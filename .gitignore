@@ -43,3 +43,6 @@ next-env.d.ts
 
 # Prisma generated client
 /src/generated/
+
+# Imágenes subidas y las que genera el seed: se recrean con `npx prisma db seed`
+/public/uploads/
