@@ -85,4 +85,9 @@ Mientras no estén, `/dev/bot` permite probar el flujo completo sin credenciales
 | Clasificador de IA | `ANTHROPIC_API_KEY` | El bot cae al menú de categorías tradicional (previsto en el SPEC §4.1) |
 | WhatsApp Cloud API | `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_ID`, `WHATSAPP_VERIFY_TOKEN` | Se usa el simulador de `/dev/bot` |
 | Bot de Telegram | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` | El bot de Telegram no responde; todo lo demás funciona |
-| Almacenamiento S3 | `S3_*` | Las fotos se guardan en `/public/uploads` del servidor |
+| Almacenamiento S3 | `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_ENDPOINT` | Las fotos se guardan en `/public/uploads` del servidor |
+| Correo de alertas | `SMTP_*`, `ALERTAS_DESTINATARIOS` | Las alertas se detectan y se ven en el tablero, pero no salen por correo |
+
+> El almacenamiento S3 **ya está implementado** y sirve para AWS S3, Cloudflare
+> R2, MinIO o Spaces: solo hay que poner las credenciales y
+> `STORAGE_DRIVER=s3`.

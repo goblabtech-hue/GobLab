@@ -7,6 +7,7 @@ import {
 } from './provider'
 
 export * from './provider'
+export { ErrorAlmacenamiento } from './errores'
 
 let instancia: StorageProvider | null = null
 

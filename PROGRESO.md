@@ -431,3 +431,27 @@ privacidad que explica qué protege el sistema y qué prueba lo respalda.
 ### Estado
 35 suites de prueba, `npm run build`, `npx tsc --noEmit` y `npx eslint .` en
 verde. Las seis fases del SPEC §12 están completas.
+
+---
+
+## Cierre de huecos posterior a las seis fases
+
+**Moderación de la galería** — `/moderacion`
+Al revisar los pendientes salió un hueco real: el criterio de aceptación 4 exige
+que la galería muestre «solo reportes moderados», y el flag `publicable` existía
+en la base y lo leía la galería, **pero ninguna pantalla podía ponerlo**. La
+moderación estaba asertada, no implementada: la galería quedaba congelada con lo
+que trajera el seed.
+
+Ahora hay cola de revisión con las dos fotos lado a lado, para supervisión y
+administración, acotada a la dependencia de quien modera. Cada decisión queda en
+la bitácora con nombre. Verificado: publicar mueve el contador de 75 a 74 por
+revisar y registra el evento.
+
+**Almacenamiento S3 implementado** — antes lanzaba «no implementado». Sirve para
+AWS S3, Cloudflare R2, MinIO o Spaces; solo faltan credenciales.
+
+**ROADMAP.md** — el SPEC §13 pedía documentar el roadmap posterior al MVP, y no
+se había escrito. Siete líneas de trabajo ordenadas por lo que multiplica el
+valor de lo que ya existe, con lo que cada una depende, y una sección de lo que
+deliberadamente **no** está en el roadmap y por qué.

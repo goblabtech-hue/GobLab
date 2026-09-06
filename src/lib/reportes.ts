@@ -362,6 +362,49 @@ export async function resolverReporte(
   return { folio: r.folio, resueltoAt }
 }
 
+/**
+ * Autoriza (o retira) un reporte para la galería pública antes/después.
+ *
+ * SPEC §4.4f: solo se publican reportes «marcados como publicables por un
+ * supervisor». La moderación existe porque las fotos las toma el ciudadano con
+ * su celular y pueden traer placas, fachadas, menores o el interior de una
+ * casa. Sin esta revisión, publicar la galería sería exponer a la gente que
+ * confió en el sistema.
+ *
+ * Se exige que haya las dos fotos: una galería de «antes y después» con una
+ * sola imagen no muestra nada.
+ */
+export async function moderarPublicacion(
+  reporteId: string, publicable: boolean, userId: string,
+) {
+  const r = await prisma.reporte.findUnique({
+    where: { id: reporteId },
+    select: {
+      estatus: true, resueltoAt: true,
+      fotos: { select: { tipo: true } },
+    },
+  })
+  if (!r) throw new ReglaDeNegocio('Reporte no encontrado.')
+
+  if (publicable) {
+    if (!r.resueltoAt) {
+      throw new ReglaDeNegocio('Solo se publican reportes que ya se resolvieron.')
+    }
+    const tieneAntes = r.fotos.some((f) => f.tipo === 'ciudadano')
+    const tieneDespues = r.fotos.some((f) => f.tipo === 'evidencia')
+    if (!tieneAntes || !tieneDespues) {
+      throw new ReglaDeNegocio(
+        'Para la galería hacen falta las dos fotos: la del ciudadano y la de la cuadrilla.',
+      )
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.reporte.update({ where: { id: reporteId }, data: { publicable } })
+    await registrarEvento(tx, reporteId, 'publicable', { publicable }, userId)
+  })
+}
+
 // ---------------------------------------------------------------- ciudadano
 
 /**

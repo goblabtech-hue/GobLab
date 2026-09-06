@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Inbox, Wrench, BarChart3, Settings, LogOut } from 'lucide-react'
+import { Inbox, Wrench, BarChart3, Settings, LogOut, Images } from 'lucide-react'
 import { auth } from '@/lib/auth'
 import { RUTAS_PROTEGIDAS } from '@/lib/auth.config'
 import { ROL } from '@/lib/presentacion'
@@ -13,6 +13,7 @@ const ENLACES = [
   { href: '/bandeja', texto: 'Bandeja', icono: Inbox },
   { href: '/cuadrilla', texto: 'Mis reportes', icono: Wrench },
   { href: '/ejecutivo', texto: 'Indicadores', icono: BarChart3 },
+  { href: '/moderacion', texto: 'Galería', icono: Images },
   { href: '/admin', texto: 'Administración', icono: Settings },
 ]
 

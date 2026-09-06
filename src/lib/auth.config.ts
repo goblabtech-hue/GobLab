@@ -29,6 +29,7 @@ export const RUTAS_PROTEGIDAS: { prefijo: string; roles: Rol[] }[] = [
   { prefijo: '/bandeja', roles: ['operador', 'supervisor', 'admin'] },
   { prefijo: '/cuadrilla', roles: ['cuadrilla', 'supervisor', 'admin'] },
   { prefijo: '/ejecutivo', roles: ['supervisor', 'admin'] },
+  { prefijo: '/moderacion', roles: ['supervisor', 'admin'] },
   { prefijo: '/admin', roles: ['admin'] },
 ]
 
