@@ -80,15 +80,45 @@ limitación temporal.
 
 Para conectar los bots de verdad, ver `PENDIENTES.md` §4.
 
+## Qué hay dónde
+
+**Sin cuenta** — lo que ve el ciudadano:
+
+| Ruta | Qué es |
+|---|---|
+| `/` | Portada con el resumen de 12 meses |
+| `/reportar` | Alta de reporte con foto y mapa |
+| `/folio` · `/folio/[folio]` | Seguimiento, calificación y reapertura |
+| `/tablero` | Tablero público: promesas, mapa, 7 gráficas |
+| `/mi-colonia/[slug]` | Estadísticas de una colonia contra el promedio |
+| `/antes-despues` | Galería de trabajos terminados |
+| `/datos-abiertos` | Descarga en CSV y JSON, con diccionario |
+| `/privacidad` | Aviso de privacidad |
+
+**Con cuenta** — personal municipal:
+
+| Ruta | Perfiles |
+|---|---|
+| `/bandeja` · `/bandeja/[folio]` | Atención ciudadana, supervisión, administración |
+| `/cuadrilla` · `/cuadrilla/[folio]` | Cuadrilla, supervisión, administración |
+| `/ejecutivo` | Supervisión, administración |
+| `/admin/*` | Administración |
+| `/dev/bot` | Simulador del bot (solo en desarrollo) |
+
 ## Comandos
 
 | Comando | Qué hace |
 |---|---|
 | `npm run dev` | Servidor de desarrollo |
 | `npm run build` | Build de producción |
+| `npm test` | Suite de pruebas (35 suites) |
 | `npx prisma studio` | Explorador visual de la base |
 | `npx prisma db seed` | Regenera los datos de demostración (borra los existentes) |
 | `npx prisma migrate dev` | Aplica cambios del esquema |
+
+Las pruebas corren contra la base de desarrollo y limpian lo que crean. Las de
+privacidad además consultan el servidor si está levantado; si no lo está, se
+saltan en vez de fallar.
 
 El seed es **reproducible**: usa un generador con semilla fija, así que dos
 corridas producen exactamente los mismos 400 reportes.
@@ -134,6 +164,29 @@ En Vercel, las mismas rutas se declaran en `vercel.json` con `crons`. Sin
 El tablero no depende de que esto corra: si el resumen tiene más de 15 minutos
 se recalcula solo en la siguiente visita. La tarea programada existe para que
 ese costo no se lo lleve un ciudadano.
+
+## Seguridad y privacidad
+
+Lo que el sistema hace para proteger a quien reporta, y que está cubierto por
+pruebas automáticas:
+
+- **El teléfono se guarda cifrado** (AES-256-GCM) con un hash aparte para poder
+  buscarlo. El personal ve `55••••1212`; ver el número completo requiere perfil
+  autorizado y **queda registrado** en la bitácora del reporte.
+- **Ninguna superficie pública expone teléfono ni nombre.** Hay una prueba que
+  recorre todas las rutas públicas con un reporte real y verifica que no
+  aparezcan.
+- **Los datos abiertos tampoco publican la descripción ni la dirección exacta**:
+  son texto libre donde el vecino escribe nombres y domicilios. Las coordenadas
+  van redondeadas a unos 11 metros.
+- **Las fotos se recodifican al subirlas**, lo que borra los metadatos EXIF —
+  incluida la ubicación GPS del celular de quien la tomó.
+- **Cabeceras de seguridad** en todas las respuestas, con CSP sin `eval` en
+  producción y `frame-ancestors 'none'`.
+- **Límite de peticiones** en todo lo que puede hacer un anónimo, respaldado en
+  Postgres para que siga funcionando con más de una instancia.
+- **Desactivar una cuenta le quita el acceso en la carga siguiente**, no cuando
+  expire su token.
 
 ## Notas de operación
 

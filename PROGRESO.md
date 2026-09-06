@@ -388,6 +388,46 @@ caché de módulos. Ahora se leen en cada evaluación.
 
 ---
 
-## Fase 6 — Endurecimiento ⏳ siguiente
+## Fase 6 — Endurecimiento ✅
 
-Cabeceras de seguridad, revisión de privacidad y cierre de documentación.
+**Entregable pedido:** rate limiting, sanitización de imágenes, pruebas de los
+módulos críticos, revisión de privacidad y README final.
+
+El límite de peticiones, la sanitización de imágenes y las pruebas de `sla.ts`,
+`folio.ts`, `duplicados.ts` y las transiciones de estatus se hicieron en sus
+fases correspondientes. Lo que faltaba:
+
+**Cabeceras de seguridad** — `next.config.ts`
+CSP, `nosniff`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy` y
+HSTS en todas las respuestas. La CSP es consciente del entorno: en producción
+**no permite `eval`** ni websockets; en desarrollo sí, porque React y la recarga
+en caliente los necesitan.
+
+Esa distinción salió de probarlo: la primera versión, idéntica en los dos
+entornos, rompía el ciclo de desarrollo. Una regla de seguridad que estorba
+todos los días acaba borrada por quien venga después, así que vale más una CSP
+estricta donde importa que una que nadie tolera. Verificado compilando y
+levantando en modo producción, no leyendo el archivo.
+
+**Revisión de privacidad, como prueba permanente** — `tests/privacidad.test.ts`
+En vez de una revisión de una sola vez, seis pruebas que corren contra el
+servidor real y comprueban lo que de verdad sale por el cable:
+
+- Ninguna de las 8 rutas públicas expone el teléfono (en claro, enmascarado o
+  cifrado) ni el nombre de un reporte real que sí los tiene.
+- Los datos abiertos no publican la descripción ni la dirección del ciudadano.
+- Las cuatro rutas internas redirigen al login sin sesión.
+- Las cuatro tareas programadas rechazan sin secreto y con secreto incorrecto.
+- El webhook de Telegram rechaza sin su secreto.
+- Las cabeceras de seguridad están puestas.
+
+Si el servidor no está levantado se saltan en vez de fallar, para que
+`npm test` siga sirviendo sin él.
+
+**Documentación final**
+README con el mapa completo de rutas, los comandos y una sección de seguridad y
+privacidad que explica qué protege el sistema y qué prueba lo respalda.
+
+### Estado
+35 suites de prueba, `npm run build`, `npx tsc --noEmit` y `npx eslint .` en
+verde. Las seis fases del SPEC §12 están completas.

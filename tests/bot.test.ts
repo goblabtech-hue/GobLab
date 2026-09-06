@@ -143,21 +143,25 @@ describe('alta de reporte por el bot', () => {
   })
 
   test('reintentar el mismo id de mensaje no duplica el reporte', async () => {
+    const marca = `árbol caído sobre la banqueta, prueba de reintento ${Date.now()}`
     await di('hola'); await di('1')
-    await di('se cayó un árbol sobre la banqueta de mi calle')
+    await di(marca)
     await di('1'); await di('seguir')
     await di('', { ubicacion: { lat: 19.42, lng: -99.14 } })
 
     const idRepetido = `dup${Date.now()}`
     const primera = await procesarMensaje({ canal: 'simulador', chatId: CHAT, idExterno: idRepetido, texto: 'si' })
     const folio = primera[0]?.texto.match(/[A-Z]{2,5}-\d{4}-\d{5,}/)?.[0]
-    if (folio) creados.push(folio)
+    assert.ok(folio, 'la primera vez sí debe crear el reporte')
+    creados.push(folio)
 
-    const antes = await prisma.reporte.count()
     const segunda = await procesarMensaje({ canal: 'simulador', chatId: CHAT, idExterno: idRepetido, texto: 'si' })
-
     assert.equal(segunda.length, 0, 'un reintento no debe responder')
-    assert.equal(await prisma.reporte.count(), antes, 'ni crear otro reporte')
+
+    // Se cuenta por la descripción y no sobre el total: las suites corren en
+    // paralelo contra la misma base y el total se mueve solo.
+    const cuantos = await prisma.reporte.count({ where: { descripcion: marca } })
+    assert.equal(cuantos, 1, 'debe existir exactamente un reporte con esa descripción')
   })
 })
 
