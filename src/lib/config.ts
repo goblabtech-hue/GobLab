@@ -35,10 +35,19 @@ export const duplicados = {
   ventanaDias: num(process.env.DUPLICADOS_VENTANA_DIAS, 30),
 }
 
-export const alertas = {
-  vencidosPct: num(process.env.ALERTA_VENCIDOS_PCT, 20),
-  caidaCalificacion: num(process.env.ALERTA_CAIDA_CALIFICACION, 0.5),
-  reaperturasCategoria: num(process.env.ALERTA_REAPERTURAS_CATEGORIA, 3),
+/**
+ * Umbrales de las alertas internas (SPEC §4.5).
+ *
+ * Es una función y no una constante a propósito: leerlos en cada evaluación
+ * permite ajustarlos sin reiniciar el servidor, y hace que se puedan probar
+ * sin trucos con la caché de módulos.
+ */
+export function umbralesAlertas() {
+  return {
+    vencidosPct: num(process.env.ALERTA_VENCIDOS_PCT, 20),
+    caidaCalificacion: num(process.env.ALERTA_CAIDA_CALIFICACION, 0.5),
+    reaperturasCategoria: num(process.env.ALERTA_REAPERTURAS_CATEGORIA, 3),
+  }
 }
 
 /** Días naturales tras `resuelto` para el autocierre (SPEC §4.3). */

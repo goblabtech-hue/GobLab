@@ -332,7 +332,62 @@ tras una interfaz intercambiable.
 
 ---
 
-## Fase 5 — Tablero ejecutivo y alertas ⏳ siguiente
+## Fase 5 — Tablero ejecutivo y alertas ✅
 
-Métricas internas por dependencia y por resolutor, embudo del bot, y alertas
-automáticas por umbral.
+**Entregable pedido:** métricas internas, embudo del bot, alertas por umbral.
+
+### Hecho
+
+**Alertas internas** — `src/lib/alertas.ts`, `/api/cron/alertas`
+Las tres condiciones del SPEC §4.5: vencidos sobre el umbral, caída de más de
+0.5 estrellas en una semana, y 3 o más reaperturas de una misma categoría en el
+mes. Dos decisiones que separan una alerta útil del ruido:
+
+- **No se repiten.** Mientras una siga abierta no se crea otra igual. Un cron
+  cada 15 minutos que reenvía el mismo correo 96 veces al día consigue que la
+  gente lo filtre, y entonces la alerta deja de servir.
+- **Se cierran solas** cuando la condición deja de cumplirse.
+
+La de calificación exige al menos 5 calificaciones en la semana: con dos o tres,
+cualquier promedio se mueve solo y alertar por eso sería ruido garantizado.
+
+El correo sale por SMTP si el municipio lo configura; si no, la alerta igual se
+detecta, se guarda y se ve en el tablero. Un sistema de alertas que se cae
+porque el servidor de correo no responde es peor que no tener correo.
+
+**Tablero ejecutivo** — `/ejecutivo`
+- Banner de alertas activas, resumen con comparación, y **tiempo de primera
+  respuesta** (del alta al primer movimiento real, sacado de la bitácora).
+- Desglose por dependencia, incluida la columna «recibidos de otra área»: si un
+  área recibe muchas reasignaciones, el problema está en cómo se clasifica al
+  entrar, no en ella.
+- Ranking por cuadrilla, **con una advertencia visible** de que mide personas
+  sin contexto y sirve para saber dónde hace falta apoyo, no para calificar.
+- Embudo del bot: conversaciones → reportes → escaladas, más cuántas cayeron al
+  menú de respaldo.
+- Reaperturas por categoría, que es la señal más directa de trabajo mal cerrado.
+
+### Validación
+
+**Pruebas** — 34 suites, 0 fallos (3 nuevas)
+- La alerta se dispara al rebasar el umbral, **no se repite** en la siguiente
+  pasada, y **se cierra sola** cuando la condición desaparece.
+- Con umbrales altos no inventa alertas; las reaperturas generan una alerta por
+  categoría, no una global.
+- Métricas internas coherentes: los vencidos son subconjunto de los abiertos,
+  nadie resuelve más de lo asignado, ninguna primera respuesta es negativa, y
+  el embudo del bot nunca pasa del 100%.
+
+**En el navegador**, con perfil de supervisión: la alerta de vencidos aparece en
+rojo con su cifra («20 de 84, 23.8%, el umbral es 20%»), primera respuesta 7.6 h,
+y el embudo muestra 287 conversaciones con 79.1% que terminaron en reporte.
+
+**Un defecto corregido:** los umbrales se leían al importar el módulo, así que
+cambiarlos exigía reiniciar el servidor y no se podían probar sin trucos con la
+caché de módulos. Ahora se leen en cada evaluación.
+
+---
+
+## Fase 6 — Endurecimiento ⏳ siguiente
+
+Cabeceras de seguridad, revisión de privacidad y cierre de documentación.
