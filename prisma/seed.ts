@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import crypto from 'node:crypto'
 import { prisma } from '../src/lib/prisma'
-import { municipio } from '../src/lib/config'
+import { obtenerConfiguracion, invalidarConfiguracion, CONFIG_POR_DEFECTO } from '../src/lib/config'
 import { calcularFechaLimite, cargarFestivos, invalidarCacheFestivos } from '../src/lib/sla'
 import { derivarTelefono } from '../src/lib/telefono'
 import { formatearFolio } from '../src/lib/folio'
@@ -75,11 +75,24 @@ async function limpiar() {
   await prisma.colonia.deleteMany()
   await prisma.dependencia.deleteMany()
   await prisma.diaFestivo.deleteMany()
+  // La configuración del municipio NO se borra: es trabajo del administrador.
 }
 
 async function main() {
   console.log('Limpiando base…')
   await limpiar()
+
+  // La identidad del municipio vive en la base y se edita en /admin/municipio.
+  // El seed la siembra desde las variables de entorno solo si no existe: si
+  // alguien ya la configuró, resembrar los reportes no debe borrar su trabajo.
+  await prisma.configuracionMunicipio.upsert({
+    where: { id: 1 },
+    create: { id: 1, ...CONFIG_POR_DEFECTO },
+    update: {},
+  })
+  invalidarConfiguracion()
+  const municipio = await obtenerConfiguracion()
+  console.log(`Municipio: ${municipio.nombre} (folios ${municipio.prefijoFolio}-…)`)
 
   // ---------------------------------------------------------------- catálogos
   console.log('Catálogos…')

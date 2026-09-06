@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Tags, Building2, MapPin, CalendarDays, Users } from 'lucide-react'
+import { Tags, Building2, MapPin, CalendarDays, Users, Landmark } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { Tarjeta, TarjetaCuerpo } from '@/components/ui/tarjeta'
 
@@ -15,6 +15,8 @@ export default async function PaginaAdmin() {
   ])
 
   const secciones = [
+    { href: '/admin/municipio', icono: Landmark, titulo: 'Datos del municipio', cuenta: null,
+      texto: 'Nombre, prefijo del folio, teléfono de emergencias y dónde se centra el mapa. Es lo que ve el ciudadano en cada pantalla.' },
     { href: '/admin/categorias', icono: Tags, titulo: 'Categorías y promesas de servicio', cuenta: categorias,
       texto: 'Los tipos de problema que puede reportar la gente y el plazo en días hábiles que el municipio se compromete a cumplir.' },
     { href: '/admin/dependencias', icono: Building2, titulo: 'Dependencias', cuenta: dependencias,
@@ -50,7 +52,9 @@ export default async function PaginaAdmin() {
                   <div className="min-w-0">
                     <p className="font-semibold">
                       {titulo}
-                      <span className="ml-2 text-sm font-normal text-tenue">{cuenta}</span>
+                      {cuenta !== null && (
+                        <span className="ml-2 text-sm font-normal text-tenue">{cuenta}</span>
+                      )}
                     </p>
                     <p className="mt-1 text-sm text-tinta-suave">{texto}</p>
                   </div>

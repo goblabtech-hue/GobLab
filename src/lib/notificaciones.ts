@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { municipio } from '@/lib/config'
+import { obtenerConfiguracion } from '@/lib/config'
 import { descifrarTelefono } from '@/lib/telefono'
 import { fecha } from '@/lib/utils'
 import { proveedor } from '@/lib/mensajeria'
@@ -39,13 +39,14 @@ export async function notificarCiudadano(reporteId: string, tipo: TipoAviso): Pr
     const destino = r.destinoNotificacion ?? r.telefonoCifrado
     if (!canal || !destino) return // de verdad no hay a dónde avisar
 
+    const cfg = await obtenerConfiguracion()
     const texto = redactar(tipo, {
       folio: r.folio,
       categoria: r.categoria.nombre,
       fechaLimite: r.fechaLimite,
       motivoImprocedente: r.motivoImprocedente,
       notaCierre: r.notaCierre,
-    })
+    }, cfg.telEmergencias)
     if (!texto) return
 
     const chatId = descifrarTelefono(destino)
@@ -72,6 +73,7 @@ function redactar(
     motivoImprocedente: string | null
     notaCierre: string | null
   },
+  telEmergencias: string,
 ): string | null {
   const encabezado = `Reporte *${r.folio}* — ${r.categoria}`
 
@@ -92,7 +94,7 @@ function redactar(
       return `${encabezado}\n\nLo reabrimos porque nos dijiste que el problema sigue. La cuadrilla lo va a revisar otra vez; el nuevo plazo vence el ${fecha(r.fechaLimite)}.`
 
     case 'improcedente':
-      return `${encabezado}\n\nEste caso no lo puede atender el municipio.\n\n${r.motivoImprocedente ?? ''}\n\nSi crees que es un error, escribe *menú* y pide hablar con una persona. Para emergencias, marca al ${municipio.telEmergencias}.`
+      return `${encabezado}\n\nEste caso no lo puede atender el municipio.\n\n${r.motivoImprocedente ?? ''}\n\nSi crees que es un error, escribe *menú* y pide hablar con una persona. Para emergencias, marca al ${telEmergencias}.`
 
     default:
       return null

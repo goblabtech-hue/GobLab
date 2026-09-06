@@ -416,3 +416,21 @@ enum CanalMensajeria {
   telegram
   simulador
 }
+
+/// Identidad del municipio, editable desde /admin/municipio.
+///
+/// Vive en la base y no en variables de entorno porque cambiar el nombre del
+/// municipio o el centro del mapa no debería exigir un reinicio del servidor:
+/// eso obliga a llamar a quien instaló el sistema por un cambio de una palabra.
+/// Es una fila única (id = 1).
+model ConfiguracionMunicipio {
+  id             Int      @id @default(1)
+  nombre         String
+  prefijoFolio   String
+  centroLat      Float
+  centroLng      Float
+  zoomInicial    Int      @default(13)
+  telEmergencias String
+  actualizadoAt  DateTime @updatedAt
+  actualizadoPor String?
+}

@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { prisma } from '@/lib/prisma'
-import { municipio } from '@/lib/config'
+import { obtenerConfiguracion } from '@/lib/config'
 import { ESQUEMA_CLASIFICACION, promptClasificador, VERSION_PROMPT } from './prompts/clasificador'
 import type { Prioridad } from '@/generated/prisma/enums'
 
@@ -92,12 +92,13 @@ export async function clasificar(
     return respaldo
   }
 
-  const [categorias, colonias] = await Promise.all([
+  const [categorias, colonias, cfg] = await Promise.all([
     prisma.categoria.findMany({
       where: { activa: true }, orderBy: { orden: 'asc' },
       select: { id: true, nombre: true, descripcionCorta: true },
     }),
     prisma.colonia.findMany({ orderBy: { nombre: 'asc' }, select: { nombre: true } }),
+    obtenerConfiguracion(),
   ])
 
   try {
@@ -115,7 +116,7 @@ export async function clasificar(
           },
         },
         system: promptClasificador({
-          municipio: municipio.nombre,
+          municipio: cfg.nombre,
           categorias: categorias.map((c) => ({
             id: c.id, nombre: c.nombre, descripcion: c.descripcionCorta,
           })),

@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { municipio } from '@/lib/config'
+import { obtenerConfiguracion } from '@/lib/config'
 import { crearReporte, posiblesDuplicados, adherirse, ReglaDeNegocio } from '@/lib/reportes'
 import { derivarTelefono, hashTelefono, cifrarTelefono, telefonoValido } from '@/lib/telefono'
 import { guardarImagen, ImagenInvalida, MAX_FOTOS_CIUDADANO } from '@/lib/storage'
@@ -161,7 +161,7 @@ async function responder(
   // --- salidas de emergencia, antes que cualquier estado ---
   if (PALABRAS_MENU.includes(clave)) {
     await guardarEstado(conversacion.id, { paso: 'menu' })
-    return [menuPrincipal(chatId, entrante.nombre)]
+    return [await menuPrincipal(chatId, entrante.nombre)]
   }
 
   if (PALABRAS_HUMANO.some((p) => clave.includes(p)) || clave === 'op_humano') {
@@ -176,14 +176,14 @@ async function responder(
   if (estado.paso === 'escalado') {
     return [{
       chatId,
-      texto: 'Ya avisamos a una persona del municipio; en cuanto pueda te contesta por aquí. Si es una emergencia, marca al ' + municipio.telEmergencias + '.',
+      texto: `Ya avisamos a una persona del municipio; en cuanto pueda te contesta por aquí. Si es una emergencia, marca al ${(await obtenerConfiguracion()).telEmergencias}.`,
     }]
   }
 
   switch (estado.paso) {
     case 'inicio':
       await guardarEstado(conversacion.id, { paso: 'menu' })
-      return [menuPrincipal(chatId, entrante.nombre)]
+      return [await menuPrincipal(chatId, entrante.nombre)]
 
     case 'menu':
       return manejarMenu(conversacion, chatId, clave, entrante)
@@ -217,17 +217,18 @@ async function responder(
 
     default:
       await guardarEstado(conversacion.id, { paso: 'menu' })
-      return [menuPrincipal(chatId, entrante.nombre)]
+      return [await menuPrincipal(chatId, entrante.nombre)]
   }
 }
 
 // ---------------------------------------------------------------- pasos
 
-function menuPrincipal(chatId: string, nombre?: string): MensajeSaliente {
+async function menuPrincipal(chatId: string, nombre?: string): Promise<MensajeSaliente> {
   const saludo = nombre ? `¡Hola, ${nombre}!` : '¡Hola!'
+  const cfg = await obtenerConfiguracion()
   return {
     chatId,
-    texto: `${saludo} Soy el asistente de ${municipio.nombre}. ¿Qué necesitas?\n\n1️⃣ Reportar un problema\n2️⃣ Consultar mi folio\n3️⃣ Información del municipio\n4️⃣ Hablar con una persona\n\nEscribe el número o dime directamente qué pasa.`,
+    texto: `${saludo} Soy el asistente de ${cfg.nombre}. ¿Qué necesitas?\n\n1️⃣ Reportar un problema\n2️⃣ Consultar mi folio\n3️⃣ Información del municipio\n4️⃣ Hablar con una persona\n\nEscribe el número o dime directamente qué pasa.`,
     botones: [
       { id: 'op_reportar', texto: 'Reportar' },
       { id: 'op_folio', texto: 'Mi folio' },
@@ -252,9 +253,10 @@ async function manejarMenu(
   }
 
   if (clave === '3' || clave.includes('informacion')) {
+    const cfg = await obtenerConfiguracion()
     return [{
       chatId,
-      texto: `Sobre ${municipio.nombre}:\n\n• Reportar y dar seguimiento: por aquí mismo, o en el sitio del municipio.\n• Consulta el tablero público para ver cuánto tardamos en atender cada tipo de problema.\n• Emergencias: ${municipio.telEmergencias}. No las atendemos por chat.\n\nEscribe *menú* para volver.`,
+      texto: `Sobre ${cfg.nombre}:\n\n• Reportar y dar seguimiento: por aquí mismo, o en el sitio del municipio.\n• Consulta el tablero público para ver cuánto tardamos en atender cada tipo de problema.\n• Emergencias: ${cfg.telEmergencias}. No las atendemos por chat.\n\nEscribe *menú* para volver.`,
     }]
   }
 
@@ -265,7 +267,7 @@ async function manejarMenu(
     return manejarDescripcion(conversacion, chatId, entrante.texto.trim())
   }
 
-  return [menuPrincipal(chatId, entrante.nombre)]
+  return [await menuPrincipal(chatId, entrante.nombre)]
 }
 
 async function manejarDescripcion(
@@ -712,6 +714,7 @@ async function escalar(
   conversacionId: string, chatId: string, motivo: string,
 ): Promise<MensajeSaliente[]> {
   await guardarEstado(conversacionId, { paso: 'escalado' }, { escaladaAHumano: true })
+  const cfg = await obtenerConfiguracion()
 
   await prisma.mensajeBot.create({
     data: { conversacionId, direccion: 'out', texto: `[escalado: ${motivo}]` },
@@ -719,7 +722,7 @@ async function escalar(
 
   return [{
     chatId,
-    texto: `⚠️ *Si hay riesgo para alguien, marca ahora al ${municipio.telEmergencias}.* Ese número atiende las 24 horas; por este chat no podemos responder una emergencia.\n\nYa avisé a una persona del municipio para que retome esta conversación. Te contesta en cuanto pueda.`,
+    texto: `⚠️ *Si hay riesgo para alguien, marca ahora al ${cfg.telEmergencias}.* Ese número atiende las 24 horas; por este chat no podemos responder una emergencia.\n\nYa avisé a una persona del municipio para que retome esta conversación. Te contesta en cuanto pueda.`,
   }]
 }
 

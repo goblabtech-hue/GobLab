@@ -13,7 +13,9 @@ import { prisma } from '@/lib/prisma'
  * fechas civiles en MUNICIPIO_TZ, no sobre instantes UTC.
  */
 
-export const TZ = process.env.MUNICIPIO_TZ ?? 'America/Mexico_City'
+import { TZ_MUNICIPIO } from '@/lib/config'
+
+export const TZ = TZ_MUNICIPIO
 
 export type Civil = { y: number; m: number; d: number }
 

@@ -4,7 +4,7 @@ import { Inbox, Wrench, BarChart3, Settings, LogOut, Images } from 'lucide-react
 import { auth } from '@/lib/auth'
 import { RUTAS_PROTEGIDAS } from '@/lib/auth.config'
 import { ROL } from '@/lib/presentacion'
-import { municipioPublico } from '@/lib/config'
+import { obtenerConfiguracion } from '@/lib/config'
 import { Boton } from '@/components/ui/boton'
 import { salir } from '@/app/entrar/acciones'
 import { NavInterna } from './nav'
@@ -18,6 +18,7 @@ const ENLACES = [
 ]
 
 export default async function LayoutInterno({ children }: LayoutProps<'/'>) {
+  const municipio = await obtenerConfiguracion()
   const sesion = await auth()
   if (!sesion?.user) redirect('/entrar')
   const { rol, name } = sesion.user
@@ -32,7 +33,7 @@ export default async function LayoutInterno({ children }: LayoutProps<'/'>) {
       <header className="sticky top-0 z-40 border-b border-borde bg-papel">
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4">
           <Link href="/" className="shrink-0 text-sm font-semibold text-marca-700">
-            {municipioPublico.nombre}
+            {municipio.nombre}
           </Link>
 
           <NavInterna enlaces={permitidos.map(({ href, texto }) => ({ href, texto }))} />

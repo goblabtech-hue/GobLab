@@ -11,6 +11,7 @@ import { Campo, Entrada, AreaTexto, Selector, Etiqueta, Ayuda } from '@/componen
 import { Tarjeta, TarjetaCuerpo } from '@/components/ui/tarjeta'
 import { IconoCategoria } from '@/components/icono-categoria'
 import { MAX_FOTOS_CIUDADANO } from '@/lib/storage/provider'
+import type { Centro } from '@/components/mapa-selector'
 import { cercanos, enviarReporte, type EstadoReporte } from './acciones'
 
 // Leaflet necesita `window`: fuera del render del servidor.
@@ -33,10 +34,11 @@ function BotonEnviar() {
 }
 
 export function FormularioReporte({
-  categorias, colonias, categoriaInicial,
+  categorias, colonias, centro, categoriaInicial,
 }: {
   categorias: Categoria[]
   colonias: Colonia[]
+  centro: Centro
   categoriaInicial?: string
 }) {
   const [estado, enviar] = useActionState<EstadoReporte, FormData>(enviarReporte, {})
@@ -232,7 +234,7 @@ export function FormularioReporte({
           O toca el mapa para poner el pin donde está el problema. Puedes arrastrarlo para ajustarlo.
         </p>
 
-        <MapaSelector lat={lat} lng={lng} onCambio={(a, b) => { setLat(a); setLng(b); setErrorUbicacion(null) }} />
+        <MapaSelector lat={lat} lng={lng} centro={centro} onCambio={(a, b) => { setLat(a); setLng(b); setErrorUbicacion(null) }} />
 
         {lat != null && (
           <p className="flex items-center gap-1.5 text-sm text-marca-700">

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Megaphone, Search, BarChart3, Phone } from 'lucide-react'
-import { municipioPublico } from '@/lib/config'
+import { obtenerConfiguracion } from '@/lib/config'
 
 const ENLACES = [
   { href: '/reportar', texto: 'Reportar', icono: Megaphone },
@@ -8,13 +8,15 @@ const ENLACES = [
   { href: '/tablero', texto: 'Cómo vamos', icono: BarChart3 },
 ]
 
-export default function LayoutPublico({ children }: { children: React.ReactNode }) {
+export default async function LayoutPublico({ children }: { children: React.ReactNode }) {
+  const municipio = await obtenerConfiguracion()
+
   return (
     <div className="flex min-h-full flex-col">
       <header className="sticky top-0 z-40 border-b border-borde bg-papel/95 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-3 px-4">
           <Link href="/" className="mr-auto min-w-0 truncate font-semibold text-marca-700">
-            {municipioPublico.nombre}
+            {municipio.nombre}
           </Link>
           <nav aria-label="Principal">
             <ul className="flex items-center gap-1">
@@ -42,15 +44,15 @@ export default function LayoutPublico({ children }: { children: React.ReactNode 
             <Phone className="mt-0.5 size-4 shrink-0" aria-hidden />
             <p>
               <strong>¿Es una emergencia?</strong> No uses esta página. Llama al{' '}
-              <a href={`tel:${municipioPublico.telEmergencias}`} className="font-semibold underline">
-                {municipioPublico.telEmergencias}
+              <a href={`tel:${municipio.telEmergencias}`} className="font-semibold underline">
+                {municipio.telEmergencias}
               </a>
               . Fugas grandes, incendios, accidentes y situaciones de riesgo se atienden por teléfono.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p>{municipioPublico.nombre} · Atención Ciudadana</p>
+            <p>{municipio.nombre} · Atención Ciudadana</p>
             <nav aria-label="Legal" className="flex gap-4">
               <Link href="/privacidad" className="underline hover:text-tinta">Aviso de privacidad</Link>
               <Link href="/datos-abiertos" className="underline hover:text-tinta">Datos abiertos</Link>

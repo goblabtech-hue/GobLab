@@ -7,23 +7,31 @@ enseñar con ellos, pero hay que sustituirlos antes de salir a producción.
 Ningún dato municipal está escrito en el código: todo se lee de variables de
 entorno (`src/lib/config.ts`) o del catálogo administrable.
 
-## 1. Variables de entorno — archivo `.env`
+## 1. Identidad del municipio ✅ — ya configurada
 
-| Variable | Valor demo actual | Qué poner |
-|---|---|---|
-| `MUNICIPIO_NOMBRE` | `Municipio Demo` | Nombre oficial del municipio |
-| `MUNICIPIO_PREFIJO_FOLIO` | `MUN` | 3 letras para el folio (`TIZ-2026-00341`) |
-| `MUNICIPIO_CENTRO_LAT` | `19.4326` | Latitud del centro (centra el mapa) |
-| `MUNICIPIO_CENTRO_LNG` | `-99.1332` | Longitud del centro |
-| `MUNICIPIO_ZOOM_INICIAL` | `13` | Zoom inicial del mapa |
-| `MUNICIPIO_TZ` | `America/Mexico_City` | Huso horario (define los días hábiles) |
-| `TEL_EMERGENCIAS` | `911` | Número al que deriva el bot ante emergencias |
+Se edita en **`/admin/municipio`**, sin tocar archivos ni reiniciar nada.
 
-> Las cuatro variables `NEXT_PUBLIC_*` del `.env` deben quedar con el mismo
-> valor que sus equivalentes: son el espejo que lee el mapa en el navegador.
+| Dato | Valor actual |
+|---|---|
+| Municipio | Tula de Allende |
+| Prefijo del folio | `TUL` (folios `TUL-2026-00341`) |
+| Centro del mapa | 20.0517, −99.3450 |
+| Acercamiento | 14 |
+| Teléfono de emergencias | 911 |
+
+**Revisar el teléfono de emergencias.** Quedó en 911, que es el número nacional
+y funciona en Tula. Si el municipio tiene una línea local de protección civil
+que prefiera publicar, se cambia en esa misma pantalla — debe ser 911, un corto
+estatal, o un número a 10 dígitos.
 
 **Ojo con el prefijo de folio:** cambiarlo después de que existan reportes
-arranca una secuencia nueva. Los folios viejos conservan el prefijo anterior.
+arranca una numeración nueva; los folios viejos conservan el prefijo anterior.
+La pantalla avisa de esto antes de guardar.
+
+### Lo único que sigue en `.env`
+`MUNICIPIO_TZ` (hoy `America/Mexico_City`). No se edita desde la interfaz a
+propósito: define qué cuenta como día hábil, y cambiarlo reinterpretaría la
+fecha límite de todos los reportes que ya existen.
 
 ## 2. Catálogos — se editan en `/admin`, no en el código
 

@@ -451,6 +451,23 @@ revisar y registra el evento.
 **Almacenamiento S3 implementado** — antes lanzaba «no implementado». Sirve para
 AWS S3, Cloudflare R2, MinIO o Spaces; solo faltan credenciales.
 
+**Identidad del municipio configurable desde la interfaz** — `/admin/municipio`
+El nombre, el prefijo del folio, el teléfono de emergencias y el centro del
+mapa vivían en `.env`: cambiar una palabra exigía editar un archivo y reiniciar
+el servidor, que no es algo que se le pueda pedir a un municipio. Ahora viven en
+la base, con pantalla propia y selector de mapa. Los cambios se aplican de
+inmediato.
+
+Se quedan fuera de la interfaz a propósito el huso horario —cambiarlo
+reinterpretaría la fecha límite de todos los reportes existentes— y las
+credenciales, que son secretos y no deben leerse desde una pantalla.
+
+**Un defecto que apareció al hacerlo:** una migración escrita a mano llevaba
+hora local en el nombre, así que ordenaba **antes** de la que crea las tablas
+que modifica. En la base de desarrollo nunca se notó, porque se había aplicado
+en orden; pero un despliegue desde cero habría fallado. Renombrada y verificada
+desplegando en una base vacía.
+
 **ROADMAP.md** — el SPEC §13 pedía documentar el roadmap posterior al MVP, y no
 se había escrito. Siete líneas de trabajo ordenadas por lo que multiplica el
 valor de lo que ya existe, con lo que cada una depende, y una sección de lo que

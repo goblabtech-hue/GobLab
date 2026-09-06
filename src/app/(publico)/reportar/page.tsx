@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { obtenerConfiguracion } from '@/lib/config'
 import { FormularioReporte } from './formulario'
 
 export const metadata = {
@@ -8,12 +9,13 @@ export const metadata = {
 
 export default async function PaginaReportar({ searchParams }: PageProps<'/reportar'>) {
   const { categoria } = await searchParams
-  const [categorias, colonias] = await Promise.all([
+  const [categorias, colonias, municipio] = await Promise.all([
     prisma.categoria.findMany({
       where: { activa: true }, orderBy: { orden: 'asc' },
       select: { id: true, slug: true, nombre: true, icono: true, slaDiasHabiles: true },
     }),
     prisma.colonia.findMany({ orderBy: { nombre: 'asc' }, select: { id: true, nombre: true } }),
+    obtenerConfiguracion(),
   ])
 
   return (
@@ -27,6 +29,7 @@ export default async function PaginaReportar({ searchParams }: PageProps<'/repor
       <FormularioReporte
         categorias={categorias}
         colonias={colonias}
+        centro={{ lat: municipio.centroLat, lng: municipio.centroLng, zoom: municipio.zoomInicial }}
         categoriaInicial={typeof categoria === 'string' ? categoria : undefined}
       />
     </div>

@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer'
-import { municipio } from '@/lib/config'
+import { obtenerConfiguracion } from '@/lib/config'
 import type { AlertaEvaluada } from '@/lib/alertas'
 
 /**
@@ -38,11 +38,12 @@ export async function enviarCorreoAlerta(alertas: AlertaEvaluada[]): Promise<voi
     })
 
     const lista = alertas.map((a) => `• ${a.mensaje}`).join('\n')
+    const cfg = await obtenerConfiguracion()
 
     await transporte.sendMail({
       from: process.env.SMTP_FROM,
       to: process.env.ALERTAS_DESTINATARIOS,
-      subject: `[${municipio.nombre}] ${alertas.length === 1 ? 'Alerta' : `${alertas.length} alertas`} de atención ciudadana`,
+      subject: `[${cfg.nombre}] ${alertas.length === 1 ? 'Alerta' : `${alertas.length} alertas`} de atención ciudadana`,
       text: `El sistema detectó lo siguiente:\n\n${lista}\n\nRevisa el detalle en el tablero interno, sección Indicadores.\n\nEste correo lo manda el sistema automáticamente. No respondas a esta dirección.`,
     })
   } catch (e) {

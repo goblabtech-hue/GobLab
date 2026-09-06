@@ -1,4 +1,4 @@
-import { municipio } from '@/lib/config'
+import { obtenerConfiguracion } from '@/lib/config'
 import { TZ } from '@/lib/sla'
 import type { Prisma } from '@/generated/prisma/client'
 
@@ -31,7 +31,7 @@ export async function generarFolio(
   tx: Prisma.TransactionClient,
   fecha = new Date(),
 ): Promise<string> {
-  const prefijo = municipio.prefijoFolio
+  const prefijo = (await obtenerConfiguracion()).prefijoFolio
   const anio = anioActual(fecha)
 
   const filas = await tx.$queryRaw<{ ultimo: number }[]>`

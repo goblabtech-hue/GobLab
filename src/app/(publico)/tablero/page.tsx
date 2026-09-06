@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { ArrowRight, Download, MapPin } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { obtenerIndicadores } from '@/lib/indicadores'
+import { obtenerConfiguracion } from '@/lib/config'
 import { ESTATUS_ABIERTOS } from '@/lib/presentacion'
 import { fecha, fechaHora, numero, pct } from '@/lib/utils'
 import { Tarjeta, TarjetaCuerpo } from '@/components/ui/tarjeta'
@@ -31,7 +32,7 @@ function tonoCumplimiento(p: number | null) {
 }
 
 export default async function Tablero() {
-  const [datos, puntosCrudos, categorias, colonias, galeria] = await Promise.all([
+  const [datos, puntosCrudos, categorias, colonias, galeria, municipio] = await Promise.all([
     obtenerIndicadores(),
     prisma.reporte.findMany({
       where: { lat: { not: null }, lng: { not: null } },
@@ -57,6 +58,7 @@ export default async function Tablero() {
         fotos: { select: { url: true, tipo: true } },
       },
     }),
+    obtenerConfiguracion(),
   ])
 
   const ahora = new Date()
@@ -181,7 +183,10 @@ export default async function Tablero() {
         <p className="mt-1 mb-4 max-w-2xl text-tinta-suave">
           Filtra por tipo de problema o por estado. Toca un círculo para ver qué hay ahí.
         </p>
-        <MapaCliente puntos={puntos} categorias={categorias} />
+        <MapaCliente
+          puntos={puntos} categorias={categorias}
+          centro={{ lat: municipio.centroLat, lng: municipio.centroLng, zoom: municipio.zoomInicial }}
+        />
       </section>
 
       {/* ------------------------------------------------ d) mi colonia */}

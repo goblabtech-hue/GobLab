@@ -4,7 +4,6 @@ import { useEffect, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { municipioPublico } from '@/lib/config'
 
 /**
  * Mapa para poner el pin del reporte.
@@ -16,6 +15,9 @@ import { municipioPublico } from '@/lib/config'
  * depende de tres PNG resueltos por ruta relativa y se rompe con el empaquetado
  * de Next.
  */
+
+/** El centro del mapa lo configura el municipio, así que viaja como prop. */
+export type Centro = { lat: number; lng: number; zoom: number }
 
 const pin = L.divIcon({
   className: '',
@@ -50,18 +52,19 @@ function Centrar({ lat, lng }: { lat: number | null; lng: number | null }) {
 }
 
 export function MapaSelector({
-  lat, lng, onCambio,
+  lat, lng, centro, onCambio,
 }: {
   lat: number | null
   lng: number | null
+  centro: Centro
   onCambio: (lat: number, lng: number) => void
 }) {
   // Sin guardia de montaje: este componente se importa con dynamic(ssr:false),
   // así que nunca se renderiza en el servidor.
   return (
     <MapContainer
-      center={[lat ?? municipioPublico.centroLat, lng ?? municipioPublico.centroLng]}
-      zoom={lat != null ? 16 : municipioPublico.zoomInicial}
+      center={[lat ?? centro.lat, lng ?? centro.lng]}
+      zoom={lat != null ? 16 : centro.zoom}
       scrollWheelZoom={false}
       className="h-64 w-full rounded-lg border border-borde"
       style={{ zIndex: 0 }}

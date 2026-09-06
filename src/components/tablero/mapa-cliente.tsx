@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import type { Punto } from './mapa-reportes'
+import type { Centro } from '@/components/mapa-selector'
 
 /**
  * Envoltura de cliente para el mapa.
@@ -23,6 +24,7 @@ const Mapa = dynamic(() => import('./mapa-reportes').then((m) => m.MapaReportes)
 export function MapaCliente(props: {
   puntos: Punto[]
   categorias: { slug: string; nombre: string }[]
+  centro: Centro
 }) {
   return <Mapa {...props} />
 }

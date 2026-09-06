@@ -3,8 +3,8 @@
 import { useMemo, useState } from 'react'
 import { CircleMarker, MapContainer, Popup, TileLayer, useMapEvents } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
-import { municipioPublico } from '@/lib/config'
 import { COLORES } from './graficas'
+import type { Centro } from '@/components/mapa-selector'
 
 /**
  * Mapa del tablero (SPEC §4.4c): integrado en la página, no en un iframe
@@ -63,12 +63,13 @@ function SeguirZoom({ onCambio }: { onCambio: (z: number) => void }) {
 }
 
 export function MapaReportes({
-  puntos, categorias,
+  puntos, categorias, centro,
 }: {
   puntos: Punto[]
   categorias: { slug: string; nombre: string }[]
+  centro: Centro
 }) {
-  const [zoom, setZoom] = useState(municipioPublico.zoomInicial)
+  const [zoom, setZoom] = useState(centro.zoom)
   const [filtroCategoria, setFiltroCategoria] = useState('')
   const [filtroEstado, setFiltroEstado] = useState<'todos' | 'abiertos' | 'resueltos' | 'vencidos'>('todos')
 
@@ -125,8 +126,8 @@ export function MapaReportes({
       </p>
 
       <MapContainer
-        center={[municipioPublico.centroLat, municipioPublico.centroLng]}
-        zoom={municipioPublico.zoomInicial}
+        center={[centro.lat, centro.lng]}
+        zoom={centro.zoom}
         scrollWheelZoom={false}
         className="h-[26rem] w-full rounded-lg border border-borde"
         style={{ zIndex: 0 }}

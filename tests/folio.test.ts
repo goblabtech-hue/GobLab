@@ -1,17 +1,20 @@
 import 'dotenv/config'
-import { test, describe, after } from 'node:test'
+import { test, describe, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { prisma } from '../src/lib/prisma'
 import { formatearFolio, anioActual, generarFolio } from '../src/lib/folio'
-import { municipio } from '../src/lib/config'
+import { obtenerConfiguracion } from '../src/lib/config'
 
 /** Año de pruebas: aísla estas corridas de la secuencia real del municipio. */
 const ANIO_PRUEBA = 1999
 
+/** El prefijo ahora es configurable, así que se lee de la base. */
+let PREFIJO: string
+
+before(async () => { PREFIJO = (await obtenerConfiguracion()).prefijoFolio })
+
 after(async () => {
-  await prisma.folioSecuencia.deleteMany({
-    where: { prefijo: municipio.prefijoFolio, anio: ANIO_PRUEBA },
-  })
+  await prisma.folioSecuencia.deleteMany({ where: { prefijo: PREFIJO, anio: ANIO_PRUEBA } })
   await prisma.$disconnect()
 })
 
@@ -51,7 +54,7 @@ describe('generarFolio', () => {
     // Con un COUNT(*) o un MAX(folio) aquí saldrían folios repetidos.
     const fecha = new Date(`${ANIO_PRUEBA}-06-15T18:00:00Z`)
     const antes = await prisma.folioSecuencia.findUnique({
-      where: { prefijo_anio: { prefijo: municipio.prefijoFolio, anio: ANIO_PRUEBA } },
+      where: { prefijo_anio: { prefijo: PREFIJO, anio: ANIO_PRUEBA } },
     })
     const desde = antes?.ultimo ?? 0
 
@@ -75,6 +78,6 @@ describe('generarFolio', () => {
     const folio = await prisma.$transaction((tx) =>
       generarFolio(tx, new Date(`${ANIO_PRUEBA}-06-15T18:00:00Z`)),
     )
-    assert.ok(folio.startsWith(`${municipio.prefijoFolio}-${ANIO_PRUEBA}-`), folio)
+    assert.ok(folio.startsWith(`${PREFIJO}-${ANIO_PRUEBA}-`), folio)
   })
 })

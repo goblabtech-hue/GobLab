@@ -1,4 +1,4 @@
-import { municipioPublico } from '@/lib/config'
+import { obtenerConfiguracion } from '@/lib/config'
 import { Alerta } from '@/components/ui/alerta'
 
 export const metadata = {
@@ -14,7 +14,9 @@ export const metadata = {
  * área jurídica del municipio y completar los datos del responsable y de la
  * Unidad de Transparencia antes de publicarlo. Ver PENDIENTES.md.
  */
-export default function Privacidad() {
+export default async function Privacidad() {
+  const municipio = await obtenerConfiguracion()
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <h1 className="text-3xl font-semibold tracking-tight">Aviso de privacidad</h1>
@@ -32,7 +34,7 @@ export default function Privacidad() {
         <section>
           <h2>Quién trata tus datos</h2>
           <p>
-            El municipio de {municipioPublico.nombre}, a través de su área de
+            El municipio de {municipio.nombre}, a través de su área de
             atención ciudadana, es responsable del tratamiento de los datos
             personales que nos proporcionas al levantar un reporte.
           </p>

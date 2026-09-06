@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { municipioPublico } from '@/lib/config'
+import { obtenerConfiguracion } from '@/lib/config'
 import { inicioPorRol } from '@/lib/presentacion'
 import { Tarjeta, TarjetaCuerpo } from '@/components/ui/tarjeta'
 import { Alerta } from '@/components/ui/alerta'
@@ -13,6 +13,7 @@ export const metadata = { title: 'Entrar al sistema' }
 
 export default async function PaginaEntrar({ searchParams }: PageProps<'/entrar'>) {
   const { motivo } = await searchParams
+  const municipio = await obtenerConfiguracion()
   const sesion = await auth()
 
   if (sesion?.user) {
@@ -38,7 +39,7 @@ export default async function PaginaEntrar({ searchParams }: PageProps<'/entrar'
 
         <h1 className="text-2xl font-semibold tracking-tight">Entrar al sistema</h1>
         <p className="mt-1 mb-6 text-sm text-tinta-suave">
-          Acceso para personal de {municipioPublico.nombre}. Si eres ciudadano no
+          Acceso para personal de {municipio.nombre}. Si eres ciudadano no
           necesitas cuenta: puedes reportar y consultar tu folio directamente.
         </p>
 

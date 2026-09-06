@@ -1,17 +1,17 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
-import { municipioPublico } from '@/lib/config'
+import { obtenerConfiguracion } from '@/lib/config'
 import './globals.css'
 
 const inter = Inter({ variable: '--font-sans-app', subsets: ['latin'], display: 'swap' })
 
-export const metadata: Metadata = {
-  title: {
-    default: `Atención Ciudadana · ${municipioPublico.nombre}`,
-    template: `%s · ${municipioPublico.nombre}`,
-  },
-  description:
-    'Reporta un problema de tu colonia, dale seguimiento con tu folio y consulta cómo vamos, en tiempo real.',
+export async function generateMetadata(): Promise<Metadata> {
+  const { nombre } = await obtenerConfiguracion()
+  return {
+    title: { default: `Atención Ciudadana · ${nombre}`, template: `%s · ${nombre}` },
+    description:
+      'Reporta un problema de tu colonia, dale seguimiento con tu folio y consulta cómo vamos, en tiempo real.',
+  }
 }
 
 export const viewport: Viewport = {

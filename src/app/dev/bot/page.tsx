@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { hashTelefono } from '@/lib/telefono'
 import { hayClasificadorIA } from '@/lib/ia/clasificador'
 import { canalesActivos } from '@/lib/mensajeria'
-import { municipio } from '@/lib/config'
+import { obtenerConfiguracion } from '@/lib/config'
 import { Alerta } from '@/components/ui/alerta'
 import { Tarjeta, TarjetaCuerpo } from '@/components/ui/tarjeta'
 import { Insignia } from '@/components/ui/insignia'
@@ -24,6 +24,7 @@ export default async function PaginaSimulador({ searchParams }: PageProps<'/dev/
   if (process.env.NODE_ENV === 'production') notFound()
 
   const { chat } = await searchParams
+  const municipio = await obtenerConfiguracion()
   const chatId = (typeof chat === 'string' && chat.trim()) || CHAT_DEMO
 
   const conversacion = await prisma.conversacionBot.findFirst({
