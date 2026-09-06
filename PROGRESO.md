@@ -114,7 +114,82 @@ calificación fuera de 1–5, ningún teléfono en claro.
 
 ---
 
-## Fase 2 — Ciclo del reporte (web) ⏳ siguiente
+## Fase 2 — Ciclo del reporte (web) ✅
 
-Crear reporte web, folio, SLA, bandeja interna, asignación, vista cuadrilla,
-cierre con evidencia, calificación y reapertura.
+**Entregable pedido:** ciclo de vida completo sin bot.
+
+### Hecho
+
+**Servicio del ciclo de vida** — `src/lib/reportes.ts`
+- Tabla explícita de transiciones válidas: lo que no está declarado, no se
+  permite. Ninguna pantalla toca `estatus` directo, todo pasa por aquí y deja
+  evento en la bitácora — de ahí salen los KPIs de reasignación y reapertura.
+- Alta con folio, fecha límite y dependencia; adhesiones que suben prioridad;
+  duplicados; reasignación con motivo obligatorio; improcedente con motivo
+  público; resolución con evidencia obligatoria; calificación; reapertura una
+  sola vez; autocierre a los 3 días.
+
+**Sitio ciudadano** — mobile-first, sin cuenta
+- Portada con el resumen de 12 meses en vivo.
+- `/reportar`: categorías con ícono, fotos con vista previa, ubicación por GPS
+  o pin arrastrable (Leaflet + OpenStreetMap) con la colonia como respaldo, y
+  **detección de duplicados en vivo**: al poner el pin, si ya hay reportes
+  abiertos de lo mismo a menos de 100 m, se ofrece sumarse en vez de duplicar.
+- `/folio` y `/folio/[folio]`: seguimiento con línea de tiempo en lenguaje
+  ciudadano, evidencia de cómo quedó, calificación por estrellas y reapertura.
+
+**Pantallas internas**
+- `/bandeja`: filtros por estatus, categoría, colonia, dependencia, prioridad y
+  canal, más búsqueda por folio o texto. Los filtros van por GET, así que una
+  búsqueda se puede compartir o guardar. Tabla en escritorio, tarjetas en
+  celular. Un supervisor solo ve lo de su dependencia.
+- `/bandeja/[folio]`: detalle con bitácora completa y panel de acciones.
+- `/cuadrilla`: "Mis reportes" ordenados por vencimiento, pensada para usarse
+  de pie en la calle; cierre que **exige foto** y no habilita el botón sin ella.
+
+**Infraestructura**
+- `StorageProvider` intercambiable (local en desarrollo, S3 pendiente de
+  credenciales) con re-codificación obligatoria de cada imagen.
+- Limitador de peticiones respaldado en Postgres, no en memoria del proceso.
+- Endpoints `/api/cron/autocierre` y `/api/cron/mantenimiento` protegidos con
+  secreto y comparación de tiempo constante (corrección C-07).
+
+### Validación
+
+**Pruebas** — `npm test`, 25 suites, 0 fallos (11 nuevas en esta fase)
+- Ciclo de vida contra la base real: transiciones válidas e inválidas, evidencia
+  obligatoria, no resolver dos veces, calificación fuera de rango, reapertura
+  solo con calificación baja y solo una vez, motivo obligatorio al reasignar,
+  adhesión que no se duplica, autocierre que respeta los recientes.
+- Saneamiento de imágenes: **se borra el EXIF, incluida la ubicación GPS** —
+  importante porque estas fotos se publican en la galería antes/después—,
+  se reduce a 1600 px, todo sale como JPEG, se rechaza un ejecutable renombrado
+  a `.jpg`, y dos fotos con el mismo nombre no se pisan.
+- Limitador: 20 peticiones simultáneas cuentan las 20, sin perder ninguna.
+
+**Extremo a extremo, en el navegador**
+- Reporte real creado desde el sitio público (`MUN-2026-00266`): folio, promesa
+  de 5 días hábiles con vencimiento correcto al 11 de septiembre, y **el
+  teléfono no aparece en el HTML público** (verificado contra el número, el
+  nombre y los campos del modelo).
+- Bandeja: asignación de cuadrilla, y el teléfono completo revelado bajo demanda
+  queda registrado en la bitácora con nombre y hora.
+- Cuadrilla en pantalla de celular: el botón de resolver está deshabilitado sin
+  foto, con el aviso correspondiente.
+- Ciclo cerrado: en atención → resuelto con evidencia → calificado con 2
+  estrellas → reabierto, y la página del ciudadano muestra los ocho pasos de la
+  línea de tiempo en lenguaje claro.
+- Cron: 401 sin secreto y con secreto incorrecto; 200 con el correcto.
+
+### Pendiente de la fase
+- Las notificaciones al ciudadano se registran como evento pero todavía no
+  salen: el envío llega con el `MessagingProvider` de la Fase 3.
+- `S3Storage` es una interfaz sin implementar hasta que el municipio elija
+  proveedor (`PENDIENTES.md` §4).
+
+---
+
+## Fase 3 — Bot de WhatsApp ⏳ siguiente
+
+Simulador, flujo conversacional, clasificador de IA con respaldo por menú,
+webhook real detrás de `MessagingProvider`, notificaciones de estatus.

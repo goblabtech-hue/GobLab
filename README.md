@@ -94,6 +94,21 @@ src/
   components/ui/    botones, campos, tarjetas, insignias, alertas
 ```
 
+## Tareas programadas
+
+Dos procesos tienen que correr solos. En un servidor propio, con `crontab`:
+
+```
+# cierra reportes resueltos sin calificar tras 3 días — una vez al día
+0 3 * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://TU-DOMINIO/api/cron/autocierre
+
+# limpieza de ventanas del limitador — cada 15 minutos
+*/15 * * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://TU-DOMINIO/api/cron/mantenimiento
+```
+
+En Vercel, las mismas rutas se declaran en `vercel.json` con `crons`. Sin
+`CRON_SECRET` los endpoints responden 401 siempre.
+
 ## Notas de operación
 
 - **El teléfono del ciudadano se guarda cifrado** (AES-256-GCM) y solo se

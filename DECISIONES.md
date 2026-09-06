@@ -167,6 +167,23 @@ que `color-scheme` queda en `light`.
 un hash señuelo cuando el correo no existe. Decir "ese correo no existe"
 permitiría enumerar las cuentas del municipio.
 
+### D-09 · `nuevo` significa "falta ponerle cuadrilla"
+El SPEC §4.2 dice que "el reporte nace asignado" (a una dependencia) pero el
+ciclo de vida empieza en `nuevo`. Si el reporte naciera en `asignado`, el
+estado `nuevo` no existiría en la práctica.
+
+Se resuelve así: el reporte **nace en `nuevo` con la dependencia ya definida**
+por su categoría, y pasa a `asignado` cuando se le pone una cuadrilla concreta.
+Así `nuevo` es una bandeja de trabajo real —"esto todavía no tiene a nadie
+atrás"— en vez de un estado decorativo.
+
+### D-10 · El teléfono completo se pide bajo demanda
+La bandeja muestra `55••••4567`; el número entero se obtiene con un clic y cada
+consulta queda registrada en la bitácora del reporte. Dos razones: una pantalla
+compartida o una captura de la bandeja no expone teléfonos de vecinos, y
+"enmascarado salvo para operadores" (SPEC §7) solo se puede auditar si queda
+constancia de quién miró qué.
+
 ### D-07 · Identificadores en español
 El dominio es municipal mexicano y el SPEC exige que toda la interfaz esté en
 español. Mantener el código en el mismo idioma que el dominio evita la

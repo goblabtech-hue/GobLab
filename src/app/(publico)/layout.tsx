@@ -1,0 +1,64 @@
+import Link from 'next/link'
+import { Megaphone, Search, BarChart3, Phone } from 'lucide-react'
+import { municipioPublico } from '@/lib/config'
+
+const ENLACES = [
+  { href: '/reportar', texto: 'Reportar', icono: Megaphone },
+  { href: '/folio', texto: 'Mi folio', icono: Search },
+  { href: '/tablero', texto: 'Cómo vamos', icono: BarChart3 },
+]
+
+export default function LayoutPublico({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex min-h-full flex-col">
+      <header className="sticky top-0 z-40 border-b border-borde bg-papel/95 backdrop-blur">
+        <div className="mx-auto flex h-14 max-w-5xl items-center gap-3 px-4">
+          <Link href="/" className="mr-auto min-w-0 truncate font-semibold text-marca-700">
+            {municipioPublico.nombre}
+          </Link>
+          <nav aria-label="Principal">
+            <ul className="flex items-center gap-1">
+              {ENLACES.map(({ href, texto, icono: Icono }) => (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    className="inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-sm text-tinta-suave hover:bg-lienzo hover:text-tinta sm:px-3"
+                  >
+                    <Icono className="size-4 shrink-0" aria-hidden />
+                    <span className="hidden sm:inline">{texto}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+      </header>
+
+      <main id="contenido" className="flex-1">{children}</main>
+
+      <footer className="mt-12 border-t border-borde bg-papel">
+        <div className="mx-auto max-w-5xl space-y-4 px-4 py-8 text-sm text-tinta-suave">
+          <div className="flex items-start gap-2.5 rounded-lg bg-rojo-50 p-3 text-rojo-600">
+            <Phone className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <p>
+              <strong>¿Es una emergencia?</strong> No uses esta página. Llama al{' '}
+              <a href={`tel:${municipioPublico.telEmergencias}`} className="font-semibold underline">
+                {municipioPublico.telEmergencias}
+              </a>
+              . Fugas grandes, incendios, accidentes y situaciones de riesgo se atienden por teléfono.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p>{municipioPublico.nombre} · Atención Ciudadana</p>
+            <nav aria-label="Legal" className="flex gap-4">
+              <Link href="/privacidad" className="underline hover:text-tinta">Aviso de privacidad</Link>
+              <Link href="/datos-abiertos" className="underline hover:text-tinta">Datos abiertos</Link>
+              <Link href="/entrar" className="underline hover:text-tinta">Personal municipal</Link>
+            </nav>
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
+}

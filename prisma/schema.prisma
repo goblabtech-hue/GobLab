@@ -377,3 +377,14 @@ model AlertaInterna {
 
   @@index([resueltaAt, createdAt])
 }
+
+// SPEC §7: "rate limiting en endpoints públicos". Se respalda en la base y no
+// en memoria del proceso: con más de una instancia (o con funciones sin estado)
+// un contador en memoria deja de limitar en cuanto hay dos procesos.
+model LimitePeticion {
+  clave     String   @id
+  ventanaAt DateTime @default(now())
+  cuenta    Int      @default(0)
+
+  @@index([ventanaAt])
+}
