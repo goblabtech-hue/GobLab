@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useState } from 'react'
+import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { Plus, X } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
@@ -65,17 +65,23 @@ export function Catalogo({
   accion: (previo: Resultado, datos: FormData) => Promise<Resultado>
   etiquetaNuevo?: string
 }) {
-  const [estado, ejecutar] = useActionState<Resultado, FormData>(accion, {})
   const [editando, setEditando] = useState<FilaCatalogo | null>(null)
   const [abierto, setAbierto] = useState(false)
 
-  // al guardar con éxito se cierra el panel y la tabla ya viene revalidada
-  useEffect(() => {
-    if (estado.ok) {
-      setAbierto(false)
-      setEditando(null)
-    }
-  }, [estado])
+  // El cierre del panel se decide al terminar la acción, no en un efecto que
+  // observe el resultado: así no hay un render intermedio con el panel abierto
+  // y el estado ya en "ok".
+  const [estado, ejecutar] = useActionState<Resultado, FormData>(
+    async (previo, datos) => {
+      const resultado = await accion(previo, datos)
+      if (resultado.ok) {
+        setAbierto(false)
+        setEditando(null)
+      }
+      return resultado
+    },
+    {},
+  )
 
   const valores = editando?.valores ?? {}
   const esNuevo = !editando

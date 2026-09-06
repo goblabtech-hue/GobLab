@@ -74,7 +74,14 @@ function desfaseTz(fecha: Date): number {
     Number(p.minute),
     Number(p.second),
   )
-  return comoUtc - fecha.getTime()
+  // El formateador no da milisegundos, así que `comoUtc` está truncado al
+  // segundo. Hay que truncar también el instante de referencia: comparar uno
+  // truncado contra otro que sí trae ms mete ese sobrante en el desfase, y una
+  // fecha límite de 23:59:59.999 terminaba cayendo en las 00:00 del día
+  // siguiente. Los desfases horarios son de minutos completos, así que la
+  // parte de milisegundos es la misma en UTC y en hora local.
+  const truncado = fecha.getTime() - fecha.getUTCMilliseconds()
+  return comoUtc - truncado
 }
 
 /**

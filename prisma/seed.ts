@@ -13,6 +13,7 @@ import { generarImagen, prepararDirImagenes } from './imagenes'
 import type {
   EstatusReporte, OrigenReporte, Prioridad, TipoEvento, TipoFoto,
 } from '../src/generated/prisma/enums'
+import type { Prisma } from '../src/generated/prisma/client'
 
 /** PRNG determinista: el mismo seed produce siempre la misma demo. */
 function mulberry32(a: number) {
@@ -153,13 +154,10 @@ async function main() {
   const PUBLICABLES = 30
   const ahora = new Date()
 
-  type FilaReporte = Parameters<typeof prisma.reporte.createMany>[0] extends
-    { data: infer D } ? (D extends (infer U)[] ? U : never) : never
-
-  const reportes: any[] = []
-  const eventos: any[] = []
-  const fotos: any[] = []
-  const adhesiones: any[] = []
+  const reportes: Prisma.ReporteCreateManyInput[] = []
+  const eventos: Prisma.EventoReporteCreateManyInput[] = []
+  const fotos: Prisma.FotoReporteCreateManyInput[] = []
+  const adhesiones: Prisma.AdhesionCreateManyInput[] = []
   const secuencias = new Map<number, number>()
 
   // pesos: baches y luminarias dominan el volumen real de un municipio
@@ -240,8 +238,10 @@ async function main() {
 
     const asignadoAId = elegir(cuadrillas).id
 
-    const eventoBase = (tipo: TipoEvento, ts: Date, detalle?: any, userId?: string | null) =>
-      eventos.push({ id: id(), reporteId: rid, tipo, timestamp: ts, detalle: detalle ?? null, userId: userId ?? null })
+    const eventoBase = (
+      tipo: TipoEvento, ts: Date,
+      detalle: Prisma.InputJsonValue = {}, userId?: string | null,
+    ) => eventos.push({ id: id(), reporteId: rid, tipo, timestamp: ts, detalle, userId: userId ?? null })
 
     eventoBase('creado', createdAt, { origen })
     const asignadoAt = new Date(createdAt.getTime() + entre(0.02, 0.6) * DIA)
@@ -424,8 +424,8 @@ async function main() {
   const reportesWa = await prisma.reporte.findMany({
     where: { origen: 'whatsapp' }, select: { id: true, folio: true, createdAt: true, telefonoCifrado: true, telefonoHash: true, telefonoMascara: true, descripcion: true },
   })
-  const convs: any[] = []
-  const msgs: any[] = []
+  const convs: Prisma.ConversacionBotCreateManyInput[] = []
+  const msgs: Prisma.MensajeBotCreateManyInput[] = []
   for (const r of reportesWa) {
     const cid = id()
     convs.push({

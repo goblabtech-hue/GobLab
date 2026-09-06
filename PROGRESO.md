@@ -60,12 +60,54 @@ Bitácora por fases del plan del SPEC §12.
 
 - Imágenes placeholder generadas localmente con sharp, sin descargar nada.
 
-### Verificado en el navegador
-- Login como `operador` → aterriza en `/bandeja`; la nav solo muestra su sección.
-- `/admin` y `/ejecutivo` por URL directa con rol `operador` → bloqueados con
-  mensaje, sin rebote al login.
-- Login como `admin` → ve las cuatro secciones.
-- Edición real: promesa de "Bache" 5 → 7 días hábiles, persistió; revertida.
+### Validación
+
+**Pruebas automatizadas** — `npm test`, 14 suites, 0 fallos
+- `sla.ts` — fines de semana, festivos, hora local vs. UTC, fin del día,
+  días hábiles entre fechas, semáforo.
+- `folio.ts` — formato, año en zona local, y **50 reservas simultáneas que
+  producen 50 folios distintos y contiguos** (la prueba de la corrección C-04).
+- `telefono.ts` — normalización de las seis formas de escribir un número,
+  hash determinista, ciclo de cifrado, texto alterado que no se descifra en
+  silencio, máscara.
+- `duplicados.ts` — Haversine contra distancias conocidas y la esquina de la
+  caja delimitadora (~141 m) que no debe contar como duplicado.
+
+**Bug encontrado y corregido por las pruebas:** la conversión de hora local
+perdía los milisegundos y toda fecha límite caía en el día siguiente
+(corrección C-11 en DECISIONES.md). El seed se regeneró: las 400 fechas límite
+quedan a las 23:59:59 hora local, ninguna en fin de semana ni en festivo.
+
+**Matriz de permisos** — probada por HTTP con los cuatro roles
+
+| | /bandeja | /cuadrilla | /ejecutivo | /admin |
+|---|---|---|---|---|
+| anónimo | login | login | login | login |
+| operador | acceso | bloqueado | bloqueado | bloqueado |
+| cuadrilla | bloqueado | acceso | bloqueado | bloqueado |
+| supervisor | acceso | acceso | acceso | bloqueado |
+| admin | acceso | acceso | acceso | acceso |
+
+Contraseña incorrecta y cuenta inexistente: no crean sesión.
+Desactivar una cuenta expulsa **en la carga siguiente**, no al expirar el token;
+cambiar el perfil surte efecto de inmediato (decisión D-08).
+
+**Catálogos, probados en el navegador**
+- Categorías: editar la promesa de "Bache" (5 → 7 días) persiste.
+- Colonias: alta de "Ampliación San Andrés" → slug `ampliacion-san-andres`
+  (acentos correctos) y coordenadas guardadas.
+- Usuarios: correo duplicado rechazado; alta con correo con espacios y
+  mayúsculas → se normaliza, se cifra con bcrypt, **y la cuenta nueva entra**
+  con los permisos de su perfil.
+- Festivos: alta y baja funcionan, y el alta **recorre las fechas límite un día**
+  (13 → 14 de octubre), que es el efecto que debía tener.
+
+**Levantar desde cero** (criterio de aceptación 7) — en una base vacía:
+`migrate deploy` + `seed` corren limpio; 400 folios únicos, ninguna fecha límite
+nula, ningún resuelto sin evidencia en categoría que la exige, ninguna
+calificación fuera de 1–5, ningún teléfono en claro.
+
+`npm run build`, `npx tsc --noEmit` y `npx eslint .` en verde.
 
 ### Pendiente de la fase
 - Los datos del municipio siguen siendo de demostración → `PENDIENTES.md`.

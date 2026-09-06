@@ -98,6 +98,15 @@ El SPEC §11 pide *"orígenes 55% whatsapp / 30% web / 15% teléfono"*, que suma
 canal del §4.1. Un canal con cero reportes haría que la gráfica de orígenes del
 tablero se viera rota. **Se reparte 55 / 30 / 10 / 5.**
 
+### C-11 · La conversión de hora local perdía los milisegundos
+Encontrado por las pruebas de `sla.ts`, no por revisión a ojo. `desfaseTz`
+comparaba un instante truncado al segundo (el formateador de `Intl` no da
+milisegundos) contra otro que sí traía milisegundos, y ese sobrante se colaba
+en el desfase. Resultado: toda fecha límite calculada como 23:59:59.999 se
+guardaba como 00:00:00.998 **del día siguiente**, así que el vencimiento
+mostrado al ciudadano estaba corrido un día. Se trunca también el instante de
+referencia.
+
 ---
 
 ## Decisiones libres
@@ -135,6 +144,18 @@ recibe no trae `rol`.
 
 Entrar a una sección sin permiso **muestra un mensaje**, no rebota al login:
 rebotar haría creer al usuario que su contraseña falló.
+
+### D-08 · La sesión se recontrasta contra la base en cada carga interna
+La sesión es un JWT firmado que vive 8 horas y no consulta la base. Eso hacía
+falsa la promesa de la propia pantalla de administración ("desactivar una
+cuenta le quita el acceso"): la persona seguía entrando hasta que su token
+expirara, y un cambio de perfil tampoco surtía efecto.
+
+`guardarSeccion` ahora consulta la cuenta por id en cada carga de sección
+interna y usa el rol **de la base**, no el del token. Si la cuenta está dada de
+baja o borrada, se cierra la sesión con una explicación en `/entrar`. Es una
+consulta por clave primaria; el costo es despreciable frente a tener permisos
+que tardan 8 horas en aplicarse.
 
 ### D-05 · Tema claro fijo
 El tablero público se proyecta en pantallas y se imprime. Un tema oscuro

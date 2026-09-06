@@ -2,16 +2,28 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 import { municipioPublico } from '@/lib/config'
 import { inicioPorRol } from '@/lib/presentacion'
 import { Tarjeta, TarjetaCuerpo } from '@/components/ui/tarjeta'
+import { Alerta } from '@/components/ui/alerta'
 import { FormularioLogin } from './formulario'
 
 export const metadata = { title: 'Entrar al sistema' }
 
-export default async function PaginaEntrar() {
+export default async function PaginaEntrar({ searchParams }: PageProps<'/entrar'>) {
+  const { motivo } = await searchParams
   const sesion = await auth()
-  if (sesion?.user) redirect(inicioPorRol(sesion.user.rol))
+
+  if (sesion?.user) {
+    // Solo se reenvía adentro si la cuenta sigue siendo válida; si no, se deja
+    // ver el formulario con la explicación.
+    const vigente = await prisma.usuario.findUnique({
+      where: { id: sesion.user.id },
+      select: { rol: true, activo: true },
+    })
+    if (vigente?.activo) redirect(inicioPorRol(vigente.rol))
+  }
 
   return (
     <main id="contenido" className="flex flex-1 items-center justify-center p-4">
@@ -29,6 +41,13 @@ export default async function PaginaEntrar() {
           Acceso para personal de {municipioPublico.nombre}. Si eres ciudadano no
           necesitas cuenta: puedes reportar y consultar tu folio directamente.
         </p>
+
+        {motivo === 'cuenta-inactiva' && (
+          <Alerta tipo="aviso" titulo="Tu sesión ya no está activa" className="mb-4">
+            Tu cuenta fue desactivada o dada de baja. Si crees que es un error,
+            habla con la persona que administra el sistema.
+          </Alerta>
+        )}
 
         <Tarjeta>
           <TarjetaCuerpo>
