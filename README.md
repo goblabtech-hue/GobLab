@@ -61,6 +61,25 @@ Las crea el seed. Todas usan la contraseña **`Demo1234!`**.
 
 **Bórralas antes de producción.** Ver `PENDIENTES.md`.
 
+## Los bots
+
+El sistema habla por **WhatsApp** y por **Telegram**, y trae un **simulador**
+para probar el flujo completo sin credenciales de nadie:
+
+```
+http://localhost:3000/dev/bot
+```
+
+Escríbele como le escribirías a una persona («hay un bache enorme frente a la
+escuela») y te lleva hasta el folio. Prueba también con «huele a gas»: el bot
+debe mandarte al número de emergencias y dejar de intentar resolverlo.
+
+Sin `ANTHROPIC_API_KEY` el bot funciona igual: en vez de entender lenguaje
+natural, muestra el menú de categorías. Ese respaldo es parte del diseño, no una
+limitación temporal.
+
+Para conectar los bots de verdad, ver `PENDIENTES.md` §4.
+
 ## Comandos
 
 | Comando | Qué hace |

@@ -499,7 +499,10 @@ async function main() {
   for (const r of reportesWa) {
     const cid = id()
     convs.push({
-      id: cid, telefonoHash: r.telefonoHash!, telefonoCifrado: r.telefonoCifrado!, telefonoMascara: r.telefonoMascara!,
+      id: cid, canal: 'whatsapp',
+      // en WhatsApp el chat id ES el teléfono, así que comparten derivados
+      chatIdHash: r.telefonoHash!, chatIdCifrado: r.telefonoCifrado!,
+      telefonoHash: r.telefonoHash!, telefonoCifrado: r.telefonoCifrado!, telefonoMascara: r.telefonoMascara!,
       estado: { paso: 'terminado' }, escaladaAHumano: false, reporteId: r.id,
       createdAt: r.createdAt, updatedAt: r.createdAt,
     })
@@ -516,7 +519,13 @@ async function main() {
     const t = derivarTelefono(elegir(TELEFONOS_DEMO))
     const createdAt = new Date(ahora.getTime() - entre(0, 364) * DIA)
     const escalada = chance(0.35)
-    convs.push({ id: cid, ...t, estado: { paso: escalada ? 'escalado' : 'menu' }, escaladaAHumano: escalada, createdAt, updatedAt: createdAt })
+    convs.push({
+      id: cid, canal: 'whatsapp',
+      chatIdHash: t.telefonoHash, chatIdCifrado: t.telefonoCifrado,
+      ...t,
+      estado: { paso: escalada ? 'escalado' : 'menu' },
+      escaladaAHumano: escalada, createdAt, updatedAt: createdAt,
+    })
     msgs.push(
       { id: id(), conversacionId: cid, direccion: 'in', texto: escalada ? 'Necesito hablar con una persona' : 'Hola', timestamp: createdAt },
       { id: id(), conversacionId: cid, direccion: 'out', texto: escalada ? 'Con gusto. Un momento, te comunico con un operador.' : `¡Hola! Soy el asistente de ${municipio.nombre}.`, timestamp: new Date(createdAt.getTime() + 1000) },

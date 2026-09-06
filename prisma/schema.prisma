@@ -22,6 +22,7 @@ enum Rol {
 
 enum OrigenReporte {
   whatsapp
+  telegram
   web
   telefono
   ventanilla
@@ -208,6 +209,12 @@ model Reporte {
   comentarioCalificacion String?
   notaCierre            String?
 
+  /// A dónde avisarle al ciudadano cuando cambie su reporte. Sin esto, un
+  /// reporte levantado por Telegram no tendría forma de recibir el aviso: el
+  /// teléfono puede no existir y el chat id no es un teléfono.
+  canalNotificacion   CanalMensajeria?
+  destinoNotificacion String?
+
   publicable         Boolean @default(false)
   motivoImprocedente String?
   reporteOriginalId  String?
@@ -287,10 +294,18 @@ model Adhesion {
 // ---------------------------------------------------------------- bot
 
 model ConversacionBot {
-  id              String   @id @default(cuid())
-  telefonoHash    String
-  telefonoCifrado String
-  telefonoMascara String
+  id     String          @id @default(cuid())
+  canal  CanalMensajeria @default(whatsapp)
+  /// Identificador del chat en el canal. En WhatsApp es el teléfono; en
+  /// Telegram es el chat id, que no revela el número. Se guarda hasheado por
+  /// las mismas razones que el teléfono (ver DECISIONES C-05).
+  chatIdHash String
+  chatIdCifrado String
+  /// El teléfono llega después: en Telegram el ciudadano tiene que compartirlo
+  /// a propósito, así que la conversación empieza sin él.
+  telefonoHash    String?
+  telefonoCifrado String?
+  telefonoMascara String?
   estado          Json     @default("{}")
   escaladaAHumano Boolean  @default(false)
   atendidaPorId   String?
@@ -302,6 +317,7 @@ model ConversacionBot {
   reporte  Reporte?     @relation(fields: [reporteId], references: [id])
   mensajes MensajeBot[]
 
+  @@index([canal, chatIdHash])
   @@index([telefonoHash])
   @@index([escaladaAHumano])
   @@index([createdAt])
@@ -313,10 +329,15 @@ model MensajeBot {
   direccion      DireccionMensaje
   texto          String
   mediaUrl       String?
+  /// Id del mensaje en su canal. Los canales reintentan sus webhooks, así que
+  /// hace falta una llave estable para no procesar dos veces lo mismo. No se
+  /// puede deduplicar por texto: en un menú, dos "1" seguidos son legítimos.
+  idExterno      String?
   timestamp      DateTime         @default(now())
 
   conversacion ConversacionBot @relation(fields: [conversacionId], references: [id], onDelete: Cascade)
 
+  @@unique([conversacionId, idExterno])
   @@index([conversacionId, timestamp])
 }
 
@@ -387,4 +408,11 @@ model LimitePeticion {
   cuenta    Int      @default(0)
 
   @@index([ventanaAt])
+}
+
+// Canal por el que se le puede escribir de vuelta al ciudadano.
+enum CanalMensajeria {
+  whatsapp
+  telegram
+  simulador
 }

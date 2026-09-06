@@ -148,6 +148,33 @@ bache, insuficiente para señalar una casa. La página de datos abiertos explica
 cada exclusión, porque un dataset abierto también debe ser honesto sobre lo que
 no trae.
 
+### C-14 · El enum `origen` no contemplaba Telegram
+El SPEC §5 lista `whatsapp | web | telefono | ventanilla`. Al agregar el bot de
+Telegram, esos reportes iban a contarse como WhatsApp y la gráfica "por dónde
+nos reporta la gente" del tablero habría mentido: el municipio no sabría por
+qué canal le está llegando la gente, que es justo para lo que sirve esa
+gráfica. Se agregó `telegram` al enum.
+
+### C-15 · Los webhooks se reintentan, y eso duplicaba reportes
+Ni WhatsApp ni Telegram garantizan entrega única: si el servidor tarda o
+responde algo que no sea 2xx, reenvían el mismo mensaje. Sin defensa, un
+reintento sobre el "sí" de confirmación crea un segundo reporte idéntico.
+
+El primer intento —deduplicar por texto dentro de una ventana de tiempo— **era
+incorrecto y lo encontró la prueba de conversación**: en un menú, dos "1"
+seguidos son dos respuestas legítimas distintas, así que el bot se quedaba
+mudo a media conversación. La llave correcta es el id del mensaje que da cada
+canal, con índice único por conversación.
+
+### C-16 · Quien reportaba por la web nunca se enteraba de nada
+Al conectar los avisos salientes, el destino salía de `canalNotificacion`, que
+solo fijaba el bot. Un reporte levantado por la web traía teléfono pero ningún
+canal, así que se resolvía en silencio: la persona jamás recibía el aviso ni la
+petición de calificar, que es la métrica principal de éxito del SPEC §4.4a.
+
+Ahora, cuando no hay canal explícito pero sí teléfono, se usa WhatsApp: en
+México ese número es su WhatsApp.
+
 ---
 
 ## Decisiones libres
@@ -239,6 +266,34 @@ buena depende de la métrica: más reportes recibidos puede significar que la
 gente confía más en el sistema; más reportes vencidos nunca es buena noticia.
 Cada cifra declara si subir es mejorar. Pintar de verde todo lo que crece sería
 maquillar el tablero.
+
+### D-13 · El motor del bot no sabe por qué canal habla
+El flujo conversacional recibe `MensajeEntrante` y devuelve `MensajeSaliente`;
+quién los entrega es problema del proveedor. Agregar Telegram —que no está en
+el SPEC— no obligó a tocar una sola línea del flujo: solo un archivo nuevo en
+`src/lib/mensajeria/`. Era la promesa del §8 al pedir mensajería intercambiable,
+y se cumplió.
+
+Las diferencias entre canales se resuelven en cada proveedor: WhatsApp acepta
+máximo 3 botones de 20 caracteres, Telegram no tiene ese límite y sí tiene
+teclado nativo para compartir ubicación y teléfono.
+
+### D-14 · Telegram identifica por chat, no por teléfono
+WhatsApp entrega el número del ciudadano; Telegram entrega un `chat.id` que no
+lo revela. Como el sistema entero se apoya en el teléfono, se le pide
+compartirlo con el botón nativo de Telegram, que es explícito y revocable.
+
+Si no lo comparte, **puede reportar igual**: el reporte guarda a dónde avisarle
+(`canalNotificacion` + `destinoNotificacion`) y las notificaciones le llegan por
+el propio Telegram. Obligar a dar el teléfono habría sido una barrera de entrada
+sin ganancia para el municipio.
+
+### D-15 · La red de palabras de emergencia no depende de la IA
+El SPEC §4.1 exige que el bot **nunca** intente resolver una emergencia. Esa
+garantía no puede depender de que la API de un tercero esté disponible, así que
+además del clasificador hay una lista de palabras clave que escala por sí sola.
+Las dos se suman, nunca se restan: si cualquiera detecta emergencia, es
+emergencia. Es deliberadamente burda — prefiere escalar de más.
 
 ### D-07 · Identificadores en español
 El dominio es municipal mexicano y el SPEC exige que toda la interfaz esté en

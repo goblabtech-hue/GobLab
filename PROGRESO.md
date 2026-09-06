@@ -256,7 +256,83 @@ existir.
 
 ---
 
-## Fase 3 — Bot de WhatsApp ⏳ siguiente
+## Fase 3 — Bots de WhatsApp y Telegram ✅
 
-Simulador, flujo conversacional, clasificador de IA con respaldo por menú,
-webhook real detrás de `MessagingProvider`, notificaciones de estatus.
+Telegram no está en el SPEC: lo pidió el equipo. Encajó sin tocar el motor
+conversacional, que es exactamente lo que el §8 buscaba al exigir mensajería
+tras una interfaz intercambiable.
+
+### Hecho
+
+**Mensajería intercambiable** — `src/lib/mensajeria/`
+- `MessagingProvider` con tres implementaciones: WhatsApp Cloud API, Telegram y
+  el simulador de desarrollo. El motor del bot no sabe cuál está usando.
+- Cada proveedor resuelve las mañas de su canal: WhatsApp acepta máximo 3
+  botones de 20 caracteres (Meta responde 400 si te pasas), Telegram no tiene
+  ese límite y sí tiene teclado nativo para compartir ubicación y teléfono.
+- Descarga de fotos: en Telegram, dos llamadas; en WhatsApp, pedir la URL
+  temporal del medio y luego bajarla.
+
+**Clasificador de IA** — `src/lib/ia/`
+- Llamada a la API de Anthropic con **structured outputs**, no pidiendo JSON por
+  prompt: el esquema lo aplica el servidor y no hay que parsear a ciegas.
+- El prompt vive versionado en `prompts/clasificador.ts` para que un cambio de
+  redacción se vea en el historial de git.
+- **Siempre hay respaldo**: sin llave, con la API caída, con confianza baja o
+  con una categoría inexistente, el bot cae al menú tradicional. Cada
+  clasificación queda auditada con el motivo.
+- El prompt le pide bajar la confianza en vez de adivinar, y advierte que el
+  texto del ciudadano es contenido a clasificar, no instrucciones.
+
+**Motor conversacional** — `src/lib/ia/bot.ts`
+- Máquina de estados con el estado en la base, no en memoria: un bot que olvida
+  en qué paso iba cada vez que se reinicia el servidor es inservible.
+- El flujo del SPEC §4.1 completo: menú, alta con lenguaje natural, confirmación
+  de categoría, foto, ubicación, detección de duplicados con oferta de adhesión,
+  confirmación y folio con promesa de servicio. Más consulta de folio y
+  escalamiento a humano.
+- **Emergencias**: además del clasificador hay una lista de palabras clave que
+  escala por sí sola. Las dos se suman, nunca se restan.
+
+**Notificaciones salientes** — conectadas al ciclo de vida
+- Asignado, resuelto (con petición de calificación), reabierto e improcedente.
+- Fuera de la transacción: un proveedor caído no puede tumbar la transición que
+  las disparó. Cada intento queda en la bitácora, entregado o no.
+
+**Webhooks y simulador**
+- `/api/webhooks/whatsapp` (con el reto de verificación de Meta) y
+  `/api/webhooks/telegram` (protegido con secreto: Telegram no firma).
+- `/dev/bot`: chat completo contra el motor real, solo en desarrollo.
+
+### Validación
+
+**Pruebas** — `npm test`, 31 suites, 0 fallos (5 nuevas)
+- Emergencias: reconoce riesgo real, **no** confunde un bache o una fuga con
+  una emergencia, escala y da el número, y tras escalar deja de conducir.
+- Alta completa: folio, promesa de servicio, coordenadas, canal de aviso.
+- Cancelar no crea nada; una descripción demasiado corta pide más detalle.
+- Interpretación de los tres canales, incluido un webhook vacío.
+
+**Tres defectos que encontró la validación**
+- **C-15**: deduplicar los reintentos de webhook **por texto** era incorrecto —
+  en un menú, dos "1" seguidos son legítimos, y el bot se quedaba mudo a media
+  conversación. La llave es el id del mensaje del canal.
+- **C-14**: el enum `origen` no tenía `telegram`, así que esos reportes se
+  habrían contado como WhatsApp en la gráfica de canales del tablero.
+- **C-16**: al conectar los avisos, quien reportaba por la web nunca se
+  enteraba de nada — el canal de notificación solo lo fijaba el bot.
+
+### Pendiente de la fase
+- Credenciales de ambos bots (`PENDIENTES.md` §4). El de Telegram se da de alta
+  en cinco minutos con @BotFather; el de WhatsApp requiere cuenta de Meta
+  Business.
+- El clasificador de IA está escrito y probado en su camino de respaldo, pero
+  **no se ha ejercido contra la API real** por no haber `ANTHROPIC_API_KEY` en
+  esta máquina.
+
+---
+
+## Fase 5 — Tablero ejecutivo y alertas ⏳ siguiente
+
+Métricas internas por dependencia y por resolutor, embudo del bot, y alertas
+automáticas por umbral.

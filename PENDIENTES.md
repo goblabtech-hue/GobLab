@@ -51,10 +51,38 @@ hábiles) son un punto de partida razonable, no una recomendación.
 - [ ] Borrar las 8 cuentas de demo (contraseña `Demo1234!`, igual para todas).
 - [ ] Publicar el aviso de privacidad real (LGPDPPSO / ley estatal aplicable).
 
-## 4. Integraciones que necesitan credenciales
+## 4. Dar de alta los bots
+
+### Telegram — es el más rápido, no requiere trámite
+1. En Telegram, escríbele a **@BotFather** y manda `/newbot`.
+2. Te da un token: ponlo en `TELEGRAM_BOT_TOKEN`.
+3. Inventa un secreto (`openssl rand -hex 32`) y ponlo en `TELEGRAM_WEBHOOK_SECRET`.
+4. Registra el webhook:
+
+```bash
+curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
+  -d "url=https://TU-DOMINIO/api/webhooks/telegram" \
+  -d "secret_token=$TELEGRAM_WEBHOOK_SECRET"
+```
+
+Telegram **no firma sus webhooks**: ese secreto es la única defensa contra que
+alguien que adivine la URL cree reportes falsos.
+
+### WhatsApp — requiere cuenta de Meta Business
+1. Crea una app en developers.facebook.com y agrega el producto WhatsApp.
+2. `WHATSAPP_TOKEN` y `WHATSAPP_PHONE_ID` salen de ahí.
+3. Inventa `WHATSAPP_VERIFY_TOKEN` y regístralo junto con la URL
+   `https://TU-DOMINIO/api/webhooks/whatsapp`. Meta la verifica con un reto que
+   el sistema responde solo.
+4. Pon `MESSAGING_DRIVER=whatsapp_cloud`.
+
+Mientras no estén, `/dev/bot` permite probar el flujo completo sin credenciales.
+
+## 5. Integraciones que necesitan credenciales
 
 | Servicio | Variable | Sin ella qué pasa |
 |---|---|---|
 | Clasificador de IA | `ANTHROPIC_API_KEY` | El bot cae al menú de categorías tradicional (previsto en el SPEC §4.1) |
-| WhatsApp Cloud API | `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_ID`, `WHATSAPP_VERIFY_TOKEN` | Se usa el simulador de `/dev/whatsapp` |
+| WhatsApp Cloud API | `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_ID`, `WHATSAPP_VERIFY_TOKEN` | Se usa el simulador de `/dev/bot` |
+| Bot de Telegram | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` | El bot de Telegram no responde; todo lo demás funciona |
 | Almacenamiento S3 | `S3_*` | Las fotos se guardan en `/public/uploads` del servidor |

@@ -141,6 +141,8 @@ describe('resolverReporte', () => {
     assert.equal(await estatusDe(r.id), 'resuelto')
     const eventos = await eventosDe(r.id)
     assert.ok(eventos.includes('resuelto'))
+    // El reporte trae teléfono, así que sí hay a dónde avisarle: debe quedar
+    // el intento registrado, entregado o no.
     assert.ok(eventos.includes('notificacion'), 'debe registrar el aviso al ciudadano')
   })
 

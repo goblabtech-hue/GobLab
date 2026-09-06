@@ -4,6 +4,7 @@ import { calcularFechaLimite, cargarFestivos } from '@/lib/sla'
 import { derivarTelefono, hashTelefono } from '@/lib/telefono'
 import { buscarDuplicados, prioridadPorAdhesiones } from '@/lib/duplicados'
 import { CALIFICACION_REAPERTURA, DIAS_AUTOCIERRE, MAX_REAPERTURAS } from '@/lib/config'
+import { notificarCiudadano } from '@/lib/notificaciones'
 import type { Prisma } from '@/generated/prisma/client'
 import type { EstatusReporte, OrigenReporte, Prioridad, TipoEvento } from '@/generated/prisma/enums'
 
@@ -233,6 +234,8 @@ export async function asignarCuadrilla(reporteId: string, cuadrillaId: string, u
     })
     await registrarEvento(tx, reporteId, 'asignado', { cuadrillaId, cuadrilla: cuadrilla.nombre }, userId)
   })
+
+  await notificarCiudadano(reporteId, 'asignado')
 }
 
 /**
@@ -289,6 +292,8 @@ export async function marcarImprocedente(reporteId: string, motivo: string, user
     })
     await registrarEvento(tx, reporteId, 'improcedente', { motivo: limpio }, userId)
   })
+
+  await notificarCiudadano(reporteId, 'improcedente')
 }
 
 export async function iniciarAtencion(reporteId: string, userId: string) {
@@ -348,8 +353,11 @@ export async function resolverReporte(
       data: { estatus: 'resuelto', resueltoAt, notaCierre: notaCierre?.trim() || null },
     })
     await registrarEvento(tx, reporteId, 'resuelto', { evidencias: evidenciaTotal }, userId)
-    await registrarEvento(tx, reporteId, 'notificacion', { tipo: 'resuelto', pideCalificacion: true })
   })
+
+  // Fuera de la transacción a propósito: si el proveedor de mensajería está
+  // caído, el reporte igual queda resuelto.
+  await notificarCiudadano(reporteId, 'resuelto')
 
   return { folio: r.folio, resueltoAt }
 }
@@ -447,6 +455,8 @@ export async function reabrirReporte(folio: string, motivo?: string) {
       nuevaFechaLimite: nuevaFechaLimite.toISOString(),
     })
   })
+
+  await notificarCiudadano(r.id, 'reabierto')
 }
 
 /** Reportes ligados a un teléfono, para "consultar mis reportes" del bot. */

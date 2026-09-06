@@ -72,6 +72,7 @@ export const PRIORIDAD: Record<Prioridad, { texto: string; tono: Tono }> = {
 
 export const ORIGEN: Record<OrigenReporte, string> = {
   whatsapp: 'WhatsApp',
+  telegram: 'Telegram',
   web: 'Sitio web',
   telefono: 'Teléfono',
   ventanilla: 'Ventanilla',
