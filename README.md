@@ -1,36 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Plataforma de Atención Ciudadana Municipal
 
-## Getting Started
+Reportes ciudadanos de punta a punta: captación por web y WhatsApp, triaje y
+ruteo, resolución con evidencia fotográfica, calificación del ciudadano y un
+tablero público con datos abiertos.
 
-First, run the development server:
+La especificación completa está en [`SPEC.md`](SPEC.md). Las decisiones de
+diseño y las correcciones al spec, en [`DECISIONES.md`](DECISIONES.md). Lo que
+falta llenar con datos reales del municipio, en [`PENDIENTES.md`](PENDIENTES.md).
+El avance por fases, en [`PROGRESO.md`](PROGRESO.md).
+
+---
+
+## Levantarlo desde cero
+
+Necesitas **Node 20+** y **PostgreSQL 14+** corriendo en local.
 
 ```bash
+# 1. Dependencias
+npm install
+
+# 2. Base de datos
+createdb atencion_ciudadana
+
+# 3. Variables de entorno
+cp .env.example .env
+
+# 4. Secretos (pega cada resultado en su variable del .env)
+openssl rand -base64 32   # AUTH_SECRET
+openssl rand -base64 32   # PHONE_ENCRYPTION_KEY
+openssl rand -base64 32   # CRON_SECRET
+
+# 5. Ajusta DATABASE_URL en .env con tu usuario de Postgres
+#    postgresql://TU_USUARIO@localhost:5432/atencion_ciudadana?schema=public
+
+# 6. Esquema
+npx prisma migrate dev
+
+# 7. Datos de demostración (400 reportes en 13 meses)
+npx prisma db seed
+
+# 8. Arrancar
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre <http://localhost:3000>.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> **Sin `ANTHROPIC_API_KEY` el sistema funciona igual.** El clasificador de IA
+> del bot cae al menú de categorías tradicional, como pide el SPEC §4.1.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Cuentas de demostración
 
-## Learn More
+Las crea el seed. Todas usan la contraseña **`Demo1234!`**.
 
-To learn more about Next.js, take a look at the following resources:
+| Perfil | Correo | Entra a |
+|---|---|---|
+| Administración | `admin@municipio.gob.mx` | Todo |
+| Supervisión | `supervisor@municipio.gob.mx` | Indicadores, bandeja, cuadrilla |
+| Atención ciudadana | `operador@municipio.gob.mx` | Bandeja |
+| Cuadrilla | `cuadrilla@municipio.gob.mx` | Sus reportes asignados |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Bórralas antes de producción.** Ver `PENDIENTES.md`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Comandos
 
-## Deploy on Vercel
+| Comando | Qué hace |
+|---|---|
+| `npm run dev` | Servidor de desarrollo |
+| `npm run build` | Build de producción |
+| `npx prisma studio` | Explorador visual de la base |
+| `npx prisma db seed` | Regenera los datos de demostración (borra los existentes) |
+| `npx prisma migrate dev` | Aplica cambios del esquema |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+El seed es **reproducible**: usa un generador con semilla fija, así que dos
+corridas producen exactamente los mismos 400 reportes.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Cómo está organizado
+
+```
+prisma/
+  schema.prisma     modelo de datos
+  seed.ts           datos de demostración
+  catalogos.ts      categorías, dependencias, colonias, festivos
+src/
+  app/
+    (interno)/      bandeja, cuadrilla, ejecutivo, admin  (requieren sesión)
+    entrar/         login del personal municipal
+  lib/
+    sla.ts          días hábiles y fecha límite
+    folio.ts        folio único con secuencia anual atómica
+    telefono.ts     hash + cifrado + máscara del teléfono de contacto
+    duplicados.ts   detección por cercanía (Haversine)
+    presentacion.ts lenguaje ciudadano de cada estatus
+  components/ui/    botones, campos, tarjetas, insignias, alertas
+```
+
+## Notas de operación
+
+- **El teléfono del ciudadano se guarda cifrado** (AES-256-GCM) y solo se
+  descifra para los perfiles de operador, supervisión y administración. Si
+  pierdes `PHONE_ENCRYPTION_KEY`, esos teléfonos son irrecuperables.
+- **Los días festivos cambian las fechas límite.** Editarlos en `/admin/festivos`
+  afecta a los reportes nuevos; los existentes conservan su fecha.
+- **Ningún endpoint público expone teléfono ni nombre**, ni siquiera el CSV de
+  datos abiertos.

@@ -1,0 +1,473 @@
+import 'dotenv/config'
+import crypto from 'node:crypto'
+import { prisma } from '../src/lib/prisma'
+import { municipio } from '../src/lib/config'
+import { calcularFechaLimite, cargarFestivos, invalidarCacheFestivos } from '../src/lib/sla'
+import { derivarTelefono } from '../src/lib/telefono'
+import { formatearFolio } from '../src/lib/folio'
+import { hashearPassword } from '../src/lib/auth'
+import {
+  CATEGORIAS, COLONIAS, DEPENDENCIAS, DESCRIPCIONES, USUARIOS, festivosOficiales,
+} from './catalogos'
+import { generarImagen, prepararDirImagenes } from './imagenes'
+import type {
+  EstatusReporte, OrigenReporte, Prioridad, TipoEvento, TipoFoto,
+} from '../src/generated/prisma/enums'
+
+/** PRNG determinista: el mismo seed produce siempre la misma demo. */
+function mulberry32(a: number) {
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+const rnd = mulberry32(20260906)
+
+const entre = (a: number, b: number) => a + rnd() * (b - a)
+const entero = (a: number, b: number) => Math.floor(entre(a, b + 1))
+const elegir = <T,>(xs: readonly T[]): T => xs[Math.floor(rnd() * xs.length)]
+const chance = (p: number) => rnd() < p
+const id = () => crypto.randomUUID()
+
+/** Elección ponderada: [[valor, peso], ...] */
+function ponderado<T>(opciones: [T, number][]): T {
+  const total = opciones.reduce((s, [, w]) => s + w, 0)
+  let r = rnd() * total
+  for (const [v, w] of opciones) { r -= w; if (r <= 0) return v }
+  return opciones[opciones.length - 1][0]
+}
+
+const DIA = 24 * 60 * 60 * 1000
+const masDias = (d: Date, n: number) => new Date(d.getTime() + n * DIA)
+
+const TELEFONOS_DEMO = Array.from({ length: 120 }, (_, i) =>
+  `55${String(10_000_000 + i * 7919).slice(0, 8)}`,
+)
+
+async function limpiar() {
+  // orden seguro respecto a llaves foráneas
+  await prisma.mensajeBot.deleteMany()
+  await prisma.conversacionBot.deleteMany()
+  await prisma.clasificacionIA.deleteMany()
+  await prisma.adhesion.deleteMany()
+  await prisma.eventoReporte.deleteMany()
+  await prisma.fotoReporte.deleteMany()
+  await prisma.$executeRaw`UPDATE "Reporte" SET "reporteOriginalId" = NULL`
+  await prisma.reporte.deleteMany()
+  await prisma.promesaServicioHistorial.deleteMany()
+  await prisma.alertaInterna.deleteMany()
+  await prisma.resumenIndicadores.deleteMany()
+  await prisma.folioSecuencia.deleteMany()
+  await prisma.usuario.deleteMany()
+  await prisma.categoria.deleteMany()
+  await prisma.colonia.deleteMany()
+  await prisma.dependencia.deleteMany()
+  await prisma.diaFestivo.deleteMany()
+}
+
+async function main() {
+  console.log('Limpiando base…')
+  await limpiar()
+
+  // ---------------------------------------------------------------- catálogos
+  console.log('Catálogos…')
+  const dependencias = []
+  for (const d of DEPENDENCIAS) {
+    dependencias.push(await prisma.dependencia.create({ data: { ...d } }))
+  }
+
+  const categorias = []
+  for (const [i, c] of CATEGORIAS.entries()) {
+    categorias.push(
+      await prisma.categoria.create({
+        data: {
+          slug: c.slug,
+          nombre: c.nombre,
+          icono: c.icono,
+          descripcionCorta: c.descripcionCorta,
+          slaDiasHabiles: c.slaDiasHabiles,
+          requiereEvidencia: c.requiereEvidencia ?? true,
+          orden: i,
+          dependenciaId: dependencias[c.dependencia].id,
+        },
+      }),
+    )
+  }
+
+  const slugify = (s: string) =>
+    s.normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+
+  const colonias = []
+  for (const nombre of COLONIAS) {
+    colonias.push(
+      await prisma.colonia.create({
+        data: {
+          slug: slugify(nombre),
+          nombre,
+          centroLat: municipio.centroLat + entre(-0.03, 0.03),
+          centroLng: municipio.centroLng + entre(-0.03, 0.03),
+        },
+      }),
+    )
+  }
+
+  const anio = new Date().getFullYear()
+  await prisma.diaFestivo.createMany({
+    data: [anio - 1, anio, anio + 1].flatMap((a) =>
+      festivosOficiales(a).map((f) => ({ fecha: new Date(`${f.fecha}T00:00:00Z`), nombre: f.nombre })),
+    ),
+    skipDuplicates: true,
+  })
+  invalidarCacheFestivos()
+  const festivos = await cargarFestivos()
+
+  const passwordDemo = process.env.SEED_PASSWORD ?? 'Demo1234!'
+  const hash = await hashearPassword(passwordDemo)
+  const usuarios = []
+  for (const u of USUARIOS) {
+    usuarios.push(
+      await prisma.usuario.create({
+        data: {
+          nombre: u.nombre,
+          email: u.email,
+          hashPassword: hash,
+          rol: u.rol,
+          dependenciaId: u.dependencia === null ? null : dependencias[u.dependencia].id,
+        },
+      }),
+    )
+  }
+  const cuadrillas = usuarios.filter((u) => u.rol === 'cuadrilla')
+  const operadores = usuarios.filter((u) => u.rol === 'operador')
+  const supervisores = usuarios.filter((u) => u.rol === 'supervisor')
+
+  // ---------------------------------------------------------------- reportes
+  console.log('Generando imágenes placeholder…')
+  await prepararDirImagenes()
+
+  console.log('Generando 400 reportes…')
+  const N = 400
+  const PUBLICABLES = 30
+  const ahora = new Date()
+
+  type FilaReporte = Parameters<typeof prisma.reporte.createMany>[0] extends
+    { data: infer D } ? (D extends (infer U)[] ? U : never) : never
+
+  const reportes: any[] = []
+  const eventos: any[] = []
+  const fotos: any[] = []
+  const adhesiones: any[] = []
+  const secuencias = new Map<number, number>()
+
+  // pesos: baches y luminarias dominan el volumen real de un municipio
+  const pesosCategoria: [number, number][] = categorias.map((c, i) => {
+    const peso = { bache: 18, luminaria: 16, basura: 12, 'fuga-agua': 10, drenaje: 9,
+      'arbol-riesgo': 7, banqueta: 7, parque: 6, 'animal-calle': 5, ruido: 4,
+      semaforo: 3, informacion: 3 }[c.slug] ?? 5
+    return [i, peso]
+  })
+
+  // clusters para que la detección de duplicados tenga con qué trabajar
+  const clusters = Array.from({ length: 6 }, () => ({
+    lat: municipio.centroLat + entre(-0.02, 0.02),
+    lng: municipio.centroLng + entre(-0.02, 0.02),
+    categoriaIdx: ponderado(pesosCategoria),
+  }))
+
+  let publicablesHechos = 0
+
+  for (let i = 0; i < N; i++) {
+    const rid = id()
+    const enCluster = chance(0.12)
+    const cluster = enCluster ? elegir(clusters) : null
+    const catIdx = cluster ? cluster.categoriaIdx : ponderado(pesosCategoria)
+    const categoria = categorias[catIdx]
+    const colonia = elegir(colonias)
+
+    // ---- desenlace (SPEC §11: 60% a tiempo, 15% vencidos, 8% reasignados, 5% reabiertos)
+    // `recien_resuelto` mantiene una bolsa de reportes esperando calificación,
+    // que es lo que el criterio de aceptación 3 necesita poder demostrar.
+    const desenlace = ponderado<'a_tiempo' | 'recien_resuelto' | 'vencido' | 'abierto' | 'improcedente' | 'duplicado'>([
+      ['a_tiempo', 54], ['recien_resuelto', 6], ['vencido', 15],
+      ['abierto', 17], ['improcedente', 4], ['duplicado', 4],
+    ])
+
+    // distribución en 12 meses, con más volumen en los meses recientes.
+    // Los `recien_resuelto` se fuerzan a los últimos días para que sigan
+    // dentro de la ventana de 3 días previa al autocierre.
+    const diasAtras = desenlace === 'recien_resuelto'
+      ? entre(0.5, 2.5)
+      : Math.floor(Math.pow(rnd(), 0.75) * 364)
+    const createdAt = new Date(ahora.getTime() - diasAtras * DIA - entre(0, DIA))
+
+    const lat = cluster ? cluster.lat + entre(-0.0006, 0.0006) : municipio.centroLat + entre(-0.035, 0.035)
+    const lng = cluster ? cluster.lng + entre(-0.0006, 0.0006) : municipio.centroLng + entre(-0.035, 0.035)
+
+    // CORRECCIÓN C-10: el SPEC §11 pide 55/30/15 = 100% y deja `ventanilla`
+    // en cero pese a existir en el enum. Se reparte 55/30/10/5.
+    const origen = ponderado<OrigenReporte>([
+      ['whatsapp', 55], ['web', 30], ['telefono', 10], ['ventanilla', 5],
+    ])
+
+    const tieneTel = chance(origen === 'whatsapp' ? 1 : 0.8)
+    const telefono = tieneTel ? elegir(TELEFONOS_DEMO) : null
+    const tel = telefono ? derivarTelefono(telefono) : null
+
+    const fechaLimite = calcularFechaLimite(createdAt, categoria.slaDiasHabiles, festivos)
+
+    const anioR = createdAt.getFullYear()
+    const n = (secuencias.get(anioR) ?? 0) + 1
+    secuencias.set(anioR, n)
+    const folio = formatearFolio(municipio.prefijoFolio, anioR, n)
+
+    const reasignado = chance(0.08)
+
+    let estatus: EstatusReporte = 'nuevo'
+    let resueltoAt: Date | null = null
+    let cerradoAt: Date | null = null
+    let reabiertoAt: Date | null = null
+    let calificacion: number | null = null
+    let comentario: string | null = null
+    let vecesReabierto = 0
+    let motivoImprocedente: string | null = null
+
+    const dependenciaId = reasignado
+      ? elegir(dependencias.filter((d) => d.id !== categoria.dependenciaId)).id
+      : categoria.dependenciaId
+
+    const asignadoAId = elegir(cuadrillas).id
+
+    const eventoBase = (tipo: TipoEvento, ts: Date, detalle?: any, userId?: string | null) =>
+      eventos.push({ id: id(), reporteId: rid, tipo, timestamp: ts, detalle: detalle ?? null, userId: userId ?? null })
+
+    eventoBase('creado', createdAt, { origen })
+    const asignadoAt = new Date(createdAt.getTime() + entre(0.02, 0.6) * DIA)
+
+    if (desenlace === 'improcedente') {
+      estatus = 'improcedente'
+      motivoImprocedente = elegir([
+        'La dirección reportada corresponde a una vialidad estatal, no municipal.',
+        'El domicilio está fuera de los límites del municipio.',
+        'Se trata de un predio particular; no procede intervención municipal.',
+      ])
+      eventoBase('asignado', asignadoAt, { dependenciaId })
+      eventoBase('improcedente', new Date(asignadoAt.getTime() + DIA), { motivo: motivoImprocedente }, elegir(supervisores).id)
+    } else if (desenlace === 'duplicado') {
+      estatus = 'duplicado'
+      eventoBase('duplicado', asignadoAt, {}, elegir(operadores).id)
+    } else if (desenlace === 'abierto') {
+      estatus = ponderado<EstatusReporte>([['nuevo', 15], ['asignado', 45], ['en_atencion', 40]])
+      if (estatus !== 'nuevo') eventoBase('asignado', asignadoAt, { dependenciaId })
+      // los reportes abiertos también se reasignan: si no, el KPI de mal ruteo
+      // solo mediría reportes ya cerrados y saldría artificialmente bajo
+      if (estatus !== 'nuevo' && reasignado) {
+        eventoBase('reasignado', new Date(asignadoAt.getTime() + entre(0.2, 2) * DIA), {
+          de: categoria.dependenciaId, a: dependenciaId,
+          motivo: 'El reporte corresponde a otra dependencia por el tipo de intervención.',
+        }, elegir(supervisores).id)
+      }
+      if (estatus === 'en_atencion') eventoBase('en_atencion', new Date(asignadoAt.getTime() + entre(0.5, 2) * DIA), {}, asignadoAId)
+    } else {
+      // a_tiempo | vencido
+      eventoBase('asignado', asignadoAt, { dependenciaId })
+      if (reasignado) {
+        eventoBase('reasignado', new Date(asignadoAt.getTime() + entre(0.2, 2) * DIA), {
+          de: categoria.dependenciaId, a: dependenciaId,
+          motivo: 'El reporte corresponde a otra dependencia por el tipo de intervención.',
+        }, elegir(supervisores).id)
+      }
+      const enAtencionAt = new Date(asignadoAt.getTime() + entre(0.3, 2) * DIA)
+      eventoBase('en_atencion', enAtencionAt, {}, asignadoAId)
+
+      const margen = fechaLimite.getTime() - createdAt.getTime()
+      resueltoAt = desenlace === 'vencido'
+        ? new Date(fechaLimite.getTime() + entre(0.5, 12) * DIA)
+        : new Date(createdAt.getTime() + margen * entre(0.25, 0.95))
+
+      if (resueltoAt > ahora) resueltoAt = new Date(ahora.getTime() - entre(0, 2) * DIA)
+      if (resueltoAt < enAtencionAt) resueltoAt = new Date(enAtencionAt.getTime() + 0.2 * DIA)
+
+      estatus = 'resuelto'
+      eventoBase('resuelto', resueltoAt, {}, asignadoAId)
+      eventoBase('notificacion', resueltoAt, { canal: origen === 'whatsapp' ? 'whatsapp' : 'sms', tipo: 'resuelto' })
+
+      const califica = desenlace !== 'recien_resuelto' && tieneTel && chance(0.72)
+      if (califica) {
+        // sesgo a 4–5 con cola en 1–2 (SPEC §11)
+        calificacion = ponderado<number>([[5, 46], [4, 27], [3, 12], [2, 9], [1, 6]])
+        cerradoAt = new Date(resueltoAt.getTime() + entre(0.1, 2.5) * DIA)
+        comentario = calificacion >= 4
+          ? elegir(['Quedó muy bien, gracias', 'Rápido y bien hecho', 'Sí lo arreglaron, gracias'])
+          : elegir(['Lo taparon a medias, ya se volvió a hundir', 'Tardaron mucho', 'No quedó bien'])
+        eventoBase('calificado', cerradoAt, { calificacion }, null)
+      } else {
+        // autocierre a 3 días sin respuesta (SPEC §4.3)
+        cerradoAt = masDias(resueltoAt, 3)
+        if (cerradoAt > ahora) cerradoAt = null
+      }
+
+      if (cerradoAt) {
+        estatus = 'cerrado'
+        eventoBase('cerrado', cerradoAt, { automatico: !califica }, null)
+      }
+
+      // reaperturas: solo con calificación baja (SPEC §4.2)
+      if (cerradoAt && calificacion !== null && calificacion <= 2 && chance(0.55)) {
+        reabiertoAt = new Date(cerradoAt.getTime() + entre(0.2, 2) * DIA)
+        if (reabiertoAt < ahora) {
+          vecesReabierto = 1
+          estatus = 'reabierto'
+          cerradoAt = null
+          eventoBase('reabierto', reabiertoAt, { motivo: 'El ciudadano reporta que el problema persiste.' }, null)
+        } else {
+          reabiertoAt = null
+        }
+      }
+    }
+
+    // ---- fotos y galería antes/después
+    const esPublicable =
+      estatus === 'cerrado' && resueltoAt !== null && publicablesHechos < PUBLICABLES && chance(0.35)
+
+    if (esPublicable) publicablesHechos++
+
+    reportes.push({
+      id: rid, folio, categoriaId: categoria.id, descripcion: elegir(DESCRIPCIONES[categoria.slug]),
+      prioridad: ponderado<Prioridad>([['normal', 78], ['alta', 17], ['urgente', 5]]),
+      estatus, origen, lat, lng,
+      direccionTexto: `Calle ${entero(1, 40)} #${entero(100, 999)}, Col. ${colonia.nombre}`,
+      coloniaId: colonia.id,
+      telefonoHash: tel?.telefonoHash ?? null,
+      telefonoCifrado: tel?.telefonoCifrado ?? null,
+      telefonoMascara: tel?.telefonoMascara ?? null,
+      nombreContacto: tieneTel && chance(0.6) ? elegir(['María', 'José', 'Laura', 'Miguel', 'Sofía', 'Ricardo']) : null,
+      dependenciaId,
+      asignadoAId: ['nuevo', 'duplicado', 'improcedente'].includes(estatus) ? null : asignadoAId,
+      fechaLimite, resueltoAt, cerradoAt, reabiertoAt,
+      calificacion, comentarioCalificacion: comentario,
+      notaCierre: resueltoAt ? elegir(['Se atendió con cuadrilla y material propio.', 'Trabajo concluido en sitio.', 'Se realizó la reparación completa.']) : null,
+      publicable: esPublicable, motivoImprocedente, vecesReabierto,
+      createdAt, updatedAt: cerradoAt ?? resueltoAt ?? createdAt,
+    })
+
+    // foto del ciudadano
+    if (chance(0.45) || esPublicable) {
+      fotos.push({
+        id: id(), reporteId: rid, tipo: 'ciudadano' as TipoFoto,
+        url: esPublicable
+          ? await generarImagen(`${folio}-antes`, categoria.nombre, colonia.nombre, 'antes')
+          : '/uploads/seed/generico-antes.jpg',
+        createdAt,
+      })
+    }
+    // evidencia de resolución (obligatoria si resuelto y la categoría la exige)
+    if (resueltoAt && categoria.requiereEvidencia) {
+      fotos.push({
+        id: id(), reporteId: rid, tipo: 'evidencia' as TipoFoto, subidaPorUserId: asignadoAId,
+        url: esPublicable
+          ? await generarImagen(`${folio}-despues`, categoria.nombre, colonia.nombre, 'despues')
+          : '/uploads/seed/generico-despues.jpg',
+        createdAt: resueltoAt,
+      })
+    }
+    if (esPublicable) {
+      eventoBase('publicable', masDias(resueltoAt!, 1), { por: 'supervisor' }, elegir(supervisores).id)
+    }
+
+    // adhesiones para los clusters
+    if (enCluster && ['nuevo', 'asignado', 'en_atencion'].includes(estatus) && chance(0.5)) {
+      for (let k = 0; k < entero(1, 5); k++) {
+        const t = derivarTelefono(elegir(TELEFONOS_DEMO))
+        adhesiones.push({ id: id(), reporteId: rid, ...t, createdAt: new Date(createdAt.getTime() + k * 0.4 * DIA) })
+      }
+    }
+  }
+
+  // imágenes genéricas compartidas por los reportes no publicables
+  await generarImagen('generico-antes', 'Reporte ciudadano', 'Imagen de demostración', 'antes')
+  await generarImagen('generico-despues', 'Evidencia de resolución', 'Imagen de demostración', 'despues')
+
+  console.log(`Insertando ${reportes.length} reportes…`)
+  await prisma.reporte.createMany({ data: reportes })
+  await prisma.fotoReporte.createMany({ data: fotos })
+  await prisma.eventoReporte.createMany({ data: eventos })
+  // dedup de adhesiones: un mismo teléfono no se adhiere dos veces al mismo reporte
+  const vistas = new Set<string>()
+  const adhesionesUnicas = adhesiones.filter((a) => {
+    const k = `${a.reporteId}:${a.telefonoHash}`
+    if (vistas.has(k)) return false
+    vistas.add(k)
+    return true
+  })
+  await prisma.adhesion.createMany({ data: adhesionesUnicas })
+
+  // liga de duplicados: cada reporte `duplicado` apunta a uno abierto cercano
+  const dups = await prisma.reporte.findMany({ where: { estatus: 'duplicado' }, select: { id: true, categoriaId: true, lat: true, lng: true } })
+  for (const d of dups) {
+    const original = await prisma.reporte.findFirst({
+      where: { categoriaId: d.categoriaId, estatus: { in: ['nuevo', 'asignado', 'en_atencion'] }, id: { not: d.id } },
+      select: { id: true },
+    })
+    if (original) await prisma.reporte.update({ where: { id: d.id }, data: { reporteOriginalId: original.id } })
+  }
+
+  // la secuencia de folios debe continuar donde quedó el seed
+  for (const [a, ultimo] of secuencias) {
+    await prisma.folioSecuencia.create({ data: { prefijo: municipio.prefijoFolio, anio: a, ultimo } })
+  }
+
+  // ---------------------------------------------------------------- bot
+  console.log('Conversaciones del bot…')
+  const reportesWa = await prisma.reporte.findMany({
+    where: { origen: 'whatsapp' }, select: { id: true, folio: true, createdAt: true, telefonoCifrado: true, telefonoHash: true, telefonoMascara: true, descripcion: true },
+  })
+  const convs: any[] = []
+  const msgs: any[] = []
+  for (const r of reportesWa) {
+    const cid = id()
+    convs.push({
+      id: cid, telefonoHash: r.telefonoHash!, telefonoCifrado: r.telefonoCifrado!, telefonoMascara: r.telefonoMascara!,
+      estado: { paso: 'terminado' }, escaladaAHumano: false, reporteId: r.id,
+      createdAt: r.createdAt, updatedAt: r.createdAt,
+    })
+    msgs.push(
+      { id: id(), conversacionId: cid, direccion: 'in', texto: 'Hola', timestamp: r.createdAt },
+      { id: id(), conversacionId: cid, direccion: 'out', texto: `¡Hola! Soy el asistente de ${municipio.nombre}. ¿Qué necesitas? 1) Nuevo reporte 2) Consultar folio 3) Información 4) Hablar con una persona`, timestamp: new Date(r.createdAt.getTime() + 1000) },
+      { id: id(), conversacionId: cid, direccion: 'in', texto: r.descripcion, timestamp: new Date(r.createdAt.getTime() + 30_000) },
+      { id: id(), conversacionId: cid, direccion: 'out', texto: `Listo, tu reporte quedó registrado con el folio ${r.folio}.`, timestamp: new Date(r.createdAt.getTime() + 60_000) },
+    )
+  }
+  // conversaciones que no terminaron en reporte (para el embudo del SPEC §4.5)
+  for (let i = 0; i < 60; i++) {
+    const cid = id()
+    const t = derivarTelefono(elegir(TELEFONOS_DEMO))
+    const createdAt = new Date(ahora.getTime() - entre(0, 364) * DIA)
+    const escalada = chance(0.35)
+    convs.push({ id: cid, ...t, estado: { paso: escalada ? 'escalado' : 'menu' }, escaladaAHumano: escalada, createdAt, updatedAt: createdAt })
+    msgs.push(
+      { id: id(), conversacionId: cid, direccion: 'in', texto: escalada ? 'Necesito hablar con una persona' : 'Hola', timestamp: createdAt },
+      { id: id(), conversacionId: cid, direccion: 'out', texto: escalada ? 'Con gusto. Un momento, te comunico con un operador.' : `¡Hola! Soy el asistente de ${municipio.nombre}.`, timestamp: new Date(createdAt.getTime() + 1000) },
+    )
+  }
+  await prisma.conversacionBot.createMany({ data: convs })
+  await prisma.mensajeBot.createMany({ data: msgs })
+
+  // ---------------------------------------------------------------- resumen
+  const total = await prisma.reporte.count()
+  const porEstatus = await prisma.reporte.groupBy({ by: ['estatus'], _count: true })
+  console.log('\n✔ Seed completo')
+  console.log(`  Reportes: ${total}`)
+  for (const g of porEstatus) console.log(`    ${g.estatus.padEnd(14)} ${g._count}`)
+  console.log(`  Publicables (antes/después): ${await prisma.reporte.count({ where: { publicable: true } })}`)
+  console.log(`  Adhesiones: ${await prisma.adhesion.count()}`)
+  console.log(`  Conversaciones bot: ${await prisma.conversacionBot.count()}`)
+  console.log(`\n  Usuarios de demo (contraseña: ${passwordDemo}):`)
+  for (const u of USUARIOS) console.log(`    ${u.rol.padEnd(11)} ${u.email}`)
+}
+
+main()
+  .catch((e) => { console.error(e); process.exit(1) })
+  .finally(async () => { await prisma.$disconnect() })

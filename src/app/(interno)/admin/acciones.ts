@@ -1,0 +1,233 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
+import { prisma } from '@/lib/prisma'
+import { requerirRol, hashearPassword, NoAutorizado } from '@/lib/auth'
+import { invalidarCacheFestivos } from '@/lib/sla'
+
+/**
+ * Catálogos administrables (SPEC §3: el rol admin gestiona categorías,
+ * colonias, dependencias, usuarios y promesas de servicio).
+ *
+ * Toda acción revalida su propia ruta y exige rol admin del lado servidor:
+ * ocultar un botón en la UI no es control de acceso.
+ */
+
+export type Resultado = { ok?: boolean; error?: string }
+
+async function comoAdmin<T>(fn: () => Promise<T>): Promise<T | Resultado> {
+  try {
+    await requerirRol('admin')
+    return await fn()
+  } catch (e) {
+    if (e instanceof NoAutorizado) return { error: 'No tienes permiso para esta acción.' }
+    throw e
+  }
+}
+
+const texto = (min = 1, max = 200) => z.string().trim().min(min, 'Campo obligatorio.').max(max)
+
+const slugify = (s: string) =>
+  s.normalize('NFD').replace(/\p{Diacritic}/gu, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+
+// ---------------------------------------------------------------- categorías
+
+const categoriaSchema = z.object({
+  id: z.coerce.number().int().optional(),
+  nombre: texto(3, 80),
+  icono: texto(1, 40),
+  descripcionCorta: z.string().trim().max(160).optional().or(z.literal('')),
+  slaDiasHabiles: z.coerce.number().int().min(1, 'Mínimo 1 día.').max(60, 'Máximo 60 días.'),
+  dependenciaId: z.coerce.number().int(),
+  requiereEvidencia: z.coerce.boolean().optional(),
+  activa: z.coerce.boolean().optional(),
+})
+
+export async function guardarCategoria(_p: Resultado, datos: FormData): Promise<Resultado> {
+  return comoAdmin(async () => {
+    const parsed = categoriaSchema.safeParse({
+      id: datos.get('id') || undefined,
+      nombre: datos.get('nombre'),
+      icono: datos.get('icono'),
+      descripcionCorta: datos.get('descripcionCorta'),
+      slaDiasHabiles: datos.get('slaDiasHabiles'),
+      dependenciaId: datos.get('dependenciaId'),
+      requiereEvidencia: datos.get('requiereEvidencia') === 'on',
+      activa: datos.get('activa') === 'on',
+    })
+    if (!parsed.success) return { error: parsed.error.issues[0].message }
+
+    const { id, descripcionCorta, ...resto } = parsed.data
+    const data = { ...resto, descripcionCorta: descripcionCorta || null }
+
+    if (id) {
+      await prisma.categoria.update({ where: { id }, data })
+    } else {
+      const base = slugify(data.nombre)
+      // el slug es único: si ya existe, se numera
+      let slug = base
+      for (let i = 2; await prisma.categoria.findUnique({ where: { slug } }); i++) slug = `${base}-${i}`
+      const orden = (await prisma.categoria.count()) + 1
+      await prisma.categoria.create({ data: { ...data, slug, orden } })
+    }
+    revalidatePath('/admin/categorias')
+    return { ok: true }
+  }) as Promise<Resultado>
+}
+
+// ---------------------------------------------------------------- dependencias
+
+const dependenciaSchema = z.object({
+  id: z.coerce.number().int().optional(),
+  nombre: texto(3, 120),
+  responsable: texto(3, 120),
+  telefono: z.string().trim().regex(/^\d{7,15}$/, 'Escribe solo dígitos (7 a 15).'),
+  activa: z.coerce.boolean().optional(),
+})
+
+export async function guardarDependencia(_p: Resultado, datos: FormData): Promise<Resultado> {
+  return comoAdmin(async () => {
+    const parsed = dependenciaSchema.safeParse({
+      id: datos.get('id') || undefined,
+      nombre: datos.get('nombre'),
+      responsable: datos.get('responsable'),
+      telefono: datos.get('telefono'),
+      activa: datos.get('activa') === 'on',
+    })
+    if (!parsed.success) return { error: parsed.error.issues[0].message }
+
+    const { id, ...data } = parsed.data
+    if (id) await prisma.dependencia.update({ where: { id }, data })
+    else await prisma.dependencia.create({ data })
+    revalidatePath('/admin/dependencias')
+    return { ok: true }
+  }) as Promise<Resultado>
+}
+
+// ---------------------------------------------------------------- colonias
+
+const coloniaSchema = z.object({
+  id: z.coerce.number().int().optional(),
+  nombre: texto(2, 120),
+  centroLat: z.coerce.number().min(-90).max(90).optional().nullable(),
+  centroLng: z.coerce.number().min(-180).max(180).optional().nullable(),
+})
+
+export async function guardarColonia(_p: Resultado, datos: FormData): Promise<Resultado> {
+  return comoAdmin(async () => {
+    const crudo = {
+      id: datos.get('id') || undefined,
+      nombre: datos.get('nombre'),
+      centroLat: datos.get('centroLat') || null,
+      centroLng: datos.get('centroLng') || null,
+    }
+    const parsed = coloniaSchema.safeParse(crudo)
+    if (!parsed.success) return { error: parsed.error.issues[0].message }
+
+    const { id, ...data } = parsed.data
+    if (id) {
+      await prisma.colonia.update({ where: { id }, data })
+    } else {
+      const base = slugify(data.nombre)
+      let slug = base
+      for (let i = 2; await prisma.colonia.findUnique({ where: { slug } }); i++) slug = `${base}-${i}`
+      await prisma.colonia.create({ data: { ...data, slug } })
+    }
+    revalidatePath('/admin/colonias')
+    return { ok: true }
+  }) as Promise<Resultado>
+}
+
+// ---------------------------------------------------------------- festivos
+
+const festivoSchema = z.object({
+  fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Usa el formato AAAA-MM-DD.'),
+  nombre: texto(3, 120),
+})
+
+export async function agregarFestivo(_p: Resultado, datos: FormData): Promise<Resultado> {
+  return comoAdmin(async () => {
+    const parsed = festivoSchema.safeParse({
+      fecha: datos.get('fecha'),
+      nombre: datos.get('nombre'),
+    })
+    if (!parsed.success) return { error: parsed.error.issues[0].message }
+
+    const fecha = new Date(`${parsed.data.fecha}T00:00:00Z`)
+    const yaExiste = await prisma.diaFestivo.findUnique({ where: { fecha } })
+    if (yaExiste) return { error: 'Ese día ya está registrado como festivo.' }
+
+    await prisma.diaFestivo.create({ data: { fecha, nombre: parsed.data.nombre } })
+    // el cálculo de días hábiles cachea los festivos: hay que tirar el caché
+    invalidarCacheFestivos()
+    revalidatePath('/admin/festivos')
+    return { ok: true }
+  }) as Promise<Resultado>
+}
+
+export async function borrarFestivo(datos: FormData): Promise<void> {
+  await comoAdmin(async () => {
+    const id = Number(datos.get('id'))
+    if (Number.isInteger(id)) {
+      await prisma.diaFestivo.delete({ where: { id } })
+      invalidarCacheFestivos()
+      revalidatePath('/admin/festivos')
+    }
+    return {}
+  })
+}
+
+// ---------------------------------------------------------------- usuarios
+
+const usuarioSchema = z.object({
+  id: z.string().optional(),
+  nombre: texto(3, 120),
+  email: z.string().trim().toLowerCase().email('Escribe un correo válido.'),
+  rol: z.enum(['operador', 'cuadrilla', 'supervisor', 'admin']),
+  dependenciaId: z.coerce.number().int().optional().nullable(),
+  activo: z.coerce.boolean().optional(),
+  password: z.string().optional(),
+})
+
+export async function guardarUsuario(_p: Resultado, datos: FormData): Promise<Resultado> {
+  return comoAdmin(async () => {
+    const parsed = usuarioSchema.safeParse({
+      id: datos.get('id') || undefined,
+      nombre: datos.get('nombre'),
+      email: datos.get('email'),
+      rol: datos.get('rol'),
+      dependenciaId: datos.get('dependenciaId') || null,
+      activo: datos.get('activo') === 'on',
+      password: datos.get('password') || undefined,
+    })
+    if (!parsed.success) return { error: parsed.error.issues[0].message }
+
+    const { id, password, ...data } = parsed.data
+
+    if (password && password.length < 8) {
+      return { error: 'La contraseña debe tener al menos 8 caracteres.' }
+    }
+
+    const chocaEmail = await prisma.usuario.findFirst({
+      where: { email: data.email, ...(id ? { id: { not: id } } : {}) },
+      select: { id: true },
+    })
+    if (chocaEmail) return { error: 'Ya hay una cuenta con ese correo.' }
+
+    if (id) {
+      await prisma.usuario.update({
+        where: { id },
+        data: { ...data, ...(password ? { hashPassword: await hashearPassword(password) } : {}) },
+      })
+    } else {
+      if (!password) return { error: 'Escribe una contraseña para la cuenta nueva.' }
+      await prisma.usuario.create({
+        data: { ...data, hashPassword: await hashearPassword(password) },
+      })
+    }
+    revalidatePath('/admin/usuarios')
+    return { ok: true }
+  }) as Promise<Resultado>
+}

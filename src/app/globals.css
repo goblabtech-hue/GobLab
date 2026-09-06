@@ -1,26 +1,80 @@
 @import "tailwindcss";
 
+/*
+ * Paleta institucional. Se fija esquema claro: el tablero público se proyecta
+ * en pantallas y se imprime, y un tema oscuro automático haría impredecible el
+ * contraste que exige WCAG 2.1 AA (SPEC §7). Ver DECISIONES.md D-05.
+ */
+@theme {
+  --color-tinta: #10251f;
+  --color-tinta-suave: #4a5f59;
+  --color-tenue: #7c8c87;
+
+  --color-papel: #ffffff;
+  --color-lienzo: #f4f7f5;
+  --color-borde: #dfe6e2;
+
+  --color-marca-50: #edfaf5;
+  --color-marca-100: #d2f2e6;
+  --color-marca-200: #a7e5ce;
+  --color-marca-500: #14a37b;
+  --color-marca-600: #0d8465;
+  --color-marca-700: #0a6a52;
+  --color-marca-900: #06382c;
+
+  --color-verde-50: #ecfdf3;
+  --color-verde-600: #087443;
+  --color-ambar-50: #fff8eb;
+  --color-ambar-600: #9a5b06;
+  --color-rojo-50: #fef2f2;
+  --color-rojo-600: #b42318;
+  --color-azul-50: #eff6ff;
+  --color-azul-600: #1d4ed8;
+
+  --font-sans: var(--font-sans-app), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-tarjeta: 0.875rem;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-lienzo);
+  color: var(--color-tinta);
+  font-family: var(--font-sans);
+}
+
+/* Foco visible y consistente en todo (WCAG 2.4.7). */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-marca-600);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Salta al contenido: primer tabulador de cada página. */
+.salto-contenido {
+  position: absolute;
+  left: -9999px;
+}
+.salto-contenido:focus {
+  left: 1rem;
+  top: 1rem;
+  z-index: 60;
+  padding: 0.5rem 0.875rem;
+  background: var(--color-papel);
+  border: 2px solid var(--color-marca-600);
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

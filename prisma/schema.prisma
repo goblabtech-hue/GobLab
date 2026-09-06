@@ -1,0 +1,379 @@
+// Plataforma de Atención Ciudadana Municipal
+// Target: PostgreSQL (ver DECISIONES.md D-02: se descarta el doble target SQLite/Postgres del SPEC)
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Prisma 7: la URL vive en prisma.config.ts + adapter en src/lib/prisma.ts
+}
+
+// ---------------------------------------------------------------- enums
+
+enum Rol {
+  operador
+  cuadrilla
+  supervisor
+  admin
+}
+
+enum OrigenReporte {
+  whatsapp
+  web
+  telefono
+  ventanilla
+}
+
+enum EstatusReporte {
+  nuevo
+  asignado
+  en_atencion
+  resuelto
+  cerrado
+  reabierto
+  duplicado
+  improcedente
+}
+
+enum Prioridad {
+  normal
+  alta
+  urgente
+}
+
+enum TipoFoto {
+  ciudadano
+  evidencia
+}
+
+enum TipoEvento {
+  creado
+  asignado
+  reasignado
+  comentario
+  en_atencion
+  resuelto
+  cerrado
+  reabierto
+  notificacion
+  calificado
+  adhesion
+  duplicado
+  improcedente
+  publicable
+}
+
+enum DireccionMensaje {
+  in
+  out
+}
+
+enum TipoAlerta {
+  vencidos_sobre_umbral
+  caida_calificacion
+  reaperturas_categoria
+}
+
+// ---------------------------------------------------------------- catálogos
+
+model Dependencia {
+  id         Int      @id @default(autoincrement())
+  nombre     String
+  responsable String
+  telefono   String
+  activa     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  categorias Categoria[]
+  usuarios   Usuario[]
+  reportes   Reporte[]
+}
+
+model Categoria {
+  id               Int      @id @default(autoincrement())
+  slug             String   @unique
+  nombre           String
+  icono            String
+  descripcionCorta String?
+  slaDiasHabiles   Int
+  // CORRECCIÓN C-01: el SPEC §5 usa `requiereEvidencia` en las reglas de negocio
+  // pero lo omite en la entidad Categoria. Se agrega aquí.
+  requiereEvidencia Boolean @default(true)
+  activa           Boolean  @default(true)
+  orden            Int      @default(0)
+  dependenciaId    Int
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  dependencia Dependencia @relation(fields: [dependenciaId], references: [id])
+  reportes    Reporte[]
+  historial   PromesaServicioHistorial[]
+
+  @@index([activa, orden])
+}
+
+model Colonia {
+  id        Int      @id @default(autoincrement())
+  // CORRECCIÓN C-02: la ruta /mi-colonia/[slug] del SPEC §9 exige un slug
+  // que la entidad Colonia del SPEC §5 no define.
+  slug      String   @unique
+  nombre    String
+  geojson   Json?
+  centroLat Float?
+  centroLng Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reportes Reporte[]
+}
+
+// CORRECCIÓN C-03: el SPEC §5 exige "saltando sábados, domingos y días festivos
+// (tabla de festivos configurable)" pero nunca declara la tabla.
+model DiaFestivo {
+  id     Int      @id @default(autoincrement())
+  fecha  DateTime @unique @db.Date
+  nombre String
+}
+
+// CORRECCIÓN C-04: "el folio se genera con secuencia anual" (SPEC §5) no es
+// seguro con un COUNT(*): dos reportes simultáneos generan el mismo folio.
+// Contador dedicado + UPDATE atómico en transacción.
+model FolioSecuencia {
+  prefijo String
+  anio    Int
+  ultimo  Int    @default(0)
+
+  @@id([prefijo, anio])
+}
+
+// ---------------------------------------------------------------- usuarios
+
+model Usuario {
+  id            String   @id @default(cuid())
+  nombre        String
+  email         String   @unique
+  hashPassword  String
+  rol           Rol
+  dependenciaId Int?
+  activo        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  dependencia       Dependencia? @relation(fields: [dependenciaId], references: [id])
+  reportesAsignados Reporte[]    @relation("ReporteAsignado")
+  eventos           EventoReporte[]
+  fotosSubidas      FotoReporte[]
+}
+
+// ---------------------------------------------------------------- reportes
+
+model Reporte {
+  id          String         @id @default(cuid())
+  folio       String         @unique
+  categoriaId Int
+  descripcion String
+  prioridad   Prioridad      @default(normal)
+  estatus     EstatusReporte @default(nuevo)
+  origen      OrigenReporte
+
+  lat            Float?
+  lng            Float?
+  direccionTexto String?
+  coloniaId      Int?
+
+  // CORRECCIÓN C-05: el SPEC pide el teléfono "cifrado/enmascarado" pero no
+  // declara llave de cifrado ni resuelve cómo buscar reportes por teléfono
+  // (que el bot necesita en "consultar folio"). Se separan tres campos:
+  //   telefonoHash    -> HMAC-SHA256, determinista, permite buscar sin descifrar
+  //   telefonoCifrado -> AES-256-GCM, se descifra solo para rol operador+
+  //   telefonoMascara -> "81••••1212", listas internas sin descifrar nada
+  telefonoHash    String?
+  telefonoCifrado String?
+  telefonoMascara String?
+  nombreContacto  String?
+
+  dependenciaId Int
+  asignadoAId   String?
+
+  fechaLimite DateTime
+  resueltoAt  DateTime?
+  cerradoAt   DateTime?
+  reabiertoAt DateTime?
+
+  calificacion          Int?
+  comentarioCalificacion String?
+  notaCierre            String?
+
+  publicable         Boolean @default(false)
+  motivoImprocedente String?
+  reporteOriginalId  String?
+  vecesReabierto     Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  categoria       Categoria    @relation(fields: [categoriaId], references: [id])
+  colonia         Colonia?     @relation(fields: [coloniaId], references: [id])
+  dependencia     Dependencia  @relation(fields: [dependenciaId], references: [id])
+  asignadoA       Usuario?     @relation("ReporteAsignado", fields: [asignadoAId], references: [id])
+  reporteOriginal Reporte?     @relation("Duplicados", fields: [reporteOriginalId], references: [id])
+  duplicados      Reporte[]    @relation("Duplicados")
+
+  fotos       FotoReporte[]
+  eventos     EventoReporte[]
+  adhesiones  Adhesion[]
+  conversaciones ConversacionBot[]
+  clasificaciones ClasificacionIA[]
+
+  @@index([estatus])
+  @@index([categoriaId])
+  @@index([coloniaId])
+  @@index([dependenciaId])
+  @@index([createdAt])
+  @@index([fechaLimite])
+  @@index([telefonoHash])
+  @@index([estatus, fechaLimite])
+  @@index([publicable, estatus])
+}
+
+model FotoReporte {
+  id             String   @id @default(cuid())
+  reporteId      String
+  url            String
+  tipo           TipoFoto
+  subidaPorUserId String?
+  createdAt      DateTime @default(now())
+
+  reporte     Reporte  @relation(fields: [reporteId], references: [id], onDelete: Cascade)
+  subidaPor   Usuario? @relation(fields: [subidaPorUserId], references: [id])
+
+  @@index([reporteId, tipo])
+}
+
+model EventoReporte {
+  id        String     @id @default(cuid())
+  reporteId String
+  tipo      TipoEvento
+  detalle   Json?
+  userId    String?
+  timestamp DateTime   @default(now())
+
+  reporte Reporte  @relation(fields: [reporteId], references: [id], onDelete: Cascade)
+  usuario Usuario? @relation(fields: [userId], references: [id])
+
+  @@index([reporteId, timestamp])
+  @@index([tipo, timestamp])
+}
+
+model Adhesion {
+  id             String   @id @default(cuid())
+  reporteId      String
+  telefonoHash   String
+  telefonoCifrado String
+  telefonoMascara String
+  createdAt      DateTime @default(now())
+
+  reporte Reporte @relation(fields: [reporteId], references: [id], onDelete: Cascade)
+
+  // un mismo teléfono no se adhiere dos veces al mismo reporte
+  @@unique([reporteId, telefonoHash])
+  @@index([reporteId])
+}
+
+// ---------------------------------------------------------------- bot
+
+model ConversacionBot {
+  id              String   @id @default(cuid())
+  telefonoHash    String
+  telefonoCifrado String
+  telefonoMascara String
+  estado          Json     @default("{}")
+  escaladaAHumano Boolean  @default(false)
+  atendidaPorId   String?
+  reporteId       String?
+  idioma          String   @default("es")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  reporte  Reporte?     @relation(fields: [reporteId], references: [id])
+  mensajes MensajeBot[]
+
+  @@index([telefonoHash])
+  @@index([escaladaAHumano])
+  @@index([createdAt])
+}
+
+model MensajeBot {
+  id             String           @id @default(cuid())
+  conversacionId String
+  direccion      DireccionMensaje
+  texto          String
+  mediaUrl       String?
+  timestamp      DateTime         @default(now())
+
+  conversacion ConversacionBot @relation(fields: [conversacionId], references: [id], onDelete: Cascade)
+
+  @@index([conversacionId, timestamp])
+}
+
+// SPEC §4.1: "Registrar cada clasificación para auditoría".
+model ClasificacionIA {
+  id            String   @id @default(cuid())
+  reporteId     String?
+  textoEntrada  String
+  modelo        String
+  respuestaJson Json?
+  categoriaId   Int?
+  prioridad     Prioridad?
+  esEmergencia  Boolean  @default(false)
+  usoFallback   Boolean  @default(false)
+  error         String?
+  latenciaMs    Int?
+  createdAt     DateTime @default(now())
+
+  reporte Reporte? @relation(fields: [reporteId], references: [id])
+
+  @@index([createdAt])
+}
+
+// ---------------------------------------------------------------- indicadores
+
+model PromesaServicioHistorial {
+  id             String   @id @default(cuid())
+  categoriaId    Int
+  anio           Int
+  mes            Int
+  totalResueltos Int
+  aTiempo        Int
+  cumplimiento   Float
+  diasPromedio   Float
+  createdAt      DateTime @default(now())
+
+  categoria Categoria @relation(fields: [categoriaId], references: [id])
+
+  @@unique([categoriaId, anio, mes])
+  @@index([anio, mes])
+}
+
+// CORRECCIÓN C-06: el SPEC §7 exige agregados precalculados refrescados cada
+// 15 min pero no define dónde viven ni quién los refresca.
+model ResumenIndicadores {
+  clave       String   @id
+  payload     Json
+  calculadoAt DateTime @default(now())
+}
+
+model AlertaInterna {
+  id           String     @id @default(cuid())
+  tipo         TipoAlerta
+  mensaje      String
+  detalle      Json?
+  resueltaAt   DateTime?
+  createdAt    DateTime   @default(now())
+
+  @@index([resueltaAt, createdAt])
+}
