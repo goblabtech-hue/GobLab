@@ -401,7 +401,7 @@ export async function calificarReporte(
 export async function reabrirReporte(folio: string, motivo?: string) {
   const r = await prisma.reporte.findUnique({
     where: { folio },
-    select: { id: true, estatus: true, calificacion: true, vecesReabierto: true, asignadoAId: true },
+    select: { id: true, estatus: true, calificacion: true, vecesReabierto: true, categoriaId: true },
   })
   if (!r) throw new ReglaDeNegocio('No encontramos ese folio.')
   if (r.vecesReabierto >= MAX_REAPERTURAS) {
@@ -418,17 +418,34 @@ export async function reabrirReporte(folio: string, motivo?: string) {
     )
   }
 
+  // DECISIÓN D-11: al reabrir, el plazo vuelve a correr desde hoy.
+  // Conservar la fecha límite original dejaría todo reporte reabierto vencido
+  // desde el primer segundo: la cuadrilla no tendría un plazo que pueda
+  // cumplir, y la tasa de vencidos mediría el pasado en vez del trabajo
+  // pendiente. El historial no se pierde: la reapertura queda en la bitácora y
+  // alimenta su propio KPI (SPEC §6.6).
+  const categoria = await prisma.categoria.findUniqueOrThrow({
+    where: { id: r.categoriaId }, select: { slaDiasHabiles: true },
+  })
+  const festivos = await cargarFestivos()
+  const reabiertoAt = new Date()
+  const nuevaFechaLimite = calcularFechaLimite(reabiertoAt, categoria.slaDiasHabiles, festivos)
+
   await prisma.$transaction(async (tx) => {
     await tx.reporte.update({
       where: { id: r.id },
       data: {
         estatus: 'reabierto',
-        reabiertoAt: new Date(),
+        reabiertoAt,
         cerradoAt: null,
+        fechaLimite: nuevaFechaLimite,
         vecesReabierto: { increment: 1 },
       },
     })
-    await registrarEvento(tx, r.id, 'reabierto', { motivo: motivo?.trim() || null })
+    await registrarEvento(tx, r.id, 'reabierto', {
+      motivo: motivo?.trim() || null,
+      nuevaFechaLimite: nuevaFechaLimite.toISOString(),
+    })
   })
 }
 

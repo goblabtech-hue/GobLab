@@ -104,10 +104,17 @@ Dos procesos tienen que correr solos. En un servidor propio, con `crontab`:
 
 # limpieza de ventanas del limitador — cada 15 minutos
 */15 * * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://TU-DOMINIO/api/cron/mantenimiento
+
+# refresca los agregados del tablero público — cada 15 minutos
+*/15 * * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://TU-DOMINIO/api/cron/indicadores
 ```
 
 En Vercel, las mismas rutas se declaran en `vercel.json` con `crons`. Sin
 `CRON_SECRET` los endpoints responden 401 siempre.
+
+El tablero no depende de que esto corra: si el resumen tiene más de 15 minutos
+se recalcula solo en la siguiente visita. La tarea programada existe para que
+ese costo no se lo lleve un ciudadano.
 
 ## Notas de operación
 

@@ -38,10 +38,15 @@ async function jpegConGps() {
   return sharp({
     create: { width: 2400, height: 1800, channels: 3, background: { r: 120, g: 80, b: 40 } },
   })
+    // El tipo `Exif` de sharp no declara el bloque GPS, pero sí lo escribe;
+    // la prueba comprueba justo que ese bloque desaparezca al re-codificar.
     .withExif({
       IFD0: { Make: 'ACME', Model: 'Telefono X', Software: 'Camara 1.0' },
-      GPS: { GPSLatitude: '19/1 25/1 4272/100', GPSLatitudeRef: 'N', GPSLongitude: '99/1 7/1 5952/100', GPSLongitudeRef: 'W' },
-    })
+      GPS: {
+        GPSLatitude: '19/1 25/1 4272/100', GPSLatitudeRef: 'N',
+        GPSLongitude: '99/1 7/1 5952/100', GPSLongitudeRef: 'W',
+      },
+    } as never)
     .jpeg()
     .toBuffer()
 }

@@ -41,6 +41,15 @@ function ponderado<T>(opciones: [T, number][]): T {
 }
 
 const DIA = 24 * 60 * 60 * 1000
+
+/**
+ * Desenlaces del reporte en la demo. `reabierto_reciente` existe para que el
+ * tablero y la vista de cuadrilla tengan reaperturas todavía abiertas que
+ * mostrar: las reaperturas viejas se vuelven a resolver, como en la realidad.
+ */
+type Desenlace =
+  | 'a_tiempo' | 'recien_resuelto' | 'reabierto_reciente'
+  | 'vencido' | 'abierto' | 'improcedente' | 'duplicado'
 const masDias = (d: Date, n: number) => new Date(d.getTime() + n * DIA)
 
 const TELEFONOS_DEMO = Array.from({ length: 120 }, (_, i) =>
@@ -149,8 +158,14 @@ async function main() {
   console.log('Generando imágenes placeholder…')
   await prepararDirImagenes()
 
-  console.log('Generando 400 reportes…')
-  const N = 400
+  // CORRECCIÓN C-12: el SPEC §11 pide 400 reportes en los últimos 12 meses,
+  // pero el §6.8 exige que TODOS los KPIs se comparen "vs. periodo anterior
+  // equivalente". Con un solo periodo sembrado esa comparación sale vacía y el
+  // tablero no puede demostrar su propia métrica. Se siembran además 12 meses
+  // previos, con menos volumen, como si el sistema hubiera ido creciendo.
+  const N = 400          // últimos 12 meses (los que pide el SPEC)
+  const N_PREVIO = 260   // los 12 meses anteriores, solo para la comparación
+  console.log(`Generando ${N + N_PREVIO} reportes…`)
   const PUBLICABLES = 30
   const ahora = new Date()
 
@@ -177,7 +192,8 @@ async function main() {
 
   let publicablesHechos = 0
 
-  for (let i = 0; i < N; i++) {
+  for (let i = 0; i < N + N_PREVIO; i++) {
+    const esPrevio = i >= N
     const rid = id()
     const enCluster = chance(0.12)
     const cluster = enCluster ? elegir(clusters) : null
@@ -188,17 +204,46 @@ async function main() {
     // ---- desenlace (SPEC §11: 60% a tiempo, 15% vencidos, 8% reasignados, 5% reabiertos)
     // `recien_resuelto` mantiene una bolsa de reportes esperando calificación,
     // que es lo que el criterio de aceptación 3 necesita poder demostrar.
-    const desenlace = ponderado<'a_tiempo' | 'recien_resuelto' | 'vencido' | 'abierto' | 'improcedente' | 'duplicado'>([
-      ['a_tiempo', 54], ['recien_resuelto', 6], ['vencido', 15],
-      ['abierto', 17], ['improcedente', 4], ['duplicado', 4],
-    ])
+    const desenlace = i >= N
+      // El periodo anterior está cerrado: no puede tener reportes todavía
+      // abiertos ni recién resueltos, o falsearía la tasa de vencidos de hoy.
+      ? ponderado<Desenlace>([
+          ['a_tiempo', 68], ['vencido', 20], ['improcedente', 6], ['duplicado', 6],
+        ])
+      : ponderado<Desenlace>([
+          ['a_tiempo', 51], ['recien_resuelto', 6], ['reabierto_reciente', 3],
+          ['vencido', 15], ['abierto', 17], ['improcedente', 4], ['duplicado', 4],
+        ])
 
-    // distribución en 12 meses, con más volumen en los meses recientes.
-    // Los `recien_resuelto` se fuerzan a los últimos días para que sigan
-    // dentro de la ventana de 3 días previa al autocierre.
-    const diasAtras = desenlace === 'recien_resuelto'
-      ? entre(0.5, 2.5)
-      : Math.floor(Math.pow(rnd(), 0.75) * 364)
+    // Antigüedad del reporte:
+    //  · `recien_resuelto` en los últimos días, para que siga dentro de la
+    //    ventana de 3 días previa al autocierre;
+    //  · los que quedan ABIERTOS se concentran en las últimas semanas. Si se
+    //    repartieran por todo el año, casi todos habrían pasado su plazo y la
+    //    tasa de vencidos saldría cerca del 100%, que no es un municipio
+    //    realista sino uno que dejó de trabajar hace un año. Se deja a
+    //    propósito una minoría vieja, que es la que produce los vencidos;
+    //  · el resto se distribuye en el periodo con más peso en lo reciente.
+    let diasAtras: number
+    if (desenlace === 'recien_resuelto') {
+      diasAtras = entre(0.5, 2.5)
+    } else if (desenlace === 'reabierto_reciente') {
+      diasAtras = entre(12, 22)
+    } else if (desenlace === 'abierto') {
+      // La antigüedad se ata al plazo DE ESTA categoría, no a un número fijo:
+      // los plazos van de 2 a 10 días hábiles, así que "hace 18 días" ya está
+      // vencido para casi todas. Como N días hábiles siempre abarcan al menos
+      // N días naturales, una edad menor al plazo en días naturales garantiza
+      // que el reporte esté en tiempo.
+      const sla = categoria.slaDiasHabiles
+      diasAtras = chance(0.2)
+        ? sla * 2 + entre(1, 45)   // el 20% que sí está vencido
+        : entre(0, sla * 0.85)     // el resto, en tiempo
+    } else {
+      diasAtras = Math.floor(Math.pow(rnd(), 0.75) * 364)
+    }
+    // los del periodo anterior se corren un año hacia atrás
+    if (esPrevio) diasAtras += 365
     const createdAt = new Date(ahora.getTime() - diasAtras * DIA - entre(0, DIA))
 
     const lat = cluster ? cluster.lat + entre(-0.0006, 0.0006) : municipio.centroLat + entre(-0.035, 0.035)
@@ -215,6 +260,7 @@ async function main() {
     const tel = telefono ? derivarTelefono(telefono) : null
 
     const fechaLimite = calcularFechaLimite(createdAt, categoria.slaDiasHabiles, festivos)
+    let fechaLimiteFinal = fechaLimite
 
     const anioR = createdAt.getFullYear()
     const n = (secuencias.get(anioR) ?? 0) + 1
@@ -294,10 +340,14 @@ async function main() {
       eventoBase('resuelto', resueltoAt, {}, asignadoAId)
       eventoBase('notificacion', resueltoAt, { canal: origen === 'whatsapp' ? 'whatsapp' : 'sms', tipo: 'resuelto' })
 
-      const califica = desenlace !== 'recien_resuelto' && tieneTel && chance(0.72)
+      const califica = desenlace === 'reabierto_reciente'
+        ? true
+        : desenlace !== 'recien_resuelto' && tieneTel && chance(0.72)
       if (califica) {
         // sesgo a 4–5 con cola en 1–2 (SPEC §11)
-        calificacion = ponderado<number>([[5, 46], [4, 27], [3, 12], [2, 9], [1, 6]])
+        calificacion = desenlace === 'reabierto_reciente'
+          ? ponderado<number>([[2, 60], [1, 40]])
+          : ponderado<number>([[5, 46], [4, 27], [3, 12], [2, 9], [1, 6]])
         cerradoAt = new Date(resueltoAt.getTime() + entre(0.1, 2.5) * DIA)
         comentario = calificacion >= 4
           ? elegir(['Quedó muy bien, gracias', 'Rápido y bien hecho', 'Sí lo arreglaron, gracias'])
@@ -315,13 +365,32 @@ async function main() {
       }
 
       // reaperturas: solo con calificación baja (SPEC §4.2)
-      if (cerradoAt && calificacion !== null && calificacion <= 2 && chance(0.55)) {
+      if (cerradoAt && calificacion !== null && calificacion <= 2 &&
+          (desenlace === 'reabierto_reciente' || chance(0.55))) {
         reabiertoAt = new Date(cerradoAt.getTime() + entre(0.2, 2) * DIA)
         if (reabiertoAt < ahora) {
           vecesReabierto = 1
           estatus = 'reabierto'
           cerradoAt = null
-          eventoBase('reabierto', reabiertoAt, { motivo: 'El ciudadano reporta que el problema persiste.' }, null)
+          // el plazo vuelve a correr desde la reapertura (decisión D-11)
+          fechaLimiteFinal = calcularFechaLimite(reabiertoAt, categoria.slaDiasHabiles, festivos)
+          eventoBase('reabierto', reabiertoAt, {
+            motivo: 'El ciudadano reporta que el problema persiste.',
+            nuevaFechaLimite: fechaLimiteFinal.toISOString(),
+          }, null)
+
+          // La cuadrilla vuelve y lo resuelve: dejar abiertos para siempre
+          // todos los reabiertos del último año haría que la tasa de vencidos
+          // midiera reportes que en la realidad ya se atendieron. Solo siguen
+          // abiertos los que se reabrieron hace poco.
+          const diasDesdeReapertura = (ahora.getTime() - reabiertoAt.getTime()) / DIA
+          if (diasDesdeReapertura > 25) {
+            resueltoAt = new Date(reabiertoAt.getTime() + entre(0.5, 6) * DIA)
+            cerradoAt = new Date(resueltoAt.getTime() + entre(0.2, 3) * DIA)
+            estatus = 'cerrado'
+            eventoBase('resuelto', resueltoAt, { trasReapertura: true }, asignadoAId)
+            eventoBase('cerrado', cerradoAt, { automatico: true })
+          }
         } else {
           reabiertoAt = null
         }
@@ -330,7 +399,8 @@ async function main() {
 
     // ---- fotos y galería antes/después
     const esPublicable =
-      estatus === 'cerrado' && resueltoAt !== null && publicablesHechos < PUBLICABLES && chance(0.35)
+      !esPrevio && estatus === 'cerrado' && resueltoAt !== null &&
+      publicablesHechos < PUBLICABLES && chance(0.35)
 
     if (esPublicable) publicablesHechos++
 
@@ -346,7 +416,7 @@ async function main() {
       nombreContacto: tieneTel && chance(0.6) ? elegir(['María', 'José', 'Laura', 'Miguel', 'Sofía', 'Ricardo']) : null,
       dependenciaId,
       asignadoAId: ['nuevo', 'duplicado', 'improcedente'].includes(estatus) ? null : asignadoAId,
-      fechaLimite, resueltoAt, cerradoAt, reabiertoAt,
+      fechaLimite: fechaLimiteFinal, resueltoAt, cerradoAt, reabiertoAt,
       calificacion, comentarioCalificacion: comentario,
       notaCierre: resueltoAt ? elegir(['Se atendió con cuadrilla y material propio.', 'Trabajo concluido en sitio.', 'Se realizó la reparación completa.']) : null,
       publicable: esPublicable, motivoImprocedente, vecesReabierto,

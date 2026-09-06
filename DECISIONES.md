@@ -107,6 +107,47 @@ guardaba como 00:00:00.998 **del día siguiente**, así que el vencimiento
 mostrado al ciudadano estaba corrido un día. Se trunca también el instante de
 referencia.
 
+### C-12 · El seed de un solo periodo hacía indemostrable el §6.8
+El SPEC §11 pide 400 reportes "en los últimos 12 meses", pero el §6.8 exige que
+**todos** los KPIs se comparen "vs. periodo anterior equivalente". Con un solo
+periodo sembrado, todas las comparaciones del tablero salían vacías: la métrica
+estrella del proyecto no se podía enseñar.
+
+Se siembran además **260 reportes en los 12 meses previos**, con menos volumen,
+como si el sistema hubiera ido creciendo. Los 400 del periodo reciente siguen
+siendo los que pide el spec.
+
+Dos ajustes más de realismo salieron de mirar los números resultantes:
+
+- Los reportes que quedan **abiertos** se concentran en las últimas semanas y su
+  antigüedad se ata al plazo de su propia categoría. Repartidos por todo el año,
+  el 99% habría pasado su fecha límite: eso no es un municipio con retrasos,
+  es uno que dejó de trabajar hace un año.
+- Las **reaperturas viejas se vuelven a resolver**. Dejarlas abiertas para
+  siempre hacía que la tasa de vencidos midiera reportes que en la realidad ya
+  se habrían atendido.
+
+Con eso la tasa de vencidos queda en ~24%, que sí es un municipio real.
+
+### C-13 · "Sin teléfonos ni nombres" no alcanza para anonimizar
+El SPEC §4.4g pide publicar el dataset "anonimizado (sin teléfonos ni
+nombres)". Quitar esas dos columnas no basta:
+
+- La **descripción** la escribe el ciudadano en texto libre, y es normal que
+  incluya nombres, domicilios o señas de vecinos ("el de la casa azul pone
+  música a las 3 de la mañana"). Publicarla en bruto filtra datos personales
+  aunque las columnas de contacto no estén.
+- La **dirección exacta** tiene el mismo problema.
+- Las **coordenadas exactas** de una queja entre vecinos —ruido, un animal,
+  comercio irregular— señalan una vivienda concreta. En un municipio pequeño
+  eso identifica a una persona.
+
+El dataset publica colonia en vez de dirección, omite descripción y comentarios,
+y redondea las coordenadas a cuatro decimales (~11 m): suficiente para ubicar un
+bache, insuficiente para señalar una casa. La página de datos abiertos explica
+cada exclusión, porque un dataset abierto también debe ser honesto sobre lo que
+no trae.
+
 ---
 
 ## Decisiones libres
@@ -183,6 +224,21 @@ consulta queda registrada en la bitácora del reporte. Dos razones: una pantalla
 compartida o una captura de la bandeja no expone teléfonos de vecinos, y
 "enmascarado salvo para operadores" (SPEC §7) solo se puede auditar si queda
 constancia de quién miró qué.
+
+### D-11 · Reabrir un reporte reinicia el plazo
+El SPEC no dice qué pasa con la fecha límite al reabrir. Conservar la original
+deja todo reporte reabierto vencido desde el primer segundo: la cuadrilla no
+tiene un plazo que pueda cumplir y la tasa de vencidos mide el pasado en vez del
+trabajo pendiente. Al reabrir, el plazo vuelve a correr desde ese momento. El
+historial no se pierde: la reapertura queda en la bitácora y alimenta su propio
+KPI (SPEC §6.6), que es donde debe doler.
+
+### D-12 · No toda flecha hacia arriba se pinta de verde
+Las cifras del resumen comparan contra el periodo anterior, pero la dirección
+buena depende de la métrica: más reportes recibidos puede significar que la
+gente confía más en el sistema; más reportes vencidos nunca es buena noticia.
+Cada cifra declara si subir es mejorar. Pintar de verde todo lo que crece sería
+maquillar el tablero.
 
 ### D-07 · Identificadores en español
 El dominio es municipal mexicano y el SPEC exige que toda la interfaz esté en

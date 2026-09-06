@@ -189,6 +189,73 @@ calificación fuera de 1–5, ningún teléfono en claro.
 
 ---
 
+## Fase 4 — Tablero público ✅
+
+Se adelantó a la Fase 3 a petición del equipo: es la pantalla que se presenta a
+las autoridades y no depende de nada del bot.
+
+**Entregable pedido:** agregados precalculados, las siete secciones del SPEC
+§4.4 (a–g), datos abiertos y mapa.
+
+### Hecho
+
+**Motor de indicadores** — `src/lib/indicadores.ts`
+- Las ocho fórmulas del SPEC §6, todas con comparación contra el periodo
+  anterior. Se calcula todo de una pasada (~95 ms) y se guarda en la tabla de
+  resumen; si tiene más de 15 minutos se recalcula solo. Si el cálculo falla
+  pero hay un resumen viejo, se sirve ese: más vale un tablero de hace media
+  hora que una página rota.
+- El promedio de días hábiles se calcula en JavaScript, no en SQL, para no
+  tener dos definiciones de "día hábil" que se puedan desincronizar.
+
+**Las siete secciones del tablero** — `/tablero`
+- **a)** Resumen de 12 meses, más las tres cifras incómodas que el spec pide
+  conservar de San Pedro: vencidos, reasignados y reabiertos.
+- **b)** Promesas de servicio: plazo prometido contra cumplimiento real y
+  tiempo promedio, por categoría, con semáforo verde/ámbar/rojo. Es el
+  diferenciador que San Pedro no tiene.
+- **c)** Mapa integrado en la página —no en un iframe aparte—, con agrupación
+  por rejilla según el zoom y filtros por tipo y por estado.
+- **d)** "Mi colonia": abiertos, resueltos del mes, y tiempo y cumplimiento
+  **comparados con el promedio municipal**, que es lo que le dice al vecino si
+  su colonia va rezagada.
+- **e)** Las siete gráficas, cada una con descarga en CSV.
+- **f)** Galería de antes y después, solo con reportes moderados.
+- **g)** Datos abiertos en CSV y JSON, con diccionario de datos.
+
+Además `/privacidad`, que estaba enlazada desde el pie y el formulario sin
+existir.
+
+### Validación
+
+**Pruebas** — `npm test`, 28 suites, 0 fallos (3 nuevas)
+- KPIs: el cumplimiento del resumen cuadra con la suma por categoría, la tasa
+  de vencidos se mide sobre abiertos, todos los porcentajes caen entre 0 y 100,
+  las series mensuales comparten los mismos meses sin huecos ni repetidos, y la
+  puntualidad mensual suma exactamente los resueltos del periodo.
+- Datos abiertos: el dataset publica **exactamente** las columnas del
+  diccionario, no incluye ningún campo parecido a un dato personal, las
+  coordenadas van redondeadas y las fechas salen sin hora.
+- CSV: escapado de comas, comillas y saltos de línea, y BOM para Excel.
+
+**En el navegador**
+- Las siete secciones presentes, siete gráficas con sus siete botones de CSV,
+  mapa cargado y las doce promesas de servicio en tabla.
+- "Mi colonia" Centro: 4.1 días contra 3.7 del municipio, 67% de cumplimiento
+  contra 78% — la comparación se lee de un vistazo.
+- El dataset público verificado contra fugas: descripción, dirección exacta,
+  nombre y las tres variantes del teléfono, ninguna aparece en CSV ni en JSON.
+
+### Correcciones que salieron de construir esto
+- **C-12**: el seed de un solo periodo dejaba vacías todas las comparaciones
+  del §6.8. Se sembraron 12 meses previos. De paso salieron dos defectos de
+  realismo: el 99% de los reportes abiertos aparecía vencido, y las reaperturas
+  viejas nunca se resolvían.
+- **C-13**: "sin teléfonos ni nombres" no alcanza para anonimizar un dataset.
+- **D-11**: reabrir un reporte ahora reinicia el plazo.
+
+---
+
 ## Fase 3 — Bot de WhatsApp ⏳ siguiente
 
 Simulador, flujo conversacional, clasificador de IA con respaldo por menú,
