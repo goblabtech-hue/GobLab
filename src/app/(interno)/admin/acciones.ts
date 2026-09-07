@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { primerError } from '@/lib/validacion'
 import { prisma } from '@/lib/prisma'
 import { requerirRol, hashearPassword, NoAutorizado } from '@/lib/auth'
 import { invalidarCacheFestivos } from '@/lib/sla'
@@ -60,7 +61,7 @@ export async function guardarCategoria(_p: Resultado, datos: FormData): Promise<
       requiereEvidencia: datos.get('requiereEvidencia') === 'on',
       activa: datos.get('activa') === 'on',
     })
-    if (!parsed.success) return { error: parsed.error.issues[0].message }
+    if (!parsed.success) return { error: primerError(parsed.error) }
 
     const { id, descripcionCorta, ...resto } = parsed.data
     const data = { ...resto, descripcionCorta: descripcionCorta || null }
@@ -101,7 +102,7 @@ export async function guardarDependencia(_p: Resultado, datos: FormData): Promis
       correo: datos.get('correo'),
       activa: datos.get('activa') === 'on',
     })
-    if (!parsed.success) return { error: parsed.error.issues[0].message }
+    if (!parsed.success) return { error: primerError(parsed.error) }
 
     const { id, correo, ...resto } = parsed.data
     const data = { ...resto, correo: correo || null }
@@ -130,7 +131,7 @@ export async function guardarColonia(_p: Resultado, datos: FormData): Promise<Re
       centroLng: datos.get('centroLng') || null,
     }
     const parsed = coloniaSchema.safeParse(crudo)
-    if (!parsed.success) return { error: parsed.error.issues[0].message }
+    if (!parsed.success) return { error: primerError(parsed.error) }
 
     const { id, ...data } = parsed.data
     if (id) {
@@ -159,7 +160,7 @@ export async function agregarFestivo(_p: Resultado, datos: FormData): Promise<Re
       fecha: datos.get('fecha'),
       nombre: datos.get('nombre'),
     })
-    if (!parsed.success) return { error: parsed.error.issues[0].message }
+    if (!parsed.success) return { error: primerError(parsed.error) }
 
     const fecha = new Date(`${parsed.data.fecha}T00:00:00Z`)
     const yaExiste = await prisma.diaFestivo.findUnique({ where: { fecha } })
@@ -208,7 +209,7 @@ export async function guardarUsuario(_p: Resultado, datos: FormData): Promise<Re
       activo: datos.get('activo') === 'on',
       password: datos.get('password') || undefined,
     })
-    if (!parsed.success) return { error: parsed.error.issues[0].message }
+    if (!parsed.success) return { error: primerError(parsed.error) }
 
     const { id, password, ...data } = parsed.data
 

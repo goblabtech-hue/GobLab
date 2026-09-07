@@ -85,8 +85,10 @@ describe('datos abiertos (SPEC §4.4g)', () => {
   test('publica exactamente las columnas del diccionario', async () => {
     const filas = await generarDataset()
     assert.ok(filas.length > 0)
+    const primera = filas[0]
+    assert.ok(primera, 'el dataset no debe venir vacío')
     assert.deepEqual(
-      Object.keys(filas[0]).sort(),
+      Object.keys(primera).sort(),
       DICCIONARIO.map((d) => d.campo).sort(),
       'el diccionario y el dataset deben coincidir campo por campo',
     )
@@ -100,7 +102,9 @@ describe('datos abiertos (SPEC §4.4g)', () => {
       // texto libre escrito por el ciudadano: puede traer nombres de vecinos
       'descripcion', 'direccion', 'direccionTexto', 'comentarioCalificacion',
     ]
-    const campos = Object.keys(filas[0]).map((c) => c.toLowerCase())
+    const primera = filas[0]
+    assert.ok(primera, 'el dataset no debe venir vacío')
+    const campos = Object.keys(primera).map((c) => c.toLowerCase())
     for (const p of prohibidos) {
       assert.ok(
         !campos.some((c) => c.includes(p.toLowerCase())),
@@ -141,7 +145,8 @@ describe('exportación CSV de las gráficas', () => {
 
   test('respeta el orden de columnas que se le pida', () => {
     const csv = aCsv([{ b: 2, a: 1 }], ['a', 'b'])
-    assert.ok(csv.split('\r\n')[0].endsWith('a,b'))
+    const encabezado = csv.split('\r\n')[0] ?? ''
+    assert.ok(encabezado.endsWith('a,b'))
   })
 
   test('un conjunto vacío no revienta', () => {

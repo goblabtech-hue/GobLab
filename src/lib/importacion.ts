@@ -45,11 +45,14 @@ function desdeCsv(texto: string): FilaImportada[] {
   // encabezado llega como "﻿nombre" y nunca coincide.
   const limpio = texto.replace(/^﻿/, '')
   const lineas = limpio.split(/\r?\n/).filter((l) => l.trim())
-  if (lineas.length < 2) throw new ErrorImportacion('El archivo no tiene datos debajo de los encabezados.')
+  const encabezado = lineas[0]
+  if (!encabezado || lineas.length < 2) {
+    throw new ErrorImportacion('El archivo no tiene datos debajo de los encabezados.')
+  }
 
   // Excel en español guarda con punto y coma cuando la configuración regional
   // usa coma decimal.
-  const separador = (lineas[0].match(/;/g)?.length ?? 0) > (lineas[0].match(/,/g)?.length ?? 0) ? ';' : ','
+  const separador = (encabezado.match(/;/g)?.length ?? 0) > (encabezado.match(/,/g)?.length ?? 0) ? ';' : ','
 
   const partir = (linea: string): string[] => {
     const celdas: string[] = []
@@ -68,7 +71,7 @@ function desdeCsv(texto: string): FilaImportada[] {
     return celdas
   }
 
-  const encabezados = partir(lineas[0]).map(normalizarEncabezado)
+  const encabezados = partir(encabezado).map(normalizarEncabezado)
   return lineas.slice(1, MAX_FILAS + 1).map((l) => {
     const celdas = partir(l)
     const fila: FilaImportada = {}

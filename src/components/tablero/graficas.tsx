@@ -36,7 +36,8 @@ const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 's
 /** "2026-09" -> "sep 26" */
 export function etiquetaMes(clave: string): string {
   const [a, m] = clave.split('-')
-  return `${MESES_CORTOS[Number(m) - 1]} ${a.slice(2)}`
+  if (!a || !m) return clave
+  return `${MESES_CORTOS[Number(m) - 1] ?? m} ${a.slice(2)}`
 }
 
 function CajaTooltip({ active, payload, label }: {

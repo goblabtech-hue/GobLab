@@ -23,7 +23,9 @@ async function golpear(segundos: number): Promise<number> {
         THEN now() ELSE "LimitePeticion"."ventanaAt" END
     RETURNING "cuenta"
   `
-  return Number(filas[0].cuenta)
+  const fila = filas[0]
+  if (!fila) throw new Error('El UPSERT no devolvió cuenta.')
+  return Number(fila.cuenta)
 }
 
 before(async () => { await prisma.limitePeticion.deleteMany({ where: { clave: CLAVE } }) })

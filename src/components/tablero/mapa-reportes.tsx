@@ -151,7 +151,7 @@ export function MapaReportes({
               pathOptions={{ color: '#fff', weight: 2, fillColor: color, fillOpacity: 0.85 }}
             >
               <Popup>
-                {n === 1 ? (
+                {n === 1 && g.puntos[0] ? (
                   <div className="text-sm">
                     <p className="font-semibold">{g.puntos[0].categoria}</p>
                     <p className="text-tinta-suave">{g.puntos[0].estatus} · {g.puntos[0].fecha}</p>

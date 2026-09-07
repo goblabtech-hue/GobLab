@@ -27,7 +27,7 @@ async function resumen() {
   return {
     recibidos,
     resueltos,
-    cumplimiento: resueltos ? (Number(aTiempo[0].n) / resueltos) * 100 : 0,
+    cumplimiento: resueltos ? (Number(aTiempo[0]?.n ?? 0) / resueltos) * 100 : 0,
     calificacion: califs._avg.calificacion ?? 0,
   }
 }

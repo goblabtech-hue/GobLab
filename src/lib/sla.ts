@@ -39,7 +39,11 @@ const fmtPartes = new Intl.DateTimeFormat('en-US', {
 
 /** Fecha civil (año/mes/día tal como se lee en el municipio) de un instante. */
 export function aCivil(fecha: Date): Civil {
-  const [y, m, d] = fmtCivil.format(fecha).split('-').map(Number)
+  const partes = fmtCivil.format(fecha).split('-').map(Number)
+  const [y, m, d] = partes
+  if (y === undefined || m === undefined || d === undefined) {
+    throw new Error(`No se pudo leer la fecha civil de ${fecha.toISOString()} en ${TZ}.`)
+  }
   return { y, m, d }
 }
 

@@ -43,7 +43,10 @@ export async function limitar(
     RETURNING "cuenta"
   `
 
-  return Number(filas[0].cuenta) <= maximo
+  const fila = filas[0]
+  // Un UPSERT con RETURNING siempre devuelve una fila; si no llegara, es un
+  // fallo de la base y lo correcto es no bloquear al ciudadano.
+  return fila ? Number(fila.cuenta) <= maximo : true
 }
 
 /** Borra ventanas viejas. Lo llama /api/cron/mantenimiento. */

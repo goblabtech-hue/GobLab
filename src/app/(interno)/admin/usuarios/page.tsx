@@ -43,7 +43,7 @@ export default async function PaginaUsuarios() {
         { nombre: 'nombre', etiqueta: 'Nombre completo', tipo: 'texto', requerido: true },
         { nombre: 'email', etiqueta: 'Correo', tipo: 'texto', requerido: true },
         { nombre: 'rol', etiqueta: 'Perfil', tipo: 'select', requerido: true,
-          opciones: (['operador', 'cuadrilla', 'supervisor', 'admin'] as const).map((r) => ({ valor: r, texto: ROL[r] })) },
+          opciones: (['operador', 'cuadrilla', 'supervisor', 'admin'] as const).map((r) => ({ valor: r, texto: ROL[r] ?? r })) },
         { nombre: 'dependenciaId', etiqueta: 'Dependencia', tipo: 'select',
           ayuda: 'Déjalo vacío para que vea todas las dependencias.',
           opciones: dependencias.map((d) => ({ valor: d.id, texto: d.nombre })) },

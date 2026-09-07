@@ -41,5 +41,7 @@ export async function generarFolio(
     DO UPDATE SET "ultimo" = "FolioSecuencia"."ultimo" + 1
     RETURNING "ultimo"
   `
-  return formatearFolio(prefijo, anio, Number(filas[0].ultimo))
+  const fila = filas[0]
+  if (!fila) throw new Error('La reserva del folio no devolvió número de secuencia.')
+  return formatearFolio(prefijo, anio, Number(fila.ultimo))
 }

@@ -15,7 +15,9 @@ const PALETA: Record<string, [string, string]> = {
 }
 
 function svg(titulo: string, subtitulo: string, variante: 'antes' | 'despues') {
-  const [a, b] = PALETA[variante]
+  const par = PALETA[variante]
+  if (!par) throw new Error(`Variante de imagen desconocida: ${variante}`)
+  const [a, b] = par
   const etiqueta = variante === 'antes' ? 'ANTES' : 'DESPUÉS'
   const esc = (s: string) =>
     s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')

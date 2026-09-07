@@ -23,6 +23,15 @@ async function comoXlsx(filas: string[][]): Promise<File> {
 const comoCsv = (texto: string, nombre = 'catalogo.csv') =>
   new File([texto], nombre, { type: 'text/csv' })
 
+/** Acceso a una fila esperada: si no está, la prueba falla con un mensaje claro. */
+function enPosicion(filas: Record<string, string>[], i: number): Record<string, string> {
+  const f = filas[i]
+  if (!f) throw new Error(`Se esperaba una fila en la posición ${i}, y no hay.`)
+  return f
+}
+const primera = (f: Record<string, string>[]) => enPosicion(f, 0)
+const segunda = (f: Record<string, string>[]) => enPosicion(f, 1)
+
 describe('lectura de Excel', () => {
   test('lee una hoja normal', async () => {
     const filas = await leerCatalogo(await comoXlsx([
@@ -31,8 +40,8 @@ describe('lectura de Excel', () => {
       ['El Llano', '20.0600', '-99.3400'],
     ]))
     assert.equal(filas.length, 2)
-    assert.equal(columna(filas[0], 'nombre'), 'Centro')
-    assert.equal(columna(filas[1], 'lat'), '20.0600', 'el texto de la celda se respeta tal cual')
+    assert.equal(columna(primera(filas), 'nombre'), 'Centro')
+    assert.equal(columna(segunda(filas), 'lat'), '20.0600', 'el texto de la celda se respeta tal cual')
   })
 
   test('no se rompe con encabezados con acentos, mayúsculas ni espacios', async () => {
@@ -41,8 +50,8 @@ describe('lectura de Excel', () => {
       ['San Marcos', '20.05', '-99.34'],
     ]))
     // "Nombre de la Colonia" no es "nombre": el lector busca por varios alias
-    assert.equal(columna(filas[0], 'nombredelacolonia', 'nombre'), 'San Marcos')
-    assert.equal(columna(filas[0], 'latitud', 'lat'), '20.05')
+    assert.equal(columna(primera(filas), 'nombredelacolonia', 'nombre'), 'San Marcos')
+    assert.equal(columna(primera(filas), 'latitud', 'lat'), '20.05')
   })
 
   test('se salta los renglones vacíos del final', async () => {
@@ -66,19 +75,19 @@ describe('lectura de Excel', () => {
 describe('lectura de CSV', () => {
   test('lee el CSV que guarda Excel, con BOM incluido', async () => {
     const filas = await leerCatalogo(comoCsv('﻿nombre,lat\r\nCentro,20.05\r\n'))
-    assert.equal(columna(filas[0], 'nombre'), 'Centro', 'el BOM no debe pegarse al encabezado')
+    assert.equal(columna(primera(filas), 'nombre'), 'Centro', 'el BOM no debe pegarse al encabezado')
   })
 
   test('acepta punto y coma, que es lo que produce Excel en español', async () => {
     const filas = await leerCatalogo(comoCsv('nombre;responsable;telefono\nObras;Ana Ríos;7731234567\n'))
-    assert.equal(columna(filas[0], 'responsable'), 'Ana Ríos')
-    assert.equal(columna(filas[0], 'telefono'), '7731234567')
+    assert.equal(columna(primera(filas), 'responsable'), 'Ana Ríos')
+    assert.equal(columna(primera(filas), 'telefono'), '7731234567')
   })
 
   test('respeta las comas dentro de comillas', async () => {
     const filas = await leerCatalogo(comoCsv('nombre,responsable\n"Obras, Agua y Drenaje","Ríos, Ana"\n'))
-    assert.equal(columna(filas[0], 'nombre'), 'Obras, Agua y Drenaje')
-    assert.equal(columna(filas[0], 'responsable'), 'Ríos, Ana')
+    assert.equal(columna(primera(filas), 'nombre'), 'Obras, Agua y Drenaje')
+    assert.equal(columna(primera(filas), 'responsable'), 'Ríos, Ana')
   })
 
   test('un archivo sin datos se rechaza', async () => {

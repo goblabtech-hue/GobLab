@@ -85,6 +85,7 @@ describe('alertas internas (SPEC §4.5)', () => {
     conUmbrales({ vencidos: '0' })
     await evaluarAlertas()
     const [a] = await alertasActivas()
+    assert.ok(a, 'debe existir una alerta activa')
     assert.ok((a.detalle as { clave?: string })?.clave, 'debe guardar la clave en el detalle')
   })
 

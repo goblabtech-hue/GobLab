@@ -30,15 +30,21 @@ const TEXTOS: Record<string, { texto: string; icono: LucideIcon; oculto?: boolea
 export function LineaTiempo({
   eventos,
 }: { eventos: { id: string; tipo: string; timestamp: string }[] }) {
-  const visibles = eventos.filter((e) => TEXTOS[e.tipo] && !TEXTOS[e.tipo].oculto)
+  // Se resuelve el texto de una vez en lugar de buscarlo dos veces: un tipo de
+  // evento que no esté en el diccionario simplemente no se muestra, en vez de
+  // romper la página del ciudadano.
+  const visibles = eventos.flatMap((e) => {
+    const def = TEXTOS[e.tipo]
+    if (!def || def.oculto) return []
+    return [{ id: e.id, timestamp: e.timestamp, texto: def.texto, icono: def.icono }]
+  })
 
   return (
     <ol className="relative space-y-4 border-l border-borde pl-6">
-      {visibles.map((e, i) => {
-        const { texto, icono: Icono } = TEXTOS[e.tipo]
+      {visibles.map(({ id, timestamp, texto, icono: Icono }, i) => {
         const ultimo = i === visibles.length - 1
         return (
-          <li key={e.id} className="relative">
+          <li key={id} className="relative">
             <span
               className={`absolute -left-[2.05rem] grid size-6 place-items-center rounded-full border ${
                 ultimo ? 'border-marca-600 bg-marca-600 text-white' : 'border-borde bg-papel text-tinta-suave'
@@ -48,7 +54,7 @@ export function LineaTiempo({
             </span>
             <p className={ultimo ? 'font-medium' : ''}>{texto}</p>
             <p className="text-sm text-tenue">
-              {haceCuanto(e.timestamp)} · {fechaHora(e.timestamp)}
+              {haceCuanto(timestamp)} · {fechaHora(timestamp)}
             </p>
           </li>
         )

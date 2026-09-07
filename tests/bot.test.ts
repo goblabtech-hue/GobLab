@@ -25,6 +25,13 @@ async function di(texto: string, extra: Record<string, unknown> = {}) {
   })
 }
 
+/** Primer elemento de un arreglo que la prueba espera no vacío. */
+function uno<T>(xs: T[], que = 'elemento'): T {
+  const x = xs[0]
+  if (x === undefined) throw new Error(`Se esperaba un ${que} y el arreglo vino vacío.`)
+  return x
+}
+
 const dice = (salida: { texto: string }[], fragmento: string) =>
   salida.some((m) => m.texto.toLowerCase().includes(fragmento.toLowerCase()))
 
@@ -169,33 +176,33 @@ describe('interpretación de los canales', () => {
   test('Telegram: texto, ubicación, contacto y foto', () => {
     const t = new TelegramProvider()
 
-    const [texto] = t.interpretar({ message: { message_id: 7, chat: { id: 42 }, text: 'hola', from: { first_name: 'Ana' } } })
+    const texto = uno(t.interpretar({ message: { message_id: 7, chat: { id: 42 }, text: 'hola', from: { first_name: 'Ana' } } }), 'mensaje')
     assert.deepEqual(
       { canal: texto.canal, chatId: texto.chatId, texto: texto.texto, nombre: texto.nombre },
       { canal: 'telegram', chatId: '42', texto: 'hola', nombre: 'Ana' },
     )
 
-    const [ubi] = t.interpretar({ message: { message_id: 8, chat: { id: 42 }, location: { latitude: 19.4, longitude: -99.1 } } })
+    const ubi = uno(t.interpretar({ message: { message_id: 8, chat: { id: 42 }, location: { latitude: 19.4, longitude: -99.1 } } }), 'mensaje')
     assert.deepEqual(ubi.ubicacion, { lat: 19.4, lng: -99.1 })
 
-    const [contacto] = t.interpretar({ message: { message_id: 9, chat: { id: 42 }, contact: { phone_number: '+525512345678' } } })
+    const contacto = uno(t.interpretar({ message: { message_id: 9, chat: { id: 42 }, contact: { phone_number: '+525512345678' } } }), 'mensaje')
     assert.equal(contacto.telefonoCompartido, '+525512345678')
 
     // de varios tamaños, se toma el último, que es el de mayor resolución
-    const [foto] = t.interpretar({
+    const foto = uno(t.interpretar({
       message: { message_id: 10, chat: { id: 42 }, photo: [{ file_id: 'chico' }, { file_id: 'grande' }] },
-    })
+    }), 'mensaje')
     assert.equal(foto.mediaUrl, 'telegram-file:grande')
   })
 
   test('WhatsApp: el id del botón llega como texto para el motor', () => {
-    const [m] = new WhatsAppCloudProvider().interpretar({
+    const m = uno(new WhatsAppCloudProvider().interpretar({
       entry: [{ changes: [{ value: {
         contacts: [{ profile: { name: 'Luis' } }],
         messages: [{ id: 'wamid.1', from: '5215512345678', type: 'interactive',
           interactive: { button_reply: { id: 'op_reportar' } } }],
       } }] }],
-    })
+    }), 'mensaje')
     assert.equal(m.texto, 'op_reportar')
     assert.equal(m.chatId, '5215512345678')
     assert.equal(m.nombre, 'Luis')

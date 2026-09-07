@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { primerError } from '@/lib/validacion'
 import { prisma } from '@/lib/prisma'
 import { requerirRol, NoAutorizado } from '@/lib/auth'
 import { invalidarConfiguracion } from '@/lib/config'
@@ -46,7 +47,7 @@ export async function guardarMunicipio(
       centroLng: datos.get('centroLng'),
       zoomInicial: datos.get('zoomInicial'),
     })
-    if (!parsed.success) return { error: parsed.error.issues[0].message }
+    if (!parsed.success) return { error: primerError(parsed.error) }
 
     await prisma.configuracionMunicipio.upsert({
       where: { id: 1 },

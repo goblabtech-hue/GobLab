@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
+import { primerError } from '@/lib/validacion'
 import { crearReporte, posiblesDuplicados, adherirse, ReglaDeNegocio } from '@/lib/reportes'
 import { guardarImagen, ImagenInvalida, MAX_FOTOS_CIUDADANO } from '@/lib/storage'
 import { telefonoValido } from '@/lib/telefono'
@@ -58,7 +59,7 @@ export async function enviarReporte(
 
   if (!parsed.success) {
     const issue = parsed.error.issues[0]
-    return { error: issue.message, campo: String(issue.path[0] ?? '') }
+    return { error: primerError(parsed.error), campo: String(issue?.path[0] ?? '') }
   }
   const d = parsed.data
 

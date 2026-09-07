@@ -2,6 +2,7 @@
 
 import { AuthError } from 'next-auth'
 import { z } from 'zod'
+import { primerError } from '@/lib/validacion'
 import { signIn, signOut } from '@/lib/auth'
 
 const schema = z.object({
@@ -20,7 +21,7 @@ export async function entrar(
     password: datos.get('password'),
   })
   if (!parsed.success) {
-    return { error: parsed.error.issues[0].message }
+    return { error: primerError(parsed.error) }
   }
 
   try {

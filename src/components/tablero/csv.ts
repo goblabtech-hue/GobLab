@@ -12,7 +12,7 @@ function escapar(valor: unknown): string {
 
 export function aCsv(filas: Record<string, unknown>[], columnas?: string[]): string {
   if (filas.length === 0) return ''
-  const llaves = columnas ?? Object.keys(filas[0])
+  const llaves = columnas ?? Object.keys(filas[0] ?? {})
   const lineas = [
     llaves.join(','),
     ...filas.map((f) => llaves.map((k) => escapar(f[k])).join(',')),

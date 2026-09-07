@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { primerError } from '@/lib/validacion'
 import { prisma } from '@/lib/prisma'
 import { requerirRol, NoAutorizado } from '@/lib/auth'
 
@@ -33,7 +34,7 @@ export async function cambiarPlazo(
       categoriaId: datos.get('categoriaId'),
       slaDiasHabiles: datos.get('slaDiasHabiles'),
     })
-    if (!parsed.success) return { error: parsed.error.issues[0].message }
+    if (!parsed.success) return { error: primerError(parsed.error) }
 
     await prisma.categoria.update({
       where: { id: parsed.data.categoriaId },

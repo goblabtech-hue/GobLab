@@ -28,16 +28,23 @@ const rnd = mulberry32(20260906)
 
 const entre = (a: number, b: number) => a + rnd() * (b - a)
 const entero = (a: number, b: number) => Math.floor(entre(a, b + 1))
-const elegir = <T,>(xs: readonly T[]): T => xs[Math.floor(rnd() * xs.length)]
+/** Elige uno al azar. Un catálogo vacío aquí es un error de programación. */
+function elegir<T>(xs: readonly T[]): T {
+  const x = xs[Math.floor(rnd() * xs.length)]
+  if (x === undefined) throw new Error('elegir() recibió una lista vacía.')
+  return x
+}
 const chance = (p: number) => rnd() < p
 const id = () => crypto.randomUUID()
 
 /** Elección ponderada: [[valor, peso], ...] */
 function ponderado<T>(opciones: [T, number][]): T {
+  const ultima = opciones[opciones.length - 1]
+  if (!ultima) throw new Error('ponderado() recibió una lista vacía.')
   const total = opciones.reduce((s, [, w]) => s + w, 0)
   let r = rnd() * total
   for (const [v, w] of opciones) { r -= w; if (r <= 0) return v }
-  return opciones[opciones.length - 1][0]
+  return ultima[0]
 }
 
 const DIA = 24 * 60 * 60 * 1000
@@ -101,6 +108,13 @@ async function main() {
     dependencias.push(await prisma.dependencia.create({ data: { ...d } }))
   }
 
+  /** El índice viene del catálogo semilla: si no existe, el catálogo está mal. */
+  const elegirDependencia = <T,>(lista: T[], i: number): T => {
+    const d = lista[i]
+    if (!d) throw new Error(`El catálogo apunta a la dependencia ${i}, que no existe.`)
+    return d
+  }
+
   const categorias = []
   for (const [i, c] of CATEGORIAS.entries()) {
     categorias.push(
@@ -113,7 +127,7 @@ async function main() {
           slaDiasHabiles: c.slaDiasHabiles,
           requiereEvidencia: c.requiereEvidencia ?? true,
           orden: i,
-          dependenciaId: dependencias[c.dependencia].id,
+          dependenciaId: elegirDependencia(dependencias, c.dependencia).id,
         },
       }),
     )
@@ -158,7 +172,7 @@ async function main() {
           email: u.email,
           hashPassword: hash,
           rol: u.rol,
-          dependenciaId: u.dependencia === null ? null : dependencias[u.dependencia].id,
+          dependenciaId: u.dependencia === null ? null : elegirDependencia(dependencias, u.dependencia).id,
         },
       }),
     )
@@ -212,6 +226,7 @@ async function main() {
     const cluster = enCluster ? elegir(clusters) : null
     const catIdx = cluster ? cluster.categoriaIdx : ponderado(pesosCategoria)
     const categoria = categorias[catIdx]
+    if (!categoria) throw new Error(`El seed eligió una categoría inexistente (${catIdx}).`)
     const colonia = elegir(colonias)
 
     // ---- desenlace (SPEC §11: 60% a tiempo, 15% vencidos, 8% reasignados, 5% reabiertos)
@@ -418,7 +433,7 @@ async function main() {
     if (esPublicable) publicablesHechos++
 
     reportes.push({
-      id: rid, folio, categoriaId: categoria.id, descripcion: elegir(DESCRIPCIONES[categoria.slug]),
+      id: rid, folio, categoriaId: categoria.id, descripcion: elegir(DESCRIPCIONES[categoria.slug] ?? ['Reporte ciudadano']),
       prioridad: ponderado<Prioridad>([['normal', 78], ['alta', 17], ['urgente', 5]]),
       estatus, origen, lat, lng,
       direccionTexto: `Calle ${entero(1, 40)} #${entero(100, 999)}, Col. ${colonia.nombre}`,

@@ -201,7 +201,7 @@ async function responder(
       return manejarFoto(conversacion, chatId, clave, estado, entrante)
 
     case 'pidiendo_ubicacion':
-      return manejarUbicacion(conversacion, chatId, clave, estado, entrante)
+      return manejarUbicacion(conversacion, chatId, estado, entrante)
 
     case 'eligiendo_colonia':
       return manejarColonia(conversacion, chatId, clave, estado)
@@ -371,11 +371,12 @@ async function manejarEleccionCategoria(
   const categorias = await prisma.categoria.findMany({
     where: { activa: true }, orderBy: { orden: 'asc' }, select: { id: true, nombre: true },
   })
-  if (!Number.isInteger(n) || n < 1 || n > categorias.length) {
+  const elegida = Number.isInteger(n) ? categorias[n - 1] : undefined
+  if (!elegida) {
     return [{ chatId, texto: 'No reconocí ese número. Responde con el número de la lista.' }]
   }
 
-  const borrador = { ...estado.borrador, categoriaId: categorias[n - 1].id }
+  const borrador = { ...estado.borrador, categoriaId: elegida.id }
   return pedirFoto(conversacion, chatId, borrador)
 }
 
@@ -439,7 +440,7 @@ async function pedirUbicacion(
 }
 
 async function manejarUbicacion(
-  conversacion: Conversacion, chatId: string, clave: string,
+  conversacion: Conversacion, chatId: string,
   estado: Extract<Estado, { paso: 'pidiendo_ubicacion' }>, entrante: MensajeEntrante,
 ): Promise<MensajeSaliente[]> {
   const borrador = { ...estado.borrador }
@@ -495,10 +496,11 @@ async function manejarColonia(
   }
   const colonias = await prisma.colonia.findMany({ orderBy: { nombre: 'asc' }, select: { id: true, nombre: true } })
   const n = Number(clave)
-  if (!Number.isInteger(n) || n < 1 || n > colonias.length) {
+  const elegida = Number.isInteger(n) ? colonias[n - 1] : undefined
+  if (!elegida) {
     return [{ chatId, texto: 'No reconocí ese número. Responde con el número de la lista.' }]
   }
-  const borrador = { ...estado.borrador, coloniaId: colonias[n - 1].id, coloniaNombre: colonias[n - 1].nombre }
+  const borrador = { ...estado.borrador, coloniaId: elegida.id, coloniaNombre: elegida.nombre }
   return revisarDuplicados(conversacion, chatId, borrador)
 }
 
