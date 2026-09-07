@@ -137,7 +137,7 @@ export default async function DetalleBandeja({ params }: PageProps<'/bandeja/[fo
                 <div>
                   <dt className="text-xs text-tinta-suave">Promesa de servicio</dt>
                   <dd>
-                    {r.categoria.slaDiasHabiles} días hábiles · vence {fecha(r.fechaLimite)}
+                    {r.slaDiasHabilesAplicado} días hábiles · vence {fecha(r.fechaLimite)}
                   </dd>
                 </div>
               </dl>

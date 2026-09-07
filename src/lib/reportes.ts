@@ -117,6 +117,9 @@ export async function crearReporte(datos: DatosNuevoReporte): Promise<ReporteCre
         nombreContacto: datos.nombreContacto?.trim() || null,
         dependenciaId: categoria.dependenciaId,
         fechaLimite,
+        // Copia del plazo vigente al momento del alta: si mañana cambia, este
+        // reporte se sigue midiendo contra lo que se le prometió.
+        slaDiasHabilesAplicado: categoria.slaDiasHabiles,
         createdAt: creado,
       },
       select: { id: true, folio: true, fechaLimite: true },
@@ -490,6 +493,9 @@ export async function reabrirReporte(folio: string, motivo?: string) {
         reabiertoAt,
         cerradoAt: null,
         fechaLimite: nuevaFechaLimite,
+        // La reapertura vuelve a correr con el plazo VIGENTE, no con el que se
+        // prometió hace meses: es trabajo nuevo con el compromiso de hoy.
+        slaDiasHabilesAplicado: categoria.slaDiasHabiles,
         vecesReabierto: { increment: 1 },
       },
     })

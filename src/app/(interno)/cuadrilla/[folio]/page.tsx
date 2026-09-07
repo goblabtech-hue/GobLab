@@ -28,7 +28,7 @@ export default async function DetalleCuadrilla({ params }: PageProps<'/cuadrilla
     select: {
       id: true, folio: true, descripcion: true, estatus: true, prioridad: true,
       fechaLimite: true, direccionTexto: true, lat: true, lng: true,
-      resueltoAt: true, notaCierre: true,
+      resueltoAt: true, notaCierre: true, slaDiasHabilesAplicado: true,
       categoria: { select: { nombre: true, requiereEvidencia: true, slaDiasHabiles: true } },
       colonia: { select: { nombre: true } },
       fotos: { select: { id: true, url: true, tipo: true }, orderBy: { createdAt: 'asc' } },
@@ -65,7 +65,7 @@ export default async function DetalleCuadrilla({ params }: PageProps<'/cuadrilla
 
       {abierto && (
         <p className="text-sm text-tinta-suave">
-          Vence el <strong>{fecha(r.fechaLimite)}</strong> ({r.categoria.slaDiasHabiles} días hábiles).
+          Vence el <strong>{fecha(r.fechaLimite)}</strong> ({r.slaDiasHabilesAplicado} días hábiles).
         </p>
       )}
 

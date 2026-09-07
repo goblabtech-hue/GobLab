@@ -81,11 +81,13 @@ enum TipoAlerta {
 // ---------------------------------------------------------------- catálogos
 
 model Dependencia {
-  id         Int      @id @default(autoincrement())
-  nombre     String
+  id          Int     @id @default(autoincrement())
+  nombre      String
   responsable String
-  telefono   String
-  activa     Boolean  @default(true)
+  telefono    String
+  /// Correo de la persona responsable. Es a donde llegan las alertas de su área.
+  correo      String?
+  activa      Boolean @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -201,6 +203,14 @@ model Reporte {
   asignadoAId   String?
 
   fechaLimite DateTime
+  /// Plazo que se le prometió a ESTE reporte, en días hábiles.
+  ///
+  /// Se guarda copiado y no se lee de la categoría a propósito: si mañana el
+  /// municipio cambia el plazo de "bache" de 5 a 3 días, los reportes viejos
+  /// deben seguir midiéndose contra los 5 días que se les prometieron. Sin esta
+  /// copia, cambiar un plazo reescribiría el cumplimiento histórico del tablero
+  /// público, que es un compromiso ya hecho con la gente.
+  slaDiasHabilesAplicado Int @default(5)
   resueltoAt  DateTime?
   cerradoAt   DateTime?
   reabiertoAt DateTime?

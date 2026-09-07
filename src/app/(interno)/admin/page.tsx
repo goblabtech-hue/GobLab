@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Tags, Building2, MapPin, CalendarDays, Users, Landmark } from 'lucide-react'
+import { Tags, Building2, MapPin, CalendarDays, Users, Landmark, Timer } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { Tarjeta, TarjetaCuerpo } from '@/components/ui/tarjeta'
 
@@ -17,8 +17,10 @@ export default async function PaginaAdmin() {
   const secciones = [
     { href: '/admin/municipio', icono: Landmark, titulo: 'Datos del municipio', cuenta: null,
       texto: 'Nombre, prefijo del folio, teléfono de emergencias y dónde se centra el mapa. Es lo que ve el ciudadano en cada pantalla.' },
-    { href: '/admin/categorias', icono: Tags, titulo: 'Categorías y promesas de servicio', cuenta: categorias,
-      texto: 'Los tipos de problema que puede reportar la gente y el plazo en días hábiles que el municipio se compromete a cumplir.' },
+    { href: '/admin/plazos', icono: Timer, titulo: 'Plazos de atención', cuenta: categorias,
+      texto: 'El compromiso público por tipo de problema, con el cumplimiento real al lado para decidir con el dato enfrente.' },
+    { href: '/admin/categorias', icono: Tags, titulo: 'Categorías', cuenta: categorias,
+      texto: 'Los tipos de problema que puede reportar la gente, su ícono y qué área los atiende.' },
     { href: '/admin/dependencias', icono: Building2, titulo: 'Dependencias', cuenta: dependencias,
       texto: 'Las áreas que resuelven los reportes. Cada categoría se asigna automáticamente a una.' },
     { href: '/admin/colonias', icono: MapPin, titulo: 'Colonias', cuenta: colonias,

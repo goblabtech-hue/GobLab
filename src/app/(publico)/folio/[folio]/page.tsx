@@ -31,6 +31,7 @@ async function cargarReporte(folio: string) {
       id: true, folio: true, descripcion: true, estatus: true, prioridad: true,
       createdAt: true, fechaLimite: true, resueltoAt: true, cerradoAt: true,
       calificacion: true, comentarioCalificacion: true, notaCierre: true,
+      slaDiasHabilesAplicado: true,
       motivoImprocedente: true, vecesReabierto: true,
       lat: true, lng: true, direccionTexto: true,
       categoria: { select: { nombre: true, icono: true, slaDiasHabiles: true } },
@@ -73,7 +74,7 @@ export default async function PaginaFolio({ params, searchParams }: PageProps<'/
           Guarda este folio: <strong className="font-mono">{r.folio}</strong>. Con él
           puedes volver a esta página cuando quieras.
           {' '}Nos comprometemos a atenderlo en un máximo de{' '}
-          <strong>{r.categoria.slaDiasHabiles} días hábiles</strong>.
+          <strong>{r.slaDiasHabilesAplicado} días hábiles</strong>.
         </Alerta>
       )}
       {unido && (
@@ -108,7 +109,7 @@ export default async function PaginaFolio({ params, searchParams }: PageProps<'/
             <div>
               <p className="text-sm font-medium">Nuestra promesa para este tipo de reporte</p>
               <p className="mt-0.5 text-sm text-tinta-suave">
-                {r.categoria.slaDiasHabiles} días hábiles. Para este reporte, eso vence el{' '}
+                {r.slaDiasHabilesAplicado} días hábiles. Para este reporte, eso vence el{' '}
                 <strong>{fecha(r.fechaLimite)}</strong>.
               </p>
             </div>

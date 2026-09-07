@@ -37,17 +37,35 @@ fecha límite de todos los reportes que ya existen.
 
 | Catálogo | Estado | Qué falta |
 |---|---|---|
-| **Colonias** | 24 nombres genéricos | Sustituir por las colonias reales. `/admin/colonias` |
-| **Dependencias** | 5 genéricas ("Dirección de Servicios Públicos"…) | Nombres reales, responsable y teléfono. `/admin/dependencias` |
-| **Categorías** | Las 12 del SPEC §11 | Revisar que los plazos sean los que el municipio **puede** cumplir |
+| **Colonias** | 24 nombres genéricos | Súbelas desde Excel en `/admin/colonias` |
+| **Dependencias** | 5 genéricas | Súbelas desde Excel en `/admin/dependencias`, con responsable, teléfono y correo |
+| **Plazos de atención** | Los 12 del SPEC §11 | Validarlos en `/admin/plazos`, donde se ve el cumplimiento real al lado |
 | **Días festivos** | Solo los oficiales (LFT art. 74) | Agregar los festivos locales (feria, fiestas patronales) |
 | **Usuarios** | 8 cuentas de demo | Dar de alta al personal real y **borrar las de demo** |
 
+### Cargar colonias y dependencias desde Excel
+No hace falta teclearlas una por una. En `/admin/colonias` y
+`/admin/dependencias` hay un cargador que acepta `.xlsx` y `.csv`:
+
+| Catálogo | Columnas |
+|---|---|
+| Colonias | `nombre` (obligatoria), `lat` y `lng` (opcionales) |
+| Dependencias | `nombre` y `responsable` (obligatorias), `telefono` y `correo` |
+
+Los encabezados no distinguen mayúsculas, acentos ni espacios: «Nombre de la
+Colonia» funciona igual que «nombre». **Se actualiza por nombre, no se
+duplica**, así que puedes volver a subir el mismo archivo corregido las veces
+que haga falta.
+
 ### Las promesas de servicio son un compromiso público
-Los plazos de `/admin/categorias` se publican en el tablero abierto y se miden
-contra el cumplimiento real. Conviene que los defina quien opera cada
-dependencia, no quien instala el sistema. Los plazos actuales (2 a 10 días
-hábiles) son un punto de partida razonable, no una recomendación.
+Los plazos de `/admin/plazos` se publican en el tablero abierto y se miden
+contra el cumplimiento real. La pantalla pone ese cumplimiento al lado de cada
+plazo, para decidir con el dato enfrente. Conviene que los defina quien opera
+cada dependencia, no quien instala el sistema.
+
+**Cambiar un plazo no reescribe el pasado:** cada reporte guarda el plazo que se
+le prometió el día que se levantó. Bajar un plazo hoy no convierte en
+incumplidos a los reportes ya resueltos.
 
 ## 3. Seguridad — antes de producción
 

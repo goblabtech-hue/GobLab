@@ -5,6 +5,9 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requerirRol, hashearPassword, NoAutorizado } from '@/lib/auth'
 import { invalidarCacheFestivos } from '@/lib/sla'
+import {
+  leerCatalogo, columna, ErrorImportacion, type ResultadoImportacion,
+} from '@/lib/importacion'
 
 /**
  * Catálogos administrables (SPEC §3: el rol admin gestiona categorías,
@@ -84,6 +87,7 @@ const dependenciaSchema = z.object({
   nombre: texto(3, 120),
   responsable: texto(3, 120),
   telefono: z.string().trim().regex(/^\d{7,15}$/, 'Escribe solo dígitos (7 a 15).'),
+  correo: z.string().trim().toLowerCase().email('Escribe un correo válido.').optional().or(z.literal('')),
   activa: z.coerce.boolean().optional(),
 })
 
@@ -94,11 +98,13 @@ export async function guardarDependencia(_p: Resultado, datos: FormData): Promis
       nombre: datos.get('nombre'),
       responsable: datos.get('responsable'),
       telefono: datos.get('telefono'),
+      correo: datos.get('correo'),
       activa: datos.get('activa') === 'on',
     })
     if (!parsed.success) return { error: parsed.error.issues[0].message }
 
-    const { id, ...data } = parsed.data
+    const { id, correo, ...resto } = parsed.data
+    const data = { ...resto, correo: correo || null }
     if (id) await prisma.dependencia.update({ where: { id }, data })
     else await prisma.dependencia.create({ data })
     revalidatePath('/admin/dependencias')
@@ -230,4 +236,135 @@ export async function guardarUsuario(_p: Resultado, datos: FormData): Promise<Re
     revalidatePath('/admin/usuarios')
     return { ok: true }
   }) as Promise<Resultado>
+}
+
+// ---------------------------------------------------------------- importación
+
+/**
+ * Carga masiva de catálogos desde Excel o CSV.
+ *
+ * Se actualiza por nombre en vez de duplicar: volver a subir el mismo archivo
+ * con una colonia corregida arregla esa y deja las demás intactas. Importar dos
+ * veces no debe dejar el catálogo al doble.
+ */
+export type ResultadoImport = {
+  ok?: boolean
+  error?: string
+  resumen?: ResultadoImportacion
+}
+
+export async function importarColonias(
+  _p: ResultadoImport, datos: FormData,
+): Promise<ResultadoImport> {
+  return comoAdmin(async () => {
+    const archivo = datos.get('archivo')
+    if (!(archivo instanceof File)) return { error: 'Elige un archivo.' }
+
+    let filas
+    try {
+      filas = await leerCatalogo(archivo)
+    } catch (e) {
+      return { error: e instanceof ErrorImportacion ? e.message : 'No pudimos leer el archivo.' }
+    }
+
+    const resumen: ResultadoImportacion = { creados: 0, actualizados: 0, omitidos: 0, errores: [] }
+
+    for (const [i, fila] of filas.entries()) {
+      const renglon = i + 2 // +1 por el encabezado, +1 porque Excel cuenta desde 1
+      const nombre = columna(fila, 'nombre', 'colonia', 'nombredelacolonia', 'asentamiento')
+      if (!nombre) { resumen.omitidos++; continue }
+      if (nombre.length > 120) {
+        resumen.errores.push(`Renglón ${renglon}: el nombre es demasiado largo.`)
+        continue
+      }
+
+      const lat = Number(columna(fila, 'lat', 'latitud'))
+      const lng = Number(columna(fila, 'lng', 'lon', 'long', 'longitud'))
+      const coords = Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0
+        ? { centroLat: lat, centroLng: lng }
+        : {}
+
+      const existente = await prisma.colonia.findFirst({
+        where: { nombre: { equals: nombre, mode: 'insensitive' } },
+        select: { id: true },
+      })
+
+      if (existente) {
+        await prisma.colonia.update({ where: { id: existente.id }, data: { nombre, ...coords } })
+        resumen.actualizados++
+      } else {
+        const base = slugify(nombre)
+        let slug = base
+        for (let n = 2; await prisma.colonia.findUnique({ where: { slug } }); n++) slug = `${base}-${n}`
+        await prisma.colonia.create({ data: { nombre, slug, ...coords } })
+        resumen.creados++
+      }
+    }
+
+    revalidatePath('/admin/colonias')
+    return { ok: true, resumen }
+  }) as Promise<ResultadoImport>
+}
+
+export async function importarDependencias(
+  _p: ResultadoImport, datos: FormData,
+): Promise<ResultadoImport> {
+  return comoAdmin(async () => {
+    const archivo = datos.get('archivo')
+    if (!(archivo instanceof File)) return { error: 'Elige un archivo.' }
+
+    let filas
+    try {
+      filas = await leerCatalogo(archivo)
+    } catch (e) {
+      return { error: e instanceof ErrorImportacion ? e.message : 'No pudimos leer el archivo.' }
+    }
+
+    const resumen: ResultadoImportacion = { creados: 0, actualizados: 0, omitidos: 0, errores: [] }
+
+    for (const [i, fila] of filas.entries()) {
+      const renglon = i + 2
+      const nombre = columna(fila, 'nombre', 'dependencia', 'area', 'direccion')
+      if (!nombre) { resumen.omitidos++; continue }
+
+      const responsable = columna(fila, 'responsable', 'titular', 'encargado', 'nombredelresponsable')
+      const telefono = columna(fila, 'telefono', 'tel', 'celular', 'numero').replace(/\D/g, '')
+      const correo = columna(fila, 'correo', 'email', 'correoelectronico', 'mail').toLowerCase()
+
+      if (!responsable) {
+        resumen.errores.push(`Renglón ${renglon} (${nombre}): falta el responsable.`)
+        continue
+      }
+      if (telefono && (telefono.length < 7 || telefono.length > 15)) {
+        resumen.errores.push(`Renglón ${renglon} (${nombre}): el teléfono no parece válido.`)
+        continue
+      }
+      if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+        resumen.errores.push(`Renglón ${renglon} (${nombre}): el correo no parece válido.`)
+        continue
+      }
+
+      const datosDep = {
+        nombre, responsable,
+        telefono: telefono || 'sin registrar',
+        correo: correo || null,
+      }
+
+      const existente = await prisma.dependencia.findFirst({
+        where: { nombre: { equals: nombre, mode: 'insensitive' } },
+        select: { id: true },
+      })
+
+      if (existente) {
+        await prisma.dependencia.update({ where: { id: existente.id }, data: datosDep })
+        resumen.actualizados++
+      } else {
+        await prisma.dependencia.create({ data: datosDep })
+        resumen.creados++
+      }
+    }
+
+    revalidatePath('/admin/dependencias')
+    return { ok: true, resumen }
+  }) as Promise<ResultadoImport>
 }

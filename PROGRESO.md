@@ -468,6 +468,29 @@ que modifica. En la base de desarrollo nunca se notó, porque se había aplicado
 en orden; pero un despliegue desde cero habría fallado. Renombrada y verificada
 desplegando en una base vacía.
 
+**Carga masiva de catálogos y panel de plazos**
+A petición del equipo: las colonias y las dependencias se suben desde un Excel
+o un CSV en vez de teclearse una por una —un municipio ya tiene esas listas en
+una hoja de cálculo—, y las dependencias ganaron el correo del responsable, que
+es a donde llegan las alertas de su área.
+
+Los plazos salieron de `/admin/categorias` a su propia pantalla, `/admin/plazos`,
+con el **cumplimiento real y el tiempo promedio al lado de cada plazo**: mover un
+compromiso público sin ver si se está cumpliendo es decidir a ciegas.
+
+**El defecto de fondo que esto destapó:** el plazo vivía únicamente en la
+categoría, así que la promesa de cada reporte se leía del valor **actual**.
+Cambiar el plazo de «bache» de 5 a 3 días habría reescrito hacia atrás el
+cumplimiento publicado en el tablero — un compromiso ya hecho con la gente.
+Ahora cada reporte guarda el plazo que se le prometió. Verificado: subir el
+plazo de bache a 7 días dejó los 110 reportes existentes con sus 5 días y el
+cumplimiento histórico intacto en 80.7%.
+
+**Dos defectos más, encontrados por las pruebas del lector de Excel:** faltaba un
+`await` antes de la lectura del archivo, así que un `.xlsx` corrupto escapaba
+del `try/catch` y le mostraba al usuario el error crudo de la librería de ZIP en
+inglés; y `nodemailer` tenía una vulnerabilidad alta corregida en la versión 10.
+
 **ROADMAP.md** — el SPEC §13 pedía documentar el roadmap posterior al MVP, y no
 se había escrito. Siete líneas de trabajo ordenadas por lo que multiplica el
 valor de lo que ya existe, con lo que cada una depende, y una sección de lo que
