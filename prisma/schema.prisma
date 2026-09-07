@@ -444,3 +444,24 @@ model ConfiguracionMunicipio {
   actualizadoAt  DateTime @updatedAt
   actualizadoPor String?
 }
+
+/// Aviso de privacidad, con historial de versiones.
+///
+/// Se versiona porque es un documento legal: la gente aceptó una redacción
+/// concreta el día que levantó su reporte, y sustituirla sin dejar rastro borra
+/// la constancia de qué se le informó. Solo una versión está publicada a la vez.
+model AvisoPrivacidad {
+  id           Int      @id @default(autoincrement())
+  version      Int      @unique
+  titulo       String
+  /// Texto en Markdown sencillo: encabezados, párrafos, listas y negritas.
+  contenido    String
+  publicado    Boolean  @default(false)
+  /// Nota interna sobre qué cambió respecto de la versión anterior.
+  notaCambio   String?
+  actualizadoPor String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([publicado, version])
+}

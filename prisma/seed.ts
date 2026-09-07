@@ -11,6 +11,7 @@ import {
   CATEGORIAS, COLONIAS, DEPENDENCIAS, DESCRIPCIONES, USUARIOS, festivosOficiales,
 } from './catalogos'
 import { generarImagen, prepararDirImagenes } from './imagenes'
+import { borradorAviso } from './aviso-privacidad'
 import type {
   EstatusReporte, OrigenReporte, Prioridad, TipoEvento, TipoFoto,
 } from '../src/generated/prisma/enums'
@@ -101,6 +102,22 @@ async function main() {
   invalidarConfiguracion()
   const municipio = await obtenerConfiguracion()
   console.log(`Municipio: ${municipio.nombre} (folios ${municipio.prefijoFolio}-…)`)
+
+  // Borrador del aviso de privacidad, solo si no existe ninguno: si el
+  // municipio ya redactó el suyo, resembrar los reportes no debe pisarlo.
+  if ((await prisma.avisoPrivacidad.count()) === 0) {
+    await prisma.avisoPrivacidad.create({
+      data: {
+        version: 1,
+        titulo: 'Aviso de privacidad integral',
+        contenido: borradorAviso(municipio.nombre, municipio.telEmergencias),
+        publicado: true,
+        notaCambio: 'Borrador inicial. Pendiente de revisión jurídica.',
+        actualizadoPor: 'Sistema',
+      },
+    })
+    console.log('Aviso de privacidad: borrador v1 publicado (pendiente de revisión jurídica)')
+  }
 
   // ---------------------------------------------------------------- catálogos
   console.log('Catálogos…')

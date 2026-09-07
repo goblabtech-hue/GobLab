@@ -43,6 +43,16 @@ fecha límite de todos los reportes que ya existen.
 | **Días festivos** | Solo los oficiales (LFT art. 74) | Agregar los festivos locales (feria, fiestas patronales) |
 | **Usuarios** | 8 cuentas de demo | Dar de alta al personal real y **borrar las de demo** |
 
+### Aviso de privacidad
+Se administra en `/admin/privacidad`: se pega el texto o se sube un `.txt`/`.md`,
+hay vista previa, y **cada guardado crea una versión**. Solo una está en vigor a
+la vez, y las anteriores se conservan — la gente aceptó una redacción concreta el
+día que reportó, y esa constancia tiene que poder consultarse.
+
+Si el jurídico te entrega un Word o un PDF, ábrelo, copia el texto y pégalo: el
+editor no lee esos formatos a propósito, porque extraer texto de ellos produce
+resultados impredecibles en un documento legal.
+
 ### Cargar colonias y dependencias desde Excel
 No hace falta teclearlas una por una. En `/admin/colonias` y
 `/admin/dependencias` hay un cargador que acepta `.xlsx` y `.csv`:
@@ -75,7 +85,12 @@ incumplidos a los reportes ya resueltos.
 - [ ] `PHONE_ENCRYPTION_KEY` **no se puede perder ni rotar a la ligera**: si
       cambia, los teléfonos ya guardados dejan de poder descifrarse.
 - [ ] Borrar las 8 cuentas de demo (contraseña `Demo1234!`, igual para todas).
-- [ ] Publicar el aviso de privacidad real (LGPDPPSO / ley estatal aplicable).
+- [ ] **Completar el aviso de privacidad.** Ya hay un borrador publicado en
+      `/admin/privacidad` con la estructura que exige la LGPDPPSO y con lo que
+      el sistema hace de verdad. Faltan tres cosas que el sistema no puede
+      saber, marcadas como `PENDIENTE` dentro del texto: el domicilio del
+      ayuntamiento, el fundamento legal estatal y los datos de la Unidad de
+      Transparencia. Después, revisión jurídica.
 
 ## 4. Dar de alta los bots
 

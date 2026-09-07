@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Tags, Building2, MapPin, CalendarDays, Users, Landmark, Timer } from 'lucide-react'
+import { Tags, Building2, MapPin, CalendarDays, Users, Landmark, Timer, ShieldCheck } from 'lucide-react'
 import { prisma } from '@/infrastructure/prisma'
 import { Tarjeta, TarjetaCuerpo } from '@/components/ui/tarjeta'
 
@@ -27,6 +27,8 @@ export default async function PaginaAdmin() {
       texto: 'El catálogo que alimenta el módulo "Mi colonia" y el respaldo cuando no hay ubicación GPS.' },
     { href: '/admin/festivos', icono: CalendarDays, titulo: 'Días festivos', cuenta: festivos,
       texto: 'Días que no cuentan para el plazo de atención. Afecta directo a la fecha límite de cada reporte.' },
+    { href: '/admin/privacidad', icono: ShieldCheck, titulo: 'Aviso de privacidad', cuenta: null,
+      texto: 'El documento legal que ve el ciudadano. Se puede pegar o subir, se versiona, y solo una versión está en vigor.' },
     { href: '/admin/usuarios', icono: Users, titulo: 'Usuarios', cuenta: usuarios,
       texto: 'Cuentas del personal municipal y el perfil con el que entra cada quien.' },
   ]
