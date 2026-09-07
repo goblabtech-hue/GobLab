@@ -19,69 +19,98 @@ Tiempo aproximado: 40 minutos, de los cuales 30 son esperar al DNS.
 Sobre el VPS: 2 GB de RAM es el mínimo cómodo. El build de Next.js es lo que
 más memoria consume; con 1 GB hay que agregar swap o compilar en otra máquina.
 
-> **Una nota sobre el dominio.** Si compraron un `.com` o `.mx` comercial,
-> funciona perfectamente. Pero para un trámite municipal vale la pena saber
-> que los ayuntamientos mexicanos tienen derecho a un `.gob.mx` a través de
-> NIC México, y que un ciudadano al que le piden su teléfono confía distinto
-> en `tuladeallende.gob.mx` que en un `.com`. No bloquea nada: se puede
-> arrancar con el dominio que ya tienen y agregar el `.gob.mx` después —
-> Caddy admite varios dominios en el mismo sitio.
+> **Una nota sobre el dominio.** `demosvoz.com` es el dominio del producto,
+> no el del ayuntamiento, y para una demostración comercial está bien así. Pero
+> conviene tenerlo claro desde ahora: **el día que Tula lo compre, la
+> plataforma no se queda aquí.** Los ayuntamientos mexicanos tienen derecho a
+> un `.gob.mx` a través de NIC México, y un ciudadano al que le piden su
+> teléfono confía distinto en `tuladeallende.gob.mx` que en un `.com` ajeno —
+> con razón: es exactamente así como se ven los fraudes de trámites.
+>
+> O sea que habrá dos instalaciones, y está bien: `demosvoz.com` como vitrina
+> permanente para enseñarle el producto al siguiente municipio, y una
+> instalación por cliente en su propio dominio. Los scripts de despliegue
+> sirven igual para las dos.
 
 ---
 
-## 1. Apuntar el dominio de GoDaddy al servidor
+## 1. Apuntar demosvoz.com al servidor
 
 Necesitas la **IP pública del VPS** (te la da tu proveedor al crearlo).
 
-1. Entra a GoDaddy → **Mis productos** → busca el dominio → **DNS**.
-2. Antes que nada, revisa arriba que diga **«Servidores de nombres de
-   GoDaddy»**. Si apuntan a otro proveedor, el panel de GoDaddy no controla
-   nada y hay que hacer los cambios allá.
-3. En **Registros**, busca el registro `A` con nombre `@`. GoDaddy lo crea
-   apuntando a su página de estacionamiento. **Edítalo**, no crees uno nuevo:
+Al momento de escribir esto, el dominio está estacionado en GoDaddy y su DNS
+se ve así:
+
+```
+demosvoz.com      A       76.223.105.230      ← estacionamiento de GoDaddy
+demosvoz.com      A       13.248.243.5        ← estacionamiento de GoDaddy
+www.demosvoz.com  CNAME   demosvoz.com        ← ya está bien, no lo toques
+demosvoz.com      NS      ns35/ns36.domaincontrol.com
+```
+
+Dos cosas que eso te ahorra y una que te puede morder:
+
+- Los nameservers son de GoDaddy, así que **el panel de GoDaddy sí manda**.
+  Si apuntaran a otro proveedor, los cambios habría que hacerlos allá.
+- El `CNAME` de `www` **ya existe y ya es correcto**. No lo toques.
+- **Hay DOS registros `A` en `@`, no uno.** Si editas solo uno, el dominio
+  queda repartido entre tu servidor y la página de estacionamiento de GoDaddy:
+  el sitio abriría bien más o menos la mitad de las veces, y el error es
+  desesperante de diagnosticar porque «a veces sí funciona». Hay que **borrar
+  uno y editar el otro.**
+
+### Los pasos
+
+1. GoDaddy → **Mis productos** → `demosvoz.com` → **DNS**.
+2. En **Registros**, localiza los dos `A` con nombre `@`.
+3. **Borra uno** (el basurero a la derecha).
+4. **Edita el que queda:**
 
    | Tipo | Nombre | Valor | TTL |
    |---|---|---|---|
    | `A` | `@` | la IP de tu VPS | 600 segundos |
 
-4. Agrega el `www`:
-
-   | Tipo | Nombre | Valor | TTL |
-   |---|---|---|---|
-   | `CNAME` | `www` | `@` | 600 segundos |
-
-5. **Apaga el reenvío.** Si en la sección de *Reenvío de dominio* hay algo
-   configurado, quítalo: GoDaddy lo aplica por encima de los registros y el
-   sitio nunca llegaría al servidor. Es el error más común.
-
-El TTL de 600 segundos es a propósito: si te equivocas, corriges en 10 minutos
-en vez de en un día.
+   El TTL de 600 es a propósito: si te equivocas, corriges en 10 minutos en
+   vez de en un día. GoDaddy trae 1 hora por defecto; cámbialo a
+   *Personalizado → 600*.
+5. **Apaga el reenvío.** Si en *Reenvío de dominio* hay algo configurado,
+   quítalo: GoDaddy lo aplica por encima de los registros y el sitio nunca
+   llega al servidor. Es el error más común.
 
 ### Comprobar que quedó
 
 Desde tu Mac, no desde el navegador (el navegador cachea y engaña):
 
 ```bash
-dig +short TU-DOMINIO.com
+dig +short demosvoz.com
 ```
 
-Tiene que devolver la IP de tu VPS. Si devuelve otra cosa o nada, todavía no
-propaga; espera y repite. Normalmente son minutos.
+Tiene que devolver **una sola** línea: la IP de tu VPS. Si devuelve dos, o
+alguna de las de GoDaddy, todavía falta borrar un registro o falta propagar.
 
-**No sigas al paso 3 hasta que esto responda con tu IP.** Caddy pedirá el
+**No sigas al paso 3 hasta que esto responda solo con tu IP.** Caddy pedirá el
 certificado y si el dominio no resuelve aún, Let's Encrypt lo rechaza y aplica
 un límite temporal de reintentos.
-
----
 
 ## 2. Preparar el servidor
 
 Conéctate por SSH como root y corre:
 
 ```bash
-git clone TU-REPOSITORIO /tmp/proyecto
-bash /tmp/proyecto/despliegue/instalar-servidor.sh TU-DOMINIO.com
+git clone https://github.com/goblabtech-hue/GobLab.git /tmp/proyecto
+bash /tmp/proyecto/despliegue/instalar-servidor.sh demosvoz.com --privado
 ```
+
+`--privado` pide un usuario y una contraseña, y deja el sitio entero detrás de
+esa puerta. **Para una demostración de ventas es lo correcto**, y no por
+pudor: el sitio va a decir «Tula de Allende · Atención Ciudadana», va a pedir
+teléfono, y los reportes que levante no los va a atender nadie. Un vecino que
+llegue por casualidad y deje su número esperando una cuadrilla es un daño
+real, no un detalle de imagen. Con la puerta puesta, solo entra a quien le
+pases la clave.
+
+Quítala el día que el sitio sea el del ayuntamiento: borra el bloque
+`basic_auth` de `/etc/caddy/Caddyfile` y `sudo systemctl reload caddy`.
 
 Instala Node 22, PostgreSQL 18, Caddy, crea el usuario de servicio `atencion`,
 la base de datos, y cierra el firewall dejando abiertos solo SSH, 80 y 443.
@@ -96,7 +125,7 @@ siguiente.
 
 ```bash
 sudo -u atencion -i
-git clone TU-REPOSITORIO /opt/atencion-ciudadana
+git clone https://github.com/goblabtech-hue/GobLab.git /opt/atencion-ciudadana
 cd /opt/atencion-ciudadana
 cp .env.example .env
 ```
@@ -131,7 +160,7 @@ bash scripts/desplegar.sh
 Verifica que no falten secretos, instala dependencias, corre las migraciones,
 compila y arranca el servicio. Si algo falla, se detiene y dice dónde.
 
-Abre `https://TU-DOMINIO.com`. El candado debe aparecer solo: Caddy pidió el
+Abre `https://demosvoz.com`. El candado debe aparecer solo: Caddy pidió el
 certificado en la primera visita.
 
 ---
@@ -141,7 +170,7 @@ certificado en la primera visita.
 Ahora que hay un dominio público con HTTPS, el bot ya puede recibir mensajes:
 
 ```bash
-npm run telegram:conectar -- https://TU-DOMINIO.com
+npm run telegram:conectar -- https://demosvoz.com
 ```
 
 Pide el token de @BotFather (ver `PENDIENTES.md` §4), registra el webhook y lo
@@ -163,12 +192,12 @@ Como usuario `atencion`, `crontab -e`:
 CRON_SECRET=el-mismo-valor-que-en-.env
 
 # Cierra reportes resueltos que nadie calificó (SPEC §4.3)
-0 3 * * *    curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://TU-DOMINIO.com/api/cron/autocierre
+0 3 * * *    curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://demosvoz.com/api/cron/autocierre
 # Alertas internas (§4.5)
-0 * * * *    curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://TU-DOMINIO.com/api/cron/alertas
+0 * * * *    curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://demosvoz.com/api/cron/alertas
 # Agregados del tablero y limpieza
-*/15 * * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://TU-DOMINIO.com/api/cron/indicadores
-*/15 * * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://TU-DOMINIO.com/api/cron/mantenimiento
+*/15 * * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://demosvoz.com/api/cron/indicadores
+*/15 * * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://demosvoz.com/api/cron/mantenimiento
 ```
 
 ---
@@ -214,7 +243,7 @@ sudo systemctl status atencion-ciudadana
 
 **El certificado no se emite.** Casi siempre el DNS todavía no resuelve al
 servidor, o quedó encendido el reenvío en GoDaddy. Comprueba con
-`dig +short TU-DOMINIO.com` desde fuera del servidor.
+`dig +short demosvoz.com` desde fuera del servidor.
 
 **502 Bad Gateway.** Caddy está bien pero la aplicación no. Mira el journal
 del servicio.

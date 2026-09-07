@@ -11,6 +11,12 @@ export async function generateMetadata(): Promise<Metadata> {
     title: { default: `Atención Ciudadana · ${nombre}`, template: `%s · ${nombre}` },
     description:
       'Reporta un problema de tu colonia, dale seguimiento con tu folio y consulta cómo vamos, en tiempo real.',
+    // robots.txt le pide al buscador que no entre; esto se lo pide a la página
+    // ya indexada que la saque. Hacen falta los dos: el primero no deshace lo
+    // que un buscador ya guardó.
+    ...(process.env.MODO_DEMO === 'true'
+      ? { robots: { index: false, follow: false } }
+      : {}),
   }
 }
 

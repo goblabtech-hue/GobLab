@@ -12,11 +12,19 @@
 set -euo pipefail
 
 DOMINIO="${1:-}"
+PRIVADO="${2:-}"
 USUARIO=atencion
 DESTINO=/opt/atencion-ciudadana
 BASE=atencion_ciudadana
 
-[ -n "$DOMINIO" ] || { echo "Uso: bash instalar-servidor.sh TU-DOMINIO"; exit 1; }
+[ -n "$DOMINIO" ] || {
+  echo "Uso: bash instalar-servidor.sh TU-DOMINIO [--privado]"
+  echo
+  echo "  --privado  pide usuario y contraseña para entrar al sitio."
+  echo "             Recomendado para una demostración: el sitio lleva el"
+  echo "             nombre de un municipio real y trae cuentas de prueba."
+  exit 1
+}
 [ "$(id -u)" = "0" ] || { echo "Esto se corre como root."; exit 1; }
 
 paso() { printf '\n\033[1;36m▸ %s\033[0m\n' "$*"; }
@@ -102,8 +110,25 @@ case "$RESTO" in
   *)   NOMBRES="$DOMINIO, www.$DOMINIO" ;;
 esac
 
+# Puerta de entrada opcional. En una demostración no se quiere que un vecino
+# llegue por casualidad: el sitio lleva el nombre del municipio, pide teléfono
+# y los reportes que levante nadie los va a atender.
+PUERTA=""
+if [ "$PRIVADO" = "--privado" ]; then
+  printf 'Usuario para entrar al sitio [demo]: '
+  read -r USR; USR="${USR:-demo}"
+  printf 'Contraseña (no se muestra): '
+  read -rs CLAVE; echo
+  [ -n "$CLAVE" ] || { echo "Contraseña vacía."; exit 1; }
+  # Caddy guarda solo el bcrypt: la contraseña en claro no queda en disco.
+  HASH=$(caddy hash-password --plaintext "$CLAVE")
+  unset CLAVE
+  PUERTA=$(printf '\tbasic_auth {\n\t\t%s %s\n\t}\n' "$USR" "$HASH")
+fi
+
 cat > /etc/caddy/Caddyfile <<CADDY
 $NOMBRES {
+$PUERTA
 	encode zstd gzip
 
 	# Una sola dirección canónica: si alguien llega por www se le manda al

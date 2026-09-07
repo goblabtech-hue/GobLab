@@ -23,8 +23,9 @@ export function AvisoDemo({ municipio }: { municipio: string }) {
     >
       <FlaskConical className="size-4 shrink-0" aria-hidden />
       <p>
-        <strong>Demostración.</strong> Los reportes y las cifras de este sitio son
-        ficticios y no corresponden a datos reales de {municipio}.
+        <strong>Sitio de demostración.</strong> Las cifras son ficticias y no
+        corresponden a datos reales de {municipio}. Los reportes que se levanten
+        aquí <strong>no serán atendidos</strong>.
       </p>
     </div>
   )
