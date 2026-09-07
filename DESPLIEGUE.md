@@ -34,14 +34,52 @@ que no explica nada.
    pregunta que sale en la revisión jurídica del ayuntamiento y que puede
    detener la firma. Con el servidor en México, el punto no existe.
 
-| Proveedor | Ubicación útil | Aproximado | Nota |
-|---|---|---|---|
-| **Vultr** | **Ciudad de México** | ~10 USD/mes por 2 GB | Lo recomendado: es el único de los tres con centro de datos en México |
-| Hetzner | Alemania / Virginia | ~4 EUR/mes por 4 GB | El más barato con diferencia, pero fuera del país |
-| DigitalOcean | Nueva York / San Francisco | ~12 USD/mes por 2 GB | Documentación excelente en español |
+### El cuadro completo (revisado en septiembre de 2026)
 
-Los precios cambian: confírmalos en la página del proveedor antes de contratar.
-Cualquiera de los tres sirve — el instalador es el mismo.
+Precios bajo demanda, plan de ~2 GB, sin compromiso de permanencia:
+
+| Proveedor | En México | RAM | USD/mes | Veredicto |
+|---|---|---|---|---|
+| **Vultr High Performance** | ✅ CDMX | 2 GB | **12** | **Lo recomendado** — NVMe, AMD, 3 TB |
+| Vultr Regular | ✅ CDMX | 2 GB | 10 | Igual pero SSD SATA e Intel compartido |
+| AWS `mx-central-1` | ✅ Querétaro | 2 GB | ~18.50 | Para la instalación que se venda |
+| Oracle Always Free | ✅ Querétaro | 12 GB | **0** | ⚠️ Descartado — ver abajo |
+| Hetzner CX22 | ❌ Alemania/EUA | 4 GB | ~4 | El más barato del mercado, pero fuera del país |
+| Contabo | ❌ Alemania/EUA | 8 GB | ~7 | Mucho hierro por poco dinero; fama de sobreventa |
+
+**Recomendación: Vultr High Performance, 2 GB, Ciudad de México, 12 USD/mes.**
+
+Los dos dólares extra sobre el plan Regular compran disco NVMe en vez de SATA
+y CPU AMD en vez de Intel compartido. Se notan en lo único que en esta
+aplicación tarda de verdad: compilar. El resto del tiempo la máquina está
+ociosa.
+
+Con 1 vCPU y 2 GB el `npm run build` tarda unos minutos y se apoya en el swap
+que agrega el instalador. Es incómodo, no un problema: se compila al desplegar,
+no al atender gente. Si llega a estorbar, Vultr deja subir de plan sin
+reinstalar nada.
+
+#### Por qué NO la opción gratuita de Oracle
+
+Oracle tiene dos regiones en México (Querétaro y Monterrey) y una capa
+*Always Free* permanente que hoy da 2 OCPU ARM y 12 GB de RAM. Sobre el papel
+gana por goleada: es gratis, está en México y tiene seis veces más memoria que
+lo que recomendamos.
+
+**El problema es exactamente el uso que le vas a dar.** Oracle reclama las
+instancias gratuitas que considera ociosas, y su definición es pública: si
+durante 7 días seguidos el percentil 95 de uso de CPU queda por debajo del
+20%, la máquina se recupera. Un sitio de demostración que solo se enciende
+cuando hay junta con un municipio vive al 0% de CPU casi todo el mes: encaja
+en la definición de ocioso casi por diseño.
+
+O sea que el escenario probable no es «se cae algún día», es «se cae justo el
+día que le ibas a enseñar la plataforma a Tula». Doce dólares al mes es un
+precio muy bajo por no tener esa conversación.
+
+(Para otras cosas —un servidor de pruebas, un proyecto personal— la capa
+gratuita de Oracle sigue siendo la mejor oferta del mercado. Aquí no, por el
+uso.)
 
 ### ¿Y AWS?
 
