@@ -1,7 +1,8 @@
 import { prisma } from '@/infrastructure/prisma'
 import { diasHabilesEntre } from '@/domain/dias-habiles'
 import { cargarFestivos } from '@/infrastructure/festivos'
-import { ESTATUS_ABIERTOS } from '@/domain/presentacion'
+import { ESTATUS_ABIERTOS } from '@/domain/estatus'
+import type { EstatusReporte } from '@/generated/prisma/enums'
 
 /**
  * Métricas del tablero ejecutivo (SPEC §4.5).
@@ -63,6 +64,109 @@ export type IndicadoresInternos = {
 }
 
 
+const promedio = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null)
+
+type ReporteInterno = {
+  dependenciaId: number
+  asignadoAId: string | null
+  estatus: EstatusReporte
+  createdAt: Date
+  resueltoAt: Date | null
+  fechaLimite: Date
+  calificacion: number | null
+  vecesReabierto: number
+}
+
+function armarDependencias(
+  datos: {
+    dependencias: { id: number; nombre: string }[]
+    reportes: ReporteInterno[]
+    primerasRespuestas: { dependenciaId: number; horas: number }[]
+    reasignados: { detalle: unknown }[]
+  },
+  festivos: ReadonlySet<string>,
+  ahora: Date,
+): FilaDependencia[] {
+  const horas = new Map<number, number[]>()
+  for (const p of datos.primerasRespuestas) {
+    const lista = horas.get(p.dependenciaId) ?? []
+    lista.push(Number(p.horas))
+    horas.set(p.dependenciaId, lista)
+  }
+
+  // Quién RECIBE reasignaciones: si un área recibe muchas, el problema está en
+  // cómo se clasifica al entrar, no en ella.
+  const recibidos = new Map<number, number>()
+  for (const ev of datos.reasignados) {
+    const destino = (ev.detalle as { a?: number } | null)?.a
+    if (typeof destino === 'number') recibidos.set(destino, (recibidos.get(destino) ?? 0) + 1)
+  }
+
+  return datos.dependencias.map((d) => {
+    const suyos = datos.reportes.filter((r) => r.dependenciaId === d.id)
+    const resueltos = suyos.filter((r) => r.resueltoAt !== null)
+    const aTiempo = resueltos.filter((r) => r.resueltoAt! <= r.fechaLimite).length
+    return {
+      id: d.id,
+      nombre: d.nombre,
+      abiertos: suyos.filter((r) => ESTATUS_ABIERTOS.includes(r.estatus)).length,
+      vencidos: suyos.filter((r) => ESTATUS_ABIERTOS.includes(r.estatus) && r.fechaLimite < ahora).length,
+      resueltos: resueltos.length,
+      aTiempo,
+      cumplimiento: resueltos.length ? (aTiempo / resueltos.length) * 100 : null,
+      diasPromedio: promedio(resueltos.map((r) => diasHabilesEntre(r.createdAt, r.resueltoAt!, festivos))),
+      primeraRespuestaHoras: promedio(horas.get(d.id) ?? []),
+      reasignadosRecibidos: recibidos.get(d.id) ?? 0,
+    }
+  })
+}
+
+function armarCuadrillas(
+  datos: {
+    cuadrillas: { id: string; nombre: string; dependencia: { nombre: string } | null }[]
+    reportes: ReporteInterno[]
+  },
+  festivos: ReadonlySet<string>,
+): FilaCuadrilla[] {
+  return datos.cuadrillas.map((c) => {
+    const suyos = datos.reportes.filter((r) => r.asignadoAId === c.id)
+    const resueltos = suyos.filter((r) => r.resueltoAt !== null)
+    const aTiempo = resueltos.filter((r) => r.resueltoAt! <= r.fechaLimite).length
+    const califs = resueltos.map((r) => r.calificacion).filter((n): n is number => n !== null)
+    return {
+      id: c.id,
+      nombre: c.nombre,
+      dependencia: c.dependencia?.nombre ?? null,
+      asignadosAbiertos: suyos.filter((r) => ESTATUS_ABIERTOS.includes(r.estatus)).length,
+      resueltos: resueltos.length,
+      aTiempo,
+      cumplimiento: resueltos.length ? (aTiempo / resueltos.length) * 100 : null,
+      diasPromedio: promedio(resueltos.map((r) => diasHabilesEntre(r.createdAt, r.resueltoAt!, festivos))),
+      reabiertos: suyos.filter((r) => r.vecesReabierto > 0).length,
+      calificacionPromedio: promedio(califs),
+    }
+  })
+}
+
+function armarEmbudo(
+  conversaciones: { reporteId: string | null; escaladaAHumano: boolean }[],
+  clasificaciones: { usoFallback: boolean; esEmergencia: boolean }[],
+): EmbudoBot {
+  const total = conversaciones.length
+  const conReporte = conversaciones.filter((c) => c.reporteId !== null).length
+  const escaladas = conversaciones.filter((c) => c.escaladaAHumano).length
+  return {
+    conversaciones: total,
+    conReporte,
+    escaladas,
+    efectividad: total ? (conReporte / total) * 100 : 0,
+    tasaEscalamiento: total ? (escaladas / total) * 100 : 0,
+    clasificacionesIA: clasificaciones.length,
+    usoFallback: clasificaciones.filter((c) => c.usoFallback).length,
+    emergenciasDetectadas: clasificaciones.filter((c) => c.esEmergencia).length,
+  }
+}
+
 export async function calcularIndicadoresInternos(meses = 12): Promise<IndicadoresInternos> {
   const desde = new Date()
   desde.setMonth(desde.getMonth() - meses)
@@ -115,80 +219,11 @@ export async function calcularIndicadoresInternos(meses = 12): Promise<Indicador
     select: { detalle: true },
   })
 
-  // ---------------------------------------------------------------- por dependencia
-  const horasPorDependencia = new Map<number, number[]>()
-  for (const p of primerasRespuestas) {
-    const lista = horasPorDependencia.get(p.dependenciaId) ?? []
-    lista.push(Number(p.horas))
-    horasPorDependencia.set(p.dependenciaId, lista)
-  }
-
-  const recibidosPorDependencia = new Map<number, number>()
-  for (const ev of reasignados) {
-    const destino = (ev.detalle as { a?: number } | null)?.a
-    if (typeof destino === 'number') {
-      recibidosPorDependencia.set(destino, (recibidosPorDependencia.get(destino) ?? 0) + 1)
-    }
-  }
-
-  const promedio = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null)
-
-  const filasDependencia: FilaDependencia[] = dependencias.map((d) => {
-    const suyos = reportes.filter((r) => r.dependenciaId === d.id)
-    const resueltos = suyos.filter((r) => r.resueltoAt !== null)
-    const aTiempo = resueltos.filter((r) => r.resueltoAt! <= r.fechaLimite).length
-    const dias = resueltos.map((r) => diasHabilesEntre(r.createdAt, r.resueltoAt!, festivos))
-
-    return {
-      id: d.id,
-      nombre: d.nombre,
-      abiertos: suyos.filter((r) => ESTATUS_ABIERTOS.includes(r.estatus)).length,
-      vencidos: suyos.filter((r) => ESTATUS_ABIERTOS.includes(r.estatus) && r.fechaLimite < ahora).length,
-      resueltos: resueltos.length,
-      aTiempo,
-      cumplimiento: resueltos.length ? (aTiempo / resueltos.length) * 100 : null,
-      diasPromedio: promedio(dias),
-      primeraRespuestaHoras: promedio(horasPorDependencia.get(d.id) ?? []),
-      reasignadosRecibidos: recibidosPorDependencia.get(d.id) ?? 0,
-    }
-  })
-
-  // ---------------------------------------------------------------- por cuadrilla
-  const filasCuadrilla: FilaCuadrilla[] = cuadrillas.map((c) => {
-    const suyos = reportes.filter((r) => r.asignadoAId === c.id)
-    const resueltos = suyos.filter((r) => r.resueltoAt !== null)
-    const aTiempo = resueltos.filter((r) => r.resueltoAt! <= r.fechaLimite).length
-    const dias = resueltos.map((r) => diasHabilesEntre(r.createdAt, r.resueltoAt!, festivos))
-    const califs = resueltos.map((r) => r.calificacion).filter((n): n is number => n !== null)
-
-    return {
-      id: c.id,
-      nombre: c.nombre,
-      dependencia: c.dependencia?.nombre ?? null,
-      asignadosAbiertos: suyos.filter((r) => ESTATUS_ABIERTOS.includes(r.estatus)).length,
-      resueltos: resueltos.length,
-      aTiempo,
-      cumplimiento: resueltos.length ? (aTiempo / resueltos.length) * 100 : null,
-      diasPromedio: promedio(dias),
-      reabiertos: suyos.filter((r) => r.vecesReabierto > 0).length,
-      calificacionPromedio: promedio(califs),
-    }
-  })
-
-  // ---------------------------------------------------------------- embudo del bot
-  const conReporte = conversaciones.filter((c) => c.reporteId !== null).length
-  const escaladas = conversaciones.filter((c) => c.escaladaAHumano).length
-
-  const bot: EmbudoBot = {
-    conversaciones: conversaciones.length,
-    conReporte,
-    escaladas,
-    efectividad: conversaciones.length ? (conReporte / conversaciones.length) * 100 : 0,
-    tasaEscalamiento: conversaciones.length ? (escaladas / conversaciones.length) * 100 : 0,
-    clasificacionesIA: clasificaciones.length,
-    usoFallback: clasificaciones.filter((c) => c.usoFallback).length,
-    emergenciasDetectadas: clasificaciones.filter((c) => c.esEmergencia).length,
-  }
+  const filasDependencia = armarDependencias(
+    { dependencias, reportes, primerasRespuestas, reasignados }, festivos, ahora,
+  )
+  const filasCuadrilla = armarCuadrillas({ cuadrillas, reportes }, festivos)
+  const bot = armarEmbudo(conversaciones, clasificaciones)
 
   // ---------------------------------------------------------------- reaperturas
   const categorias = await prisma.categoria.findMany({

@@ -84,6 +84,77 @@ function mesesEntre(desde: Date, hasta: Date): string[] {
   return [...new Set(claves)]
 }
 
+/** Cuenta cuántas fechas caen en cada mes del periodo. */
+function contarPorMes(claves: string[], fechas: Date[]): Map<string, number> {
+  const m = new Map(claves.map((k) => [k, 0]))
+  for (const f of fechas) {
+    const k = claveMes(f)
+    const actual = m.get(k)
+    if (actual !== undefined) m.set(k, actual + 1)
+  }
+  return m
+}
+
+/** Resueltos dentro y fuera de plazo, mes a mes. */
+function puntualidadPorMes(
+  claves: string[],
+  resueltos: { resueltoAt: Date | null; fechaLimite: Date }[],
+): Map<string, { aTiempo: number; tarde: number }> {
+  const m = new Map(claves.map((k) => [k, { aTiempo: 0, tarde: 0 }]))
+  for (const r of resueltos) {
+    if (!r.resueltoAt) continue
+    const celda = m.get(claveMes(r.resueltoAt))
+    if (!celda) continue
+    if (r.resueltoAt <= r.fechaLimite) celda.aTiempo++
+    else celda.tarde++
+  }
+  return m
+}
+
+type ResueltoParaPromesa = {
+  categoriaId: number
+  createdAt: Date
+  resueltoAt: Date | null
+  fechaLimite: Date
+}
+
+type CategoriaParaPromesa = {
+  id: number
+  slug: string
+  nombre: string
+  icono: string
+  slaDiasHabiles: number
+}
+
+/**
+ * Cumplimiento real por categoría contra el plazo prometido (SPEC §4.4b).
+ *
+ * Se calcula sobre las fechas ya cargadas, sin volver a la base: el promedio de
+ * días hábiles necesita la tabla de festivos y el huso del municipio, la misma
+ * definición que fija las fechas límite.
+ */
+function armarPromesas(
+  categorias: CategoriaParaPromesa[],
+  resueltos: ResueltoParaPromesa[],
+  festivos: ReadonlySet<string>,
+): Promesa[] {
+  return categorias.map((c) => {
+    const suyos = resueltos.filter((r) => r.categoriaId === c.id && r.resueltoAt !== null)
+    const puntuales = suyos.filter((r) => r.resueltoAt! <= r.fechaLimite).length
+    const dias = suyos.map((r) => diasHabilesEntre(r.createdAt, r.resueltoAt!, festivos))
+    return {
+      slug: c.slug,
+      nombre: c.nombre,
+      icono: c.icono,
+      slaDiasHabiles: c.slaDiasHabiles,
+      resueltos: suyos.length,
+      aTiempo: puntuales,
+      cumplimiento: suyos.length ? (puntuales / suyos.length) * 100 : null,
+      diasPromedio: dias.length ? dias.reduce((a, b) => a + b, 0) / dias.length : null,
+    }
+  })
+}
+
 export async function calcularIndicadores(meses = 12): Promise<Indicadores> {
   const hasta = new Date()
   const desde = new Date(hasta)
@@ -179,46 +250,14 @@ export async function calcularIndicadores(meses = 12): Promise<Indicadores> {
     select: { id: true, slug: true, nombre: true, icono: true, slaDiasHabiles: true },
   })
   const porCat = new Map(categorias.map((c) => [c.id, c]))
-
-  const promesas: Promesa[] = categorias.map((c) => {
-    const suyos = resueltosLista.filter((r) => r.categoriaId === c.id)
-    const puntuales = suyos.filter((r) => r.resueltoAt! <= r.fechaLimite).length
-    const dias = suyos.map((r) => diasHabilesEntre(r.createdAt, r.resueltoAt!, festivos))
-    return {
-      slug: c.slug,
-      nombre: c.nombre,
-      icono: c.icono,
-      slaDiasHabiles: c.slaDiasHabiles,
-      resueltos: suyos.length,
-      aTiempo: puntuales,
-      cumplimiento: suyos.length ? (puntuales / suyos.length) * 100 : null,
-      diasPromedio: dias.length ? dias.reduce((a, b) => a + b, 0) / dias.length : null,
-    }
-  })
+  const promesas = armarPromesas(categorias, resueltosLista, festivos)
 
   // ---------------------------------------------------------------- series mensuales
   const claves = mesesEntre(desde, hasta)
-  const cuentaPorMes = (fechas: Date[]) => {
-    const m = new Map(claves.map((k) => [k, 0]))
-    for (const f of fechas) {
-      const k = claveMes(f)
-      if (m.has(k)) m.set(k, m.get(k)! + 1)
-    }
-    return m
-  }
-
-  const recibidosMes = cuentaPorMes(recibidosPorMes.map((r) => r.createdAt))
-  const resueltosMes = cuentaPorMes(resueltosLista.map((r) => r.resueltoAt!))
-  const reasignadosMes = cuentaPorMes(reasignadosLista.map((r) => r.timestamp))
-
-  const puntualMes = new Map(claves.map((k) => [k, { aTiempo: 0, tarde: 0 }]))
-  for (const r of resueltosLista) {
-    const k = claveMes(r.resueltoAt!)
-    const celda = puntualMes.get(k)
-    if (!celda) continue
-    if (r.resueltoAt! <= r.fechaLimite) celda.aTiempo++
-    else celda.tarde++
-  }
+  const recibidosMes = contarPorMes(claves, recibidosPorMes.map((r) => r.createdAt))
+  const resueltosMes = contarPorMes(claves, resueltosLista.map((r) => r.resueltoAt!))
+  const reasignadosMes = contarPorMes(claves, reasignadosLista.map((r) => r.timestamp))
+  const puntualMes = puntualidadPorMes(claves, resueltosLista)
 
   return {
     generadoAt: new Date().toISOString(),
