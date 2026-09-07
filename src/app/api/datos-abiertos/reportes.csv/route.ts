@@ -1,4 +1,4 @@
-import { generarDataset, DICCIONARIO } from '@/lib/datos-abiertos'
+import { generarDataset, DICCIONARIO } from '@/application/datos-abiertos'
 
 export const revalidate = 300
 

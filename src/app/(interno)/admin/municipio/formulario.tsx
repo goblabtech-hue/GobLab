@@ -8,7 +8,7 @@ import { Alerta } from '@/components/ui/alerta'
 import { Campo, Entrada } from '@/components/ui/campo'
 import { Tarjeta, TarjetaCuerpo } from '@/components/ui/tarjeta'
 import { guardarMunicipio, type Resultado } from './acciones'
-import type { ConfigMunicipio } from '@/lib/config'
+import type { ConfigMunicipio } from '@/infrastructure/config'
 
 const MapaSelector = dynamic(
   () => import('@/components/mapa-selector').then((m) => m.MapaSelector),

@@ -1,9 +1,9 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ShieldAlert } from 'lucide-react'
-import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { ROL, inicioPorRol } from '@/lib/presentacion'
+import { auth } from '@/infrastructure/auth'
+import { prisma } from '@/infrastructure/prisma'
+import { ROL, inicioPorRol } from '@/domain/presentacion'
 import type { Rol } from '@/generated/prisma/enums'
 
 /**

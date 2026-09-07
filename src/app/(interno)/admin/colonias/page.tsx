@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/infrastructure/prisma'
 import { Catalogo } from '../catalogo'
 import { Importador } from '../importador'
 import { guardarColonia, importarColonias } from '../acciones'

@@ -1,9 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { prisma } from '@/lib/prisma'
-import { procesarMensaje } from '@/lib/ia/bot'
-import { hashTelefono } from '@/lib/telefono'
+import { prisma } from '@/infrastructure/prisma'
+import { procesarMensaje } from '@/application/bot'
+import { hashTelefono } from '@/domain/telefono'
 
 /**
  * Acciones del simulador (SPEC §4.1).

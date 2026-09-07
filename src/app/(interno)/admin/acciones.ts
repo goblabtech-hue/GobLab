@@ -2,13 +2,13 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { primerError } from '@/lib/validacion'
-import { prisma } from '@/lib/prisma'
-import { requerirRol, hashearPassword, NoAutorizado } from '@/lib/auth'
-import { invalidarCacheFestivos } from '@/lib/sla'
+import { primerError } from '@/domain/validacion'
+import { prisma } from '@/infrastructure/prisma'
+import { requerirRol, hashearPassword, NoAutorizado } from '@/infrastructure/auth'
+import { invalidarCacheFestivos } from '@/infrastructure/festivos'
 import {
   leerCatalogo, columna, ErrorImportacion, type ResultadoImportacion,
-} from '@/lib/importacion'
+} from '@/application/importacion'
 
 /**
  * Catálogos administrables (SPEC §3: el rol admin gestiona categorías,

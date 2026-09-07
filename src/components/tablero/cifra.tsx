@@ -1,6 +1,6 @@
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react'
 import { Tarjeta, TarjetaCuerpo } from '@/components/ui/tarjeta'
-import type { Comparado } from '@/lib/indicadores'
+import type { Comparado } from '@/application/indicadores'
 
 /**
  * Cifra del resumen con su comparación contra el periodo anterior (SPEC §6.8).

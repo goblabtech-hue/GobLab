@@ -10,7 +10,7 @@ import { Alerta } from '@/components/ui/alerta'
 import { Campo, Entrada, AreaTexto, Selector, Etiqueta, Ayuda } from '@/components/ui/campo'
 import { Tarjeta, TarjetaCuerpo } from '@/components/ui/tarjeta'
 import { IconoCategoria } from '@/components/icono-categoria'
-import { MAX_FOTOS_CIUDADANO } from '@/lib/storage/provider'
+import { MAX_FOTOS_CIUDADANO } from '@/infrastructure/almacenamiento/provider'
 import type { Centro } from '@/components/mapa-selector'
 import { cercanos, enviarReporte, type EstadoReporte } from './acciones'
 

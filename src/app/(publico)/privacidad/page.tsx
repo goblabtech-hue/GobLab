@@ -1,4 +1,4 @@
-import { obtenerConfiguracion } from '@/lib/config'
+import { obtenerConfiguracion } from '@/infrastructure/config'
 import { Alerta } from '@/components/ui/alerta'
 
 export const metadata = {

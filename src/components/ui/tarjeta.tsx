@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@/domain/formato'
 
 export function Tarjeta({ className, ...props }: React.ComponentProps<'div'>) {
   return (

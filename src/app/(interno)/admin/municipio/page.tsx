@@ -1,9 +1,9 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
-import { prisma } from '@/lib/prisma'
-import { requerirRol } from '@/lib/auth'
-import { obtenerConfiguracion, TZ_MUNICIPIO } from '@/lib/config'
-import { fechaHora } from '@/lib/utils'
+import { prisma } from '@/infrastructure/prisma'
+import { requerirRol } from '@/infrastructure/auth'
+import { obtenerConfiguracion, TZ_MUNICIPIO } from '@/infrastructure/config'
+import { fechaHora } from '@/domain/formato'
 import { Alerta } from '@/components/ui/alerta'
 import { FormularioMunicipio } from './formulario'
 

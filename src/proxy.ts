@@ -1,6 +1,6 @@
 import NextAuth from 'next-auth'
 import type { NextFetchEvent, NextRequest } from 'next/server'
-import { authConfig } from '@/lib/auth.config'
+import { authConfig } from '@/infrastructure/auth.config'
 
 /**
  * Next 16 sustituyó `middleware.ts` por `proxy.ts` y exige una función

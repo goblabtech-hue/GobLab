@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
-import { obtenerConfiguracion } from '@/lib/config'
+import { obtenerConfiguracion } from '@/infrastructure/config'
 import './globals.css'
 
 const inter = Inter({ variable: '--font-sans-app', subsets: ['latin'], display: 'swap' })

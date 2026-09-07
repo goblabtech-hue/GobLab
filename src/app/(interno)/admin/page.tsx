@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Tags, Building2, MapPin, CalendarDays, Users, Landmark, Timer } from 'lucide-react'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/infrastructure/prisma'
 import { Tarjeta, TarjetaCuerpo } from '@/components/ui/tarjeta'
 
 export const metadata = { title: 'Administración' }

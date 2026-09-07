@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Megaphone, Search, BarChart3, Phone } from 'lucide-react'
-import { obtenerConfiguracion } from '@/lib/config'
+import { obtenerConfiguracion } from '@/infrastructure/config'
 
 const ENLACES = [
   { href: '/reportar', texto: 'Reportar', icono: Megaphone },

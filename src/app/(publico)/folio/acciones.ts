@@ -1,8 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { calificarReporte, reabrirReporte, ReglaDeNegocio } from '@/lib/reportes'
-import { limitar } from '@/lib/rate-limit'
+import { calificarReporte, reabrirReporte, ReglaDeNegocio } from '@/application/reportes'
+import { limitar } from '@/infrastructure/rate-limit'
 
 export type EstadoCalificacion = { error?: string; ok?: boolean; puedeReabrir?: boolean }
 

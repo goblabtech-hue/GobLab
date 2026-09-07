@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@/domain/formato'
 import { AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react'
 
 const estilos = {

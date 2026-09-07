@@ -1,4 +1,4 @@
-import { fechaHora } from '@/lib/utils'
+import { fechaHora } from '@/domain/formato'
 
 /**
  * Bitácora interna: a diferencia de la línea de tiempo del ciudadano, aquí sí

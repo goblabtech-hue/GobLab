@@ -1,7 +1,7 @@
 'use client'
 
-import { ORIGEN, ESTATUS } from '@/lib/presentacion'
-import type { Indicadores } from '@/lib/indicadores'
+import { ORIGEN, ESTATUS } from '@/domain/presentacion'
+import type { Indicadores } from '@/application/indicadores'
 import {
   BarrasApiladas, BarrasHorizontales, BarrasSimples, COLORES, Grafica,
   LineasMensuales, etiquetaMes,

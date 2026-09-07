@@ -2,11 +2,11 @@
 
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
-import { primerError } from '@/lib/validacion'
-import { crearReporte, posiblesDuplicados, adherirse, ReglaDeNegocio } from '@/lib/reportes'
-import { guardarImagen, ImagenInvalida, MAX_FOTOS_CIUDADANO } from '@/lib/storage'
-import { telefonoValido } from '@/lib/telefono'
-import { limitar } from '@/lib/rate-limit'
+import { primerError } from '@/domain/validacion'
+import { crearReporte, posiblesDuplicados, adherirse, ReglaDeNegocio } from '@/application/reportes'
+import { guardarImagen, ImagenInvalida, MAX_FOTOS_CIUDADANO } from '@/infrastructure/almacenamiento'
+import { telefonoValido } from '@/domain/telefono'
+import { limitar } from '@/infrastructure/rate-limit'
 
 /**
  * Alta de reporte desde el sitio público. Es el único punto del sistema donde

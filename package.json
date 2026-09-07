@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test \"tests/**/*.test.ts\"",
+    "test:unit": "tsx --test \"tests/unit/*.test.ts\"",
+    "test:integration": "tsx --test \"tests/integration/*.test.ts\"",
+    "test:contract": "tsx --test \"tests/contract/*.test.ts\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",

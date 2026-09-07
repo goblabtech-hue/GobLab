@@ -1,9 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { iniciarAtencion, resolverReporte, ReglaDeNegocio } from '@/lib/reportes'
-import { requerirRol, NoAutorizado } from '@/lib/auth'
-import { guardarImagen, ImagenInvalida } from '@/lib/storage'
+import { iniciarAtencion, resolverReporte, ReglaDeNegocio } from '@/application/reportes'
+import { requerirRol, NoAutorizado } from '@/infrastructure/auth'
+import { guardarImagen, ImagenInvalida } from '@/infrastructure/almacenamiento'
 
 export type Resultado = { ok?: boolean; error?: string }
 
@@ -48,7 +48,7 @@ export async function resolver(_p: Resultado, datos: FormData): Promise<Resultad
       throw e
     }
 
-    await resolverReporte(reporteId, u.id, urls, nota)
+    await resolverReporte({ reporteId: reporteId, userId: u.id, fotosEvidencia: urls, notaCierre: nota })
     revalidatePath(`/cuadrilla/${folio}`)
     revalidatePath('/cuadrilla')
     revalidatePath(`/bandeja/${folio}`)

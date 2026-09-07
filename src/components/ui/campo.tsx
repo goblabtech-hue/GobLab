@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@/domain/formato'
 
 const base =
   'w-full rounded-lg border border-borde bg-papel px-3 text-tinta placeholder:text-tenue disabled:opacity-60'

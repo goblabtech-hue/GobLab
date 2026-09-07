@@ -2,10 +2,10 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { primerError } from '@/lib/validacion'
-import { prisma } from '@/lib/prisma'
-import { requerirRol, NoAutorizado } from '@/lib/auth'
-import { invalidarConfiguracion } from '@/lib/config'
+import { primerError } from '@/domain/validacion'
+import { prisma } from '@/infrastructure/prisma'
+import { requerirRol, NoAutorizado } from '@/infrastructure/auth'
+import { invalidarConfiguracion } from '@/infrastructure/config'
 
 export type Resultado = { ok?: boolean; error?: string }
 

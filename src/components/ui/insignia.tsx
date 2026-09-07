@@ -1,15 +1,17 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@/domain/formato'
 
-const tonos = {
+import type { Tono } from '@/domain/presentacion'
+
+const tonos: Record<Tono, string> = {
   neutro: 'bg-lienzo text-tinta-suave border-borde',
   verde: 'bg-verde-50 text-verde-600 border-verde-600/20',
   ambar: 'bg-ambar-50 text-ambar-600 border-ambar-600/20',
   rojo: 'bg-rojo-50 text-rojo-600 border-rojo-600/20',
   azul: 'bg-azul-50 text-azul-600 border-azul-600/20',
   marca: 'bg-marca-50 text-marca-700 border-marca-600/20',
-} as const
+}
 
-export type Tono = keyof typeof tonos
+export type { Tono }
 
 export function Insignia({
   tono = 'neutro', className, ...props

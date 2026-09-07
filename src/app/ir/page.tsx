@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
-import { auth } from '@/lib/auth'
-import { inicioPorRol } from '@/lib/presentacion'
+import { auth } from '@/infrastructure/auth'
+import { inicioPorRol } from '@/domain/presentacion'
 
 /** Punto de aterrizaje tras el login: manda a cada rol a su pantalla. */
 export default async function Ir() {

@@ -1,8 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { moderarPublicacion, ReglaDeNegocio } from '@/lib/reportes'
-import { requerirRol, NoAutorizado } from '@/lib/auth'
+import { moderarPublicacion, ReglaDeNegocio } from '@/application/reportes'
+import { requerirRol, NoAutorizado } from '@/infrastructure/auth'
 
 export type Resultado = { ok?: boolean; error?: string }
 

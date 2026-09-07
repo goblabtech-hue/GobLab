@@ -3,7 +3,7 @@ import {
   RotateCcw, Bell, Star, Users, Copy, Ban, Eye, MessageSquare,
   type LucideIcon,
 } from 'lucide-react'
-import { fechaHora, haceCuanto } from '@/lib/utils'
+import { fechaHora, haceCuanto } from '@/domain/formato'
 
 /**
  * Línea de tiempo en lenguaje ciudadano. Se omiten a propósito los eventos

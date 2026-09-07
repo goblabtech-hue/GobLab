@@ -5,10 +5,10 @@ import { z } from 'zod'
 import {
   asignarCuadrilla, reasignarDependencia, marcarImprocedente, marcarDuplicado,
   iniciarAtencion, ReglaDeNegocio,
-} from '@/lib/reportes'
-import { prisma } from '@/lib/prisma'
-import { requerirRol, NoAutorizado, ROLES_VEN_TELEFONO } from '@/lib/auth'
-import { descifrarTelefono } from '@/lib/telefono'
+} from '@/application/reportes'
+import { prisma } from '@/infrastructure/prisma'
+import { requerirRol, NoAutorizado, ROLES_VEN_TELEFONO } from '@/infrastructure/auth'
+import { descifrarTelefono } from '@/domain/telefono'
 
 export type Resultado = { ok?: boolean; error?: string }
 
@@ -52,7 +52,7 @@ export async function accionReasignar(_p: Resultado, datos: FormData): Promise<R
   if (!base.success || !Number.isInteger(dependenciaId)) return { error: 'Elige la dependencia.' }
 
   const r = await ejecutar((uid) =>
-    reasignarDependencia(base.data.reporteId, dependenciaId, motivo, uid))
+    reasignarDependencia({ reporteId: base.data.reporteId, dependenciaId: dependenciaId, motivo: motivo, userId: uid }))
   if (r.ok) refrescar(base.data.folio)
   return r
 }

@@ -1,11 +1,12 @@
 import 'dotenv/config'
 import crypto from 'node:crypto'
-import { prisma } from '../src/lib/prisma'
-import { obtenerConfiguracion, invalidarConfiguracion, CONFIG_POR_DEFECTO } from '../src/lib/config'
-import { calcularFechaLimite, cargarFestivos, invalidarCacheFestivos } from '../src/lib/sla'
-import { derivarTelefono } from '../src/lib/telefono'
-import { formatearFolio } from '../src/lib/folio'
-import { hashearPassword } from '../src/lib/auth'
+import { prisma } from '../src/infrastructure/prisma'
+import { obtenerConfiguracion, invalidarConfiguracion, CONFIG_POR_DEFECTO } from '../src/infrastructure/config'
+import { calcularFechaLimite } from '../src/domain/dias-habiles'
+import { cargarFestivos, invalidarCacheFestivos } from '../src/infrastructure/festivos'
+import { derivarTelefono } from '../src/domain/telefono'
+import { formatearFolio } from '../src/domain/folio'
+import { hashearPassword } from '../src/infrastructure/auth'
 import {
   CATEGORIAS, COLONIAS, DEPENDENCIAS, DESCRIPCIONES, USUARIOS, festivosOficiales,
 } from './catalogos'

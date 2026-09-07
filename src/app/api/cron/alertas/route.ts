@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { evaluarAlertas } from '@/lib/alertas'
-import { autorizadoComoCron, noAutorizado } from '@/lib/cron'
+import { evaluarAlertas } from '@/application/alertas'
+import { autorizadoComoCron, noAutorizado } from '@/infrastructure/cron'
 
 export const dynamic = 'force-dynamic'
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { limpiarLimites } from '@/lib/rate-limit'
-import { autorizadoComoCron, noAutorizado } from '@/lib/cron'
+import { limpiarLimites } from '@/infrastructure/rate-limit'
+import { autorizadoComoCron, noAutorizado } from '@/infrastructure/cron'
 
 export const dynamic = 'force-dynamic'
 

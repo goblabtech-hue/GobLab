@@ -1,7 +1,7 @@
 import { Download, FileJson, FileSpreadsheet } from 'lucide-react'
-import { prisma } from '@/lib/prisma'
-import { DICCIONARIO } from '@/lib/datos-abiertos'
-import { numero } from '@/lib/utils'
+import { prisma } from '@/infrastructure/prisma'
+import { DICCIONARIO } from '@/application/datos-abiertos'
+import { numero } from '@/domain/formato'
 import { Tarjeta, TarjetaCuerpo } from '@/components/ui/tarjeta'
 import { Alerta } from '@/components/ui/alerta'
 

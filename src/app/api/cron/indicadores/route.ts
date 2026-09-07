@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { refrescarIndicadores } from '@/lib/indicadores'
-import { autorizadoComoCron, noAutorizado } from '@/lib/cron'
+import { refrescarIndicadores } from '@/application/indicadores'
+import { autorizadoComoCron, noAutorizado } from '@/infrastructure/cron'
 
 export const dynamic = 'force-dynamic'
 

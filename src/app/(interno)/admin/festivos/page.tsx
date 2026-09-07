@@ -1,5 +1,5 @@
 import { CalendarDays, Trash2 } from 'lucide-react'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/infrastructure/prisma'
 import { Tarjeta, TarjetaCuerpo } from '@/components/ui/tarjeta'
 import { Boton } from '@/components/ui/boton'
 import { Alerta } from '@/components/ui/alerta'

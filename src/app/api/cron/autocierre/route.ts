@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { autocerrarResueltos } from '@/lib/reportes'
-import { autorizadoComoCron, noAutorizado } from '@/lib/cron'
+import { autocerrarResueltos } from '@/application/reportes'
+import { autorizadoComoCron, noAutorizado } from '@/infrastructure/cron'
 
 export const dynamic = 'force-dynamic'
 

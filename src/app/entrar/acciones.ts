@@ -2,8 +2,8 @@
 
 import { AuthError } from 'next-auth'
 import { z } from 'zod'
-import { primerError } from '@/lib/validacion'
-import { signIn, signOut } from '@/lib/auth'
+import { primerError } from '@/domain/validacion'
+import { signIn, signOut } from '@/infrastructure/auth'
 
 const schema = z.object({
   email: z.string().trim().email('Escribe un correo válido.'),

@@ -1,5 +1,5 @@
-import { prisma } from '@/lib/prisma'
-import { obtenerConfiguracion } from '@/lib/config'
+import { prisma } from '@/infrastructure/prisma'
+import { obtenerConfiguracion } from '@/infrastructure/config'
 import { FormularioReporte } from './formulario'
 
 export const metadata = {

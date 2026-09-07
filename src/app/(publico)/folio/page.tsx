@@ -4,7 +4,7 @@ import { Boton } from '@/components/ui/boton'
 import { Campo, Entrada } from '@/components/ui/campo'
 import { Alerta } from '@/components/ui/alerta'
 import { Tarjeta, TarjetaCuerpo } from '@/components/ui/tarjeta'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/infrastructure/prisma'
 
 export const metadata = { title: 'Consultar mi folio' }
 

@@ -1,6 +1,6 @@
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/infrastructure/prisma'
 import { Insignia } from '@/components/ui/insignia'
-import { ROL } from '@/lib/presentacion'
+import { ROL } from '@/domain/presentacion'
 import { Catalogo } from '../catalogo'
 import { guardarUsuario } from '../acciones'
 

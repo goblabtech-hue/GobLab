@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { procesarMensaje } from '@/lib/ia/bot'
-import { TelegramProvider, webhookTelegramAutorizado } from '@/lib/mensajeria'
+import { procesarMensaje } from '@/application/bot'
+import { TelegramProvider, webhookTelegramAutorizado } from '@/infrastructure/mensajeria'
 
 export const dynamic = 'force-dynamic'
 

@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/infrastructure/prisma'
 import { Insignia } from '@/components/ui/insignia'
 import { Catalogo } from '../catalogo'
 import { Importador } from '../importador'
