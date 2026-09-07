@@ -7,6 +7,8 @@ import { cargarFestivos } from '@/infrastructure/festivos'
 import { ESTATUS, ESTATUS_ABIERTOS, ORIGEN, PRIORIDAD, SEMAFORO } from '@/domain/presentacion'
 import { fecha, haceCuanto, numero } from '@/domain/formato'
 import { Tarjeta } from '@/components/ui/tarjeta'
+import { cargaPorArea } from '@/application/reportes'
+import { ResumenAreas } from './areas'
 import { Insignia } from '@/components/ui/insignia'
 import { Boton } from '@/components/ui/boton'
 import { Entrada, Selector } from '@/components/ui/campo'
@@ -26,7 +28,10 @@ export default async function PaginaBandeja({ searchParams }: PageProps<'/bandej
   const sp = await searchParams
 
   const q = param(sp.q).trim()
-  const fEstatus = param(sp.estatus)
+  // Sin filtro explícito, la bandeja abre en lo que hay que atender. Mostrar
+  // todo por omisión ponía reportes cerrados hace dos años en los primeros
+  // renglones, que es justo lo que nadie necesita ver al llegar.
+  const fEstatus = 'estatus' in sp ? param(sp.estatus) : 'abiertos'
   const fCategoria = param(sp.categoria)
   const fColonia = param(sp.colonia)
   const fDependencia = param(sp.dependencia)
@@ -60,7 +65,7 @@ export default async function PaginaBandeja({ searchParams }: PageProps<'/bandej
       : {}),
   }
 
-  const [reportes, total, categorias, colonias, dependencias, festivos, vencidos] =
+  const [reportes, total, categorias, colonias, dependencias, festivos, vencidos, areas] =
     await Promise.all([
       prisma.reporte.findMany({
         where,
@@ -85,6 +90,9 @@ export default async function PaginaBandeja({ searchParams }: PageProps<'/bandej
       prisma.reporte.count({
         where: { estatus: { in: ESTATUS_ABIERTOS }, fechaLimite: { lt: new Date() } },
       }),
+      // Un supervisor solo ve la carga de su área; operación y administración,
+      // la de todas.
+      cargaPorArea(usuario.rol === 'supervisor' ? usuario.dependenciaId : null),
     ])
 
   const paginas = Math.max(1, Math.ceil(total / POR_PAGINA))
@@ -95,8 +103,11 @@ export default async function PaginaBandeja({ searchParams }: PageProps<'/bandej
         <h1 className="text-xl font-semibold tracking-tight">Bandeja de reportes</h1>
         <p className="text-sm text-tinta-suave">
           {numero(total)} {total === 1 ? 'reporte' : 'reportes'}
+          {fEstatus === 'abiertos' && ' abiertos'}
         </p>
       </div>
+
+      <ResumenAreas areas={areas} />
 
       {vencidos > 0 && !soloVencidos && (
         <Link href="/bandeja?vencidos=1" className="block">
@@ -123,8 +134,8 @@ export default async function PaginaBandeja({ searchParams }: PageProps<'/bandej
           </div>
 
           <Selector name="estatus" defaultValue={fEstatus} aria-label="Estatus">
-            <option value="">Todos los estatus</option>
             <option value="abiertos">Solo abiertos</option>
+            <option value="">Todos los estatus</option>
             {Object.entries(ESTATUS).map(([k, v]) => (
               <option key={k} value={k}>{v.interno}</option>
             ))}

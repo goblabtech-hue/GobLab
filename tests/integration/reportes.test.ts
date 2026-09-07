@@ -335,3 +335,31 @@ describe('reportesDeTelefono', () => {
     assert.ok(folios.includes(ajeno.folio), 'debe traer aquel al que se adhirió')
   })
 })
+
+describe('carga por área', () => {
+  test('los vencidos son un subconjunto de los abiertos, por área', async () => {
+    const { cargaPorArea } = await import('../../src/application/reportes')
+    const areas = await cargaPorArea()
+    assert.ok(areas.length > 0, 'debe haber áreas registradas')
+    for (const a of areas) {
+      assert.ok(a.vencidos <= a.abiertos, `${a.nombre}: ${a.vencidos} vencidos de ${a.abiertos} abiertos`)
+      assert.ok(a.sinCuadrilla <= a.abiertos, `${a.nombre}: más sin cuadrilla que abiertos`)
+    }
+  })
+
+  test('ordena poniendo primero a quien tiene vencidos', async () => {
+    const { cargaPorArea } = await import('../../src/application/reportes')
+    const areas = await cargaPorArea()
+    const vencidos = areas.map((a) => a.vencidos)
+    assert.deepEqual(vencidos, [...vencidos].sort((a, b) => b - a),
+      'lo que exige acción va arriba')
+  })
+
+  test('acotar a un área devuelve solo esa', async () => {
+    const { cargaPorArea } = await import('../../src/application/reportes')
+    const todas = await cargaPorArea()
+    const una = await cargaPorArea(todas[0]!.id)
+    assert.equal(una.length, 1)
+    assert.equal(una[0]!.id, todas[0]!.id)
+  })
+})
