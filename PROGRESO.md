@@ -495,3 +495,47 @@ inglés; y `nodemailer` tenía una vulnerabilidad alta corregida en la versión 
 se había escrito. Siete líneas de trabajo ordenadas por lo que multiplica el
 valor de lo que ya existe, con lo que cada una depende, y una sección de lo que
 deliberadamente **no** está en el roadmap y por qué.
+
+## Canal de Telegram: conexión y un reporte real
+
+Se preparó todo lo que faltaba para que el bot de Telegram atienda gente de
+verdad, y se levantó el primer reporte por ese canal.
+
+**`scripts/telegram-conectar.sh`** (`npm run telegram:conectar`) pide el token a
+quien lo tenga, lo verifica contra Telegram, genera el secreto del webhook y
+registra la URL. El token **no se pasa como argumento**: se teclea a ciegas y se
+guarda en `.env`. Un token en la línea de comandos queda en el historial del
+shell y es legible por cualquier proceso de la máquina en `ps`, y este token
+permite escribirle a nombre del municipio a todo el que le haya escrito al bot.
+
+**`scripts/telegram-ensayo.ts`** (`npm run telegram:ensayo`) conduce una
+conversación completa contra el webhook real —mismo endpoint, misma verificación
+de secreto, mismo motor— alimentándolo con los objetos `Update` exactos que
+mandan los servidores de Telegram, y después verifica contra la base lo que
+quedó guardado. Permite probar el canal antes de tener token y detectar
+regresiones sin depender de un servicio externo ni de un túnel.
+
+**El defecto que esto destapó.** En `manejarConfirmacion`, el `update` posterior
+al alta traía `origen: entrante.canal === 'telegram' ? 'whatsapp' : 'whatsapp'`.
+Las dos ramas del ternario daban lo mismo, así que pisaba el `origen: 'telegram'`
+que `crearReporte` acababa de guardar bien. Todo reporte levantado por Telegram
+se habría contado como WhatsApp — justo lo que el comentario tres líneas arriba
+advertía que no debía pasar. No es cosmético: la gráfica de canales del tablero
+público habría dicho que nadie usa Telegram, y el municipio habría decidido en
+qué canal invertir con un dato falso.
+
+Ninguna de las 170 pruebas lo detectó, y la razón importa: **todas las pruebas
+del bot corrían por el simulador**, donde `'whatsapp'` es el valor correcto. El
+bug solo existía en la rama de Telegram, que ninguna prueba recorría de punta a
+punta. Se agregó esa prueba, y se comprobó que falla 3 de 3 veces al
+reintroducir el defecto.
+
+La primera versión de esa prueba pasaba **con el bug puesto**: cuando el bot
+ofrecía adherirse a un reporte cercano, el `sí` de la prueba significaba «es el
+mismo problema», y entonces leía el folio del reporte ajeno al que se adhirió.
+Ahora busca su reporte por una descripción única en vez de por el folio del
+mensaje, así que no puede confundirse con otro.
+
+**Lo que sigue faltando:** el token de @BotFather —solo lo puede pedir una
+persona desde su Telegram— y una URL pública, porque Telegram empuja los
+mensajes en vez de consultarlos y `localhost` no es alcanzable.

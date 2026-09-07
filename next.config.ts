@@ -46,7 +46,26 @@ const cabeceras = [
   { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
 ]
 
+/**
+ * Orígenes extra permitidos en desarrollo.
+ *
+ * Para probar el bot de Telegram hace falta un túnel (ngrok), y entonces el
+ * navegador y los webhooks llegan con un `Host` que no es localhost. Next 16
+ * rechaza eso en modo desarrollo salvo que el origen esté declarado aquí.
+ *
+ * Es una lista separada por comas en DEV_ORIGENES_PERMITIDOS, sin protocolo:
+ *   DEV_ORIGENES_PERMITIDOS="abc123.ngrok-free.app"
+ *
+ * Solo aplica en desarrollo; en producción Next ignora esta opción.
+ */
+const origenesDev = (process.env.DEV_ORIGENES_PERMITIDOS ?? '')
+  .split(',')
+  .map((o) => o.trim().replace(/^https?:\/\//, '').replace(/\/$/, ''))
+  .filter(Boolean)
+
 const nextConfig: NextConfig = {
+  ...(origenesDev.length > 0 ? { allowedDevOrigins: origenesDev } : {}),
+
   async headers() {
     return [
       { source: '/:path*', headers: cabeceras },

@@ -172,6 +172,69 @@ describe('alta de reporte por el bot', () => {
   })
 })
 
+describe('el canal queda registrado como lo que es', () => {
+  const CHAT_TG = '881234567'
+  let m = 0
+  const enTelegram = (texto: string, extra: Record<string, unknown> = {}) =>
+    procesarMensaje({
+      canal: 'telegram', chatId: CHAT_TG, idExterno: `tg${Date.now()}-${++m}`,
+      texto, nombre: 'Laura', ...extra,
+    })
+
+  after(async () => {
+    await prisma.conversacionBot.deleteMany({
+      where: { canal: 'telegram', chatIdHash: hashTelefono(CHAT_TG) },
+    })
+  })
+
+  /**
+   * Esta prueba nace de un error real: el alta fijaba `origen: 'telegram'` y
+   * un `update` posterior lo sobrescribía con `'whatsapp'` en las dos ramas de
+   * un ternario. Las demás pruebas del bot corren por el simulador, donde el
+   * valor correcto ES 'whatsapp', así que ninguna lo notó. La consecuencia no
+   * era cosmética: la gráfica de canales del tablero público habría dicho que
+   * nadie usa Telegram, y el municipio habría decidido dónde invertir con un
+   * dato falso.
+   */
+  test('un reporte levantado por Telegram no se cuenta como WhatsApp', async () => {
+    const marca = `bache en la calle, prueba de canal telegram ${Date.now()}`
+    await enTelegram('/start')
+    await enTelegram(marca)
+    await enTelegram('1')
+    await enTelegram('seguir')
+
+    // La oferta de adherirse llega como respuesta a la UBICACIÓN, no al «sí».
+    // Si se contesta «sí» ahí, el ciudadano se suma a un reporte ajeno y no se
+    // crea nada: la prueba leería el folio de otro y pasaría sin probar nada.
+    let salida = await enTelegram('', { ubicacion: { lat: 20.0533, lng: -99.3421 } })
+    if (salida.some((r) => r.texto.includes('¿Es el mismo problema?'))) {
+      salida = await enTelegram('no')
+    }
+    assert.ok(
+      salida.some((r) => r.texto.includes('Voy a registrar esto')),
+      'debe estar pidiendo la confirmación final',
+    )
+
+    salida = await enTelegram('si')
+
+    // Se busca por la descripción, no por el folio del mensaje: así se
+    // garantiza que lo que se revisa es el reporte que ESTA prueba levantó.
+    const r = await prisma.reporte.findFirstOrThrow({
+      where: { descripcion: marca },
+      select: { folio: true, origen: true, canalNotificacion: true, telefonoHash: true },
+    })
+    creados.push(r.folio)
+
+    assert.ok(salida.some((m) => m.texto.includes(r.folio)), 'debe darle su folio al ciudadano')
+    assert.equal(r.origen, 'telegram', 'el origen debe ser el canal real, no whatsapp')
+    assert.equal(r.canalNotificacion, 'telegram', 'hay que responderle por donde escribió')
+    assert.equal(
+      r.telefonoHash, null,
+      'en Telegram el chat id no es un teléfono y no debe guardarse como tal',
+    )
+  })
+})
+
 describe('interpretación de los canales', () => {
   test('Telegram: texto, ubicación, contacto y foto', () => {
     const t = new TelegramProvider()

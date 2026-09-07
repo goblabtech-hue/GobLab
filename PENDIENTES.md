@@ -95,16 +95,58 @@ incumplidos a los reportes ya resueltos.
 ## 4. Dar de alta los bots
 
 ### Telegram — es el más rápido, no requiere trámite
-1. En Telegram, escríbele a **@BotFather** y manda `/newbot`.
-2. Te da un token: ponlo en `TELEGRAM_BOT_TOKEN`.
-3. Inventa un secreto (`openssl rand -hex 32`) y ponlo en `TELEGRAM_WEBHOOK_SECRET`.
-4. Registra el webhook:
+
+Todo el cableado ya está hecho. Solo falta el token, que únicamente lo puede
+pedir una persona desde su Telegram:
+
+1. Busca el contacto **@BotFather** y mándale `/newbot`.
+2. Te pide un nombre visible (p. ej. `Atención Ciudadana Tula`) y un usuario
+   que debe terminar en `bot` (p. ej. `TulaAtencionBot`).
+3. Te responde con un token: una línea como `8123456789:AAH…`.
+4. Corre esto y pégalo cuando lo pida:
 
 ```bash
-curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
-  -d "url=https://TU-DOMINIO/api/webhooks/telegram" \
-  -d "secret_token=$TELEGRAM_WEBHOOK_SECRET"
+npm run telegram:conectar
 ```
+
+El script guarda el token en `.env` (que no se sube a git), genera el secreto
+del webhook, verifica el token contra Telegram y registra la URL. **El token no
+se pasa como argumento**: se teclea a ciegas, para que no quede en el historial
+del shell ni en la lista de procesos de la máquina.
+
+Después hay que reiniciar el servidor: Next.js lee `.env` al arrancar.
+
+#### Hace falta una URL pública
+
+Telegram no consulta tu servidor: te empuja cada mensaje a una URL, así que
+`localhost` no sirve. En producción es el dominio del municipio:
+
+```bash
+npm run telegram:conectar -- https://tula.gob.mx
+```
+
+En desarrollo, un túnel en otra terminal (el script lo detecta solo):
+
+```bash
+ngrok http 3000
+```
+
+Con túnel hay que agregar el host que da ngrok a `DEV_ORIGENES_PERMITIDOS` en
+`.env`, o Next 16 rechaza las peticiones por venir de otro origen.
+
+#### Comprobar sin Telegram
+
+`npm run telegram:ensayo` levanta una conversación completa contra el webhook
+real —mismo endpoint, misma verificación de secreto, mismo motor— alimentándolo
+con los objetos `Update` que manda Telegram, y verifica que el reporte quede
+bien guardado. Sirve para probar el canal antes de tener token, y como prueba
+de regresión después de tocar el bot.
+
+Lo único que no ejercita es la entrega de vuelta hacia Telegram, que sí
+necesita el token.
+
+Para ver cómo quedó el registro: `npm run telegram:estado`.
+Para apagarlo: `bash scripts/telegram-conectar.sh --desconectar`.
 
 Telegram **no firma sus webhooks**: ese secreto es la única defensa contra que
 alguien que adivine la URL cree reportes falsos.

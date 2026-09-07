@@ -262,12 +262,12 @@ export async function manejarConfirmacion(
     })
 
     // A dónde avisarle después (Telegram no tiene teléfono necesariamente).
+    // El `origen` ya lo fijó `crearReporte` con el canal real; no se toca aquí.
     await prisma.reporte.update({
       where: { id: reporte.id },
       data: {
         canalNotificacion: entrante.canal,
         destinoNotificacion: cifrarTelefono(chatId),
-        origen: entrante.canal === 'telegram' ? 'whatsapp' : 'whatsapp',
       },
     })
     await prisma.conversacionBot.update({
