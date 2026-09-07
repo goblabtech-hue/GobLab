@@ -12,12 +12,69 @@ Tiempo aproximado: 40 minutos, de los cuales 30 son esperar al DNS.
 
 | Pieza | Para qué | Costo aproximado |
 |---|---|---|
-| Un VPS con Ubuntu 24.04 | Correr la plataforma | 5–12 USD/mes |
+| Un VPS con Ubuntu 24.04 | Correr la plataforma | 4–12 USD/mes |
 | El dominio (ya lo tienen) | Que la gente lo encuentre | ya pagado |
 | — | HTTPS | gratis (Let's Encrypt vía Caddy) |
 
-Sobre el VPS: 2 GB de RAM es el mínimo cómodo. El build de Next.js es lo que
-más memoria consume; con 1 GB hay que agregar swap o compilar en otra máquina.
+### Elegir el VPS
+
+**2 GB de RAM es suficiente.** El build de Next.js es lo único que pide mucha
+memoria, y el instalador agrega 4 GB de swap automáticamente si detecta menos
+de 3.5 GB. El swap es lento, pero solo se usa al compilar; atender gente no lo
+toca. Sin swap, una máquina de 2 GB muere a media compilación con un `Killed`
+que no explica nada.
+
+**La ubicación importa más de lo que parece**, por dos razones distintas:
+
+1. *Latencia.* Un servidor en Alemania son ~150 ms de ida y vuelta desde
+   Hidalgo; uno en Ciudad de México, ~10 ms. Se nota al cargar el mapa.
+2. *El aviso de privacidad.* La plataforma guarda teléfonos de ciudadanos.
+   Si el servidor está fuera del país, eso es una transferencia internacional
+   de datos personales y el aviso tiene que declararla — es justo el tipo de
+   pregunta que sale en la revisión jurídica del ayuntamiento y que puede
+   detener la firma. Con el servidor en México, el punto no existe.
+
+| Proveedor | Ubicación útil | Aproximado | Nota |
+|---|---|---|---|
+| **Vultr** | **Ciudad de México** | ~10 USD/mes por 2 GB | Lo recomendado: es el único de los tres con centro de datos en México |
+| Hetzner | Alemania / Virginia | ~4 EUR/mes por 4 GB | El más barato con diferencia, pero fuera del país |
+| DigitalOcean | Nueva York / San Francisco | ~12 USD/mes por 2 GB | Documentación excelente en español |
+
+Los precios cambian: confírmalos en la página del proveedor antes de contratar.
+Cualquiera de los tres sirve — el instalador es el mismo.
+
+### Antes de crear la máquina: una llave SSH
+
+El formulario del proveedor te va a pedir una llave SSH. Si no le das una, te
+manda la contraseña de root por correo — y esa contraseña queda en tu bandeja
+de entrada para siempre, mientras robots de todo el mundo prueban contraseñas
+contra el puerto 22 de tu servidor desde el primer minuto.
+
+Si nunca has creado una:
+
+```bash
+ssh-keygen -t ed25519 -C "demosvoz"
+```
+
+Acepta la ruta que propone y **pon una frase de contraseña**: si alguien copia
+el archivo de tu Mac, sin la frase no le sirve. Luego copia la llave pública
+al portapapeles para pegarla en el formulario:
+
+```bash
+pbcopy < ~/.ssh/id_ed25519.pub
+```
+
+Se pega el contenido de `.pub` —el archivo terminado en `.pub`, nunca el
+otro—. El que no lleva extensión es la llave privada y no sale de tu máquina.
+
+Al crear la máquina: **Ubuntu 24.04 LTS**, la llave SSH pegada, y la ubicación
+que hayas elegido arriba.
+
+Cuando termine, el proveedor te da una **IP pública**. Comprueba que entras:
+
+```bash
+ssh root@LA-IP
+```
 
 > **Una nota sobre el dominio.** `demosvoz.com` es el dominio del producto,
 > no el del ayuntamiento, y para una demostración comercial está bien así. Pero

@@ -29,6 +29,36 @@ BASE=atencion_ciudadana
 
 paso() { printf '\n\033[1;36m▸ %s\033[0m\n' "$*"; }
 
+paso "Revisando la máquina"
+CODENAME=$(. /etc/os-release && echo "$VERSION_CODENAME")
+echo "  Sistema: $(. /etc/os-release && echo "$PRETTY_NAME")"
+case "$CODENAME" in
+  noble|jammy) ;;
+  *) echo "  Aviso: este script se escribió para Ubuntu 24.04 (noble)."
+     echo "  En $CODENAME puede funcionar, pero no está probado." ;;
+esac
+
+RAM_MB=$(free -m | awk '/^Mem:/{print $2}')
+echo "  Memoria: ${RAM_MB} MB"
+
+# El build de Next.js es con mucho lo que más memoria pide de todo el ciclo.
+# En una máquina de 2 GB se queda sin memoria y el kernel mata el proceso, con
+# un error que no dice "te faltó RAM" sino un críptico "Killed". El swap
+# convierte un VPS de 10 dólares en uno suficiente; es lento, pero solo se usa
+# durante la compilación, no al atender a la gente.
+if [ "$RAM_MB" -lt 3500 ] && ! swapon --show | grep -q .; then
+  paso "Agregando 4 GB de swap (la memoria no alcanza para compilar)"
+  fallocate -l 4G /swapfile
+  chmod 600 /swapfile
+  mkswap /swapfile >/dev/null
+  swapon /swapfile
+  grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+  # Con swap de emergencia conviene que el sistema lo use lo menos posible.
+  sysctl -qw vm.swappiness=10
+  grep -q '^vm.swappiness' /etc/sysctl.conf || echo 'vm.swappiness=10' >> /etc/sysctl.conf
+  free -h | sed 's/^/  /'
+fi
+
 paso "Actualizando el sistema"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
