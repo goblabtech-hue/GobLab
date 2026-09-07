@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma migrate deploy && next build",
+    "build:local": "next build",
     "start": "next start",
     "lint": "eslint",
+    "postinstall": "prisma generate",
     "test": "tsx --test \"tests/**/*.test.ts\"",
     "test:unit": "tsx --test \"tests/unit/*.test.ts\"",
     "test:integration": "tsx --test \"tests/integration/*.test.ts\"",

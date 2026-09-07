@@ -7,6 +7,7 @@ tablero público con datos abiertos.
 La especificación completa está en [`SPEC.md`](SPEC.md). Las decisiones de
 diseño y las correcciones al spec, en [`DECISIONES.md`](DECISIONES.md). Lo que
 falta llenar con datos reales del municipio, en [`PENDIENTES.md`](PENDIENTES.md).
+- **[DESPLIEGUE.md](DESPLIEGUE.md)** — poner el sitio en vivo en un servidor propio: dominio, HTTPS y tareas programadas.
 El avance por fases, en [`PROGRESO.md`](PROGRESO.md).
 
 ---

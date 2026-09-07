@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Megaphone, Search, BarChart3, Phone } from 'lucide-react'
 import { obtenerConfiguracion } from '@/infrastructure/config'
+import { AvisoDemo } from '@/components/aviso-demo'
 
 const ENLACES = [
   { href: '/reportar', texto: 'Reportar', icono: Megaphone },
@@ -13,6 +14,8 @@ export default async function LayoutPublico({ children }: { children: React.Reac
 
   return (
     <div className="flex min-h-full flex-col">
+      <AvisoDemo municipio={municipio.nombre} />
+
       <header className="sticky top-0 z-40 border-b border-borde bg-papel/95 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-3 px-4">
           <Link href="/" className="mr-auto min-w-0 truncate font-semibold text-marca-700">

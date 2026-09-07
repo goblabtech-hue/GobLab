@@ -6,6 +6,7 @@ import { RUTAS_PROTEGIDAS } from '@/infrastructure/auth.config'
 import { ROL } from '@/domain/presentacion'
 import { obtenerConfiguracion } from '@/infrastructure/config'
 import { Boton } from '@/components/ui/boton'
+import { AvisoDemo } from '@/components/aviso-demo'
 import { salir } from '@/app/entrar/acciones'
 import { NavInterna } from './nav'
 
@@ -30,6 +31,8 @@ export default async function LayoutInterno({ children }: LayoutProps<'/'>) {
 
   return (
     <div className="flex min-h-full flex-col">
+      <AvisoDemo municipio={municipio.nombre} />
+
       <header className="sticky top-0 z-40 border-b border-borde bg-papel">
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4">
           <Link href="/" className="shrink-0 text-sm font-semibold text-marca-700">

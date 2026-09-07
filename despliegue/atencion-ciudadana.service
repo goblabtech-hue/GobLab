@@ -1,0 +1,25 @@
+[Unit]
+Description=Plataforma de Atención Ciudadana
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=atencion
+WorkingDirectory=/opt/atencion-ciudadana
+Environment=NODE_ENV=production
+Environment=PORT=3000
+# -H 127.0.0.1: la aplicación no se asoma a internet por su cuenta; solo Caddy
+# la alcanza. Sin esto, el puerto 3000 quedaría accesible saltándose el HTTPS.
+ExecStart=/usr/bin/npm run start -- -H 127.0.0.1 -p 3000
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/atencion-ciudadana
+
+[Install]
+WantedBy=multi-user.target

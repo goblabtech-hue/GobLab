@@ -20,11 +20,38 @@ import type { NextConfig } from 'next'
  */
 const enDesarrollo = process.env.NODE_ENV !== 'production'
 
+/**
+ * Origen público de las fotos.
+ *
+ * Con `STORAGE_DRIVER=local` las fotos se sirven desde `/uploads` y `'self'`
+ * las cubre. Pero en un despliegue sin disco escribible (Vercel y cualquier
+ * plataforma serverless) hay que usar almacenamiento externo, y entonces las
+ * fotos viven en otro dominio. Sin declararlo aquí pasan dos cosas y las dos
+ * son invisibles hasta que alguien sube una foto: la CSP bloquea la imagen sin
+ * decir nada, y `next/image` revienta con "hostname is not configured".
+ *
+ * Se deriva de S3_PUBLIC_URL para no tener que mantener el dominio en tres
+ * lugares. Tiene que estar disponible en tiempo de compilación.
+ */
+const almacenamiento = (() => {
+  const crudo = process.env.S3_PUBLIC_URL?.trim()
+  if (!crudo) return null
+  try {
+    const url = new URL(crudo)
+    return { origen: url.origin, protocolo: url.protocol.replace(':', ''), host: url.hostname }
+  } catch {
+    // Una URL mal escrita no debe tumbar el build: se avisa y se sigue con
+    // 'self', que es exactamente el síntoma que el mensaje describe.
+    console.warn(`[next.config] S3_PUBLIC_URL no es una URL válida: ${crudo}`)
+    return null
+  }
+})()
+
 const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${enDesarrollo ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://*.tile.openstreetmap.org",
+  `img-src 'self' data: blob: https://*.tile.openstreetmap.org${almacenamiento ? ` ${almacenamiento.origen}` : ''}`,
   "font-src 'self' data:",
   `connect-src 'self'${enDesarrollo ? ' ws: wss:' : ''}`,
   "form-action 'self'",
@@ -65,6 +92,18 @@ const origenesDev = (process.env.DEV_ORIGENES_PERMITIDOS ?? '')
 
 const nextConfig: NextConfig = {
   ...(origenesDev.length > 0 ? { allowedDevOrigins: origenesDev } : {}),
+
+  ...(almacenamiento
+    ? {
+        images: {
+          remotePatterns: [{
+            protocol: almacenamiento.protocolo as 'http' | 'https',
+            hostname: almacenamiento.host,
+            pathname: '/**',
+          }],
+        },
+      }
+    : {}),
 
   async headers() {
     return [
