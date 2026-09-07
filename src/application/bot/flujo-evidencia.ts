@@ -105,39 +105,120 @@ export async function manejarUbicacion(
   return mostrarColonias(ctx, { borrador, pagina: 0 })
 }
 
+/** Cómo se nombra una colonia cuando hay otra igual en otro punto del municipio. */
+function etiquetaColonia(
+  c: { nombre: string; codigoPostal: string | null; tipo: string | null },
+  repetida: boolean,
+): string {
+  if (!repetida) return c.nombre
+  const detalle = [c.tipo, c.codigoPostal].filter(Boolean).join(' ')
+  return detalle ? `${c.nombre} (${detalle})` : c.nombre
+}
+
+const CAMPOS_COLONIA = { id: true, nombre: true, codigoPostal: true, tipo: true } as const
+
+/**
+ * Pide la colonia.
+ *
+ * Tula tiene 143 asentamientos entre colonias, pueblos, barrios,
+ * fraccionamientos y rancherías. Paginarlos de ocho en ocho son dieciocho
+ * páginas, y nadie escribe «más» diecisiete veces: por eso lo primero que se
+ * ofrece es escribir el nombre, y la lista queda como respaldo para quien no
+ * sepa cómo se escribe el suyo.
+ */
 export async function mostrarColonias(
   ctx: Contexto, vista: { borrador: Borrador; pagina: number },
 ): Promise<MensajeSaliente[]> {
   const { conversacion, chatId } = ctx
   const { borrador, pagina } = vista
-  const colonias = await prisma.colonia.findMany({ orderBy: { nombre: 'asc' }, select: { id: true, nombre: true } })
+  const colonias = await prisma.colonia.findMany({
+    orderBy: { nombre: 'asc' }, select: CAMPOS_COLONIA,
+  })
+  const repetidas = nombresRepetidos(colonias)
+
   const inicio = pagina * CATEGORIAS_POR_PAGINA
   const pag = colonias.slice(inicio, inicio + CATEGORIAS_POR_PAGINA)
   const hayMas = inicio + CATEGORIAS_POR_PAGINA < colonias.length
 
-  await guardarEstado(conversacion.id, { paso: 'eligiendo_colonia', borrador, pagina })
+  await guardarEstado(conversacion.id, {
+    paso: 'eligiendo_colonia', borrador, pagina,
+    candidatos: pag.map((c) => c.id),
+  })
+
+  const lista = pag
+    .map((c, i) => `${i + 1}. ${etiquetaColonia(c, repetidas.has(c.nombre))}`)
+    .join('\n')
 
   return [{
     chatId,
-    texto: `No identifiqué la colonia. ¿Cuál es?\n\n${pag.map((c, i) => `${inicio + i + 1}. ${c.nombre}`).join('\n')}${hayMas ? '\n\nEscribe *más* para ver otras.' : ''}`,
+    texto: `No identifiqué la colonia. **Escríbeme cómo se llama** y yo la busco.\n\nO elige de estas:\n${lista}${hayMas ? '\n\nEscribe *más* para ver otras.' : ''}`,
   }]
 }
+
+const nombresRepetidos = (cs: { nombre: string }[]) =>
+  new Set(cs.map((c) => c.nombre).filter((n, i, xs) => xs.indexOf(n) !== i))
 
 export async function manejarColonia(
   ctx: Contexto, estado: Extract<Estado, { paso: 'eligiendo_colonia' }>,
 ): Promise<MensajeSaliente[]> {
-  const { conversacion, chatId, clave } = ctx
+  const { conversacion, chatId, clave, entrante } = ctx
+
   if (clave === 'mas' || clave === '+') {
     return mostrarColonias(ctx, { borrador: estado.borrador, pagina: estado.pagina + 1 })
   }
-  const colonias = await prisma.colonia.findMany({ orderBy: { nombre: 'asc' }, select: { id: true, nombre: true } })
+
+  const colonias = await prisma.colonia.findMany({
+    orderBy: { nombre: 'asc' }, select: CAMPOS_COLONIA,
+  })
+  const repetidas = nombresRepetidos(colonias)
+  const elegir = async (c: { id: number; nombre: string }) => revisarDuplicados(
+    conversacion, chatId,
+    { ...estado.borrador, coloniaId: c.id, coloniaNombre: c.nombre },
+  )
+
+  // Un número se refiere a lo que se le acaba de enseñar, no a la lista
+  // completa: casi siempre lo mostrado fue el resultado de una búsqueda.
   const n = Number(clave)
-  const elegida = Number.isInteger(n) ? colonias[n - 1] : undefined
-  if (!elegida) {
-    return [{ chatId, texto: 'No reconocí ese número. Responde con el número de la lista.' }]
+  if (Number.isInteger(n) && n >= 1) {
+    const id = estado.candidatos?.[n - 1]
+    const porNumero = id !== undefined ? colonias.find((c) => c.id === id) : undefined
+    if (porNumero) return elegir(porNumero)
   }
-  const borrador = { ...estado.borrador, coloniaId: elegida.id, coloniaNombre: elegida.nombre }
-  return revisarDuplicados(conversacion, chatId, borrador)
+
+  const texto = entrante.texto.trim()
+  if (texto.length >= 3) {
+    const buscado = normalizar(texto)
+    const coincide = colonias.filter((c) => normalizar(c.nombre).includes(buscado))
+
+    if (coincide.length === 1) return elegir(coincide[0]!)
+
+    if (coincide.length > 1) {
+      // Varias coinciden: puede ser una búsqueda ambigua («san») o un nombre
+      // que existe en dos puntos del municipio. En los dos casos hay que
+      // preguntar, porque adivinar manda a la cuadrilla al lugar equivocado.
+      const opciones = coincide.slice(0, CATEGORIAS_POR_PAGINA)
+      await guardarEstado(conversacion.id, {
+        paso: 'eligiendo_colonia', borrador: estado.borrador, pagina: 0,
+        candidatos: opciones.map((c) => c.id),
+      })
+      const lista = opciones
+        .map((c, i) => `${i + 1}. ${etiquetaColonia(c, repetidas.has(c.nombre))}`)
+        .join('\n')
+      return [{
+        chatId,
+        texto: `Encontré varias con «${texto}». ¿Cuál es?\n\n${lista}${
+          coincide.length > opciones.length ? `\n\n(hay ${coincide.length - opciones.length} más; escribe el nombre más completo)` : ''
+        }`,
+      }]
+    }
+
+    return [{
+      chatId,
+      texto: `No encontré ninguna colonia que se llame «${texto}». Revisa cómo se escribe, o escribe *más* para ver la lista.`,
+    }]
+  }
+
+  return [{ chatId, texto: 'Escríbeme el nombre de tu colonia, o el número de la lista.' }]
 }
 
 /** Antes de crear, se ofrece sumarse a un reporte abierto igual (SPEC §4.2). */

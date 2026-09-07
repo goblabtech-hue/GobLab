@@ -118,6 +118,12 @@ export async function guardarDependencia(_p: Resultado, datos: FormData): Promis
 const coloniaSchema = z.object({
   id: z.coerce.number().int().optional(),
   nombre: texto(2, 120),
+  // Cinco dígitos: es lo que distingue dos asentamientos del mismo nombre en
+  // puntos distintos del municipio.
+  codigoPostal: z.string().trim().regex(/^\d{5}$/, 'El código postal son cinco dígitos.')
+    .optional().nullable().or(z.literal('').transform(() => null)),
+  tipo: z.string().trim().max(40).optional().nullable()
+    .or(z.literal('').transform(() => null)),
   centroLat: z.coerce.number().min(-90).max(90).optional().nullable(),
   centroLng: z.coerce.number().min(-180).max(180).optional().nullable(),
 })
@@ -127,6 +133,8 @@ export async function guardarColonia(_p: Resultado, datos: FormData): Promise<Re
     const crudo = {
       id: datos.get('id') || undefined,
       nombre: datos.get('nombre'),
+      codigoPostal: datos.get('codigoPostal') || null,
+      tipo: datos.get('tipo') || null,
       centroLat: datos.get('centroLat') || null,
       centroLng: datos.get('centroLng') || null,
     }
@@ -285,19 +293,33 @@ export async function importarColonias(
         ? { centroLat: lat, centroLng: lng }
         : {}
 
+      const cpCrudo = columna(fila, 'cp', 'codigopostal', 'codigo', 'c.p.', 'codigo_postal')
+      const codigoPostal = /^\d{5}$/.test(cpCrudo) ? cpCrudo : null
+      const tipo = columna(fila, 'tipo', 'tipoasentamiento', 'asentamientotipo') || null
+
+      // Se busca por nombre Y código postal. Buscar solo por nombre parece
+      // razonable hasta que el municipio tiene dos «El Cerrito» en puntos
+      // distintos —Tula tiene tres—: una reimportación sobrescribiría la que
+      // no era, y los reportes de esa colonia quedarían apuntando mal.
       const existente = await prisma.colonia.findFirst({
-        where: { nombre: { equals: nombre, mode: 'insensitive' } },
+        where: {
+          nombre: { equals: nombre, mode: 'insensitive' },
+          ...(codigoPostal ? { codigoPostal } : {}),
+        },
         select: { id: true },
       })
 
       if (existente) {
-        await prisma.colonia.update({ where: { id: existente.id }, data: { nombre, ...coords } })
+        await prisma.colonia.update({
+          where: { id: existente.id },
+          data: { nombre, ...(codigoPostal ? { codigoPostal } : {}), ...(tipo ? { tipo } : {}), ...coords },
+        })
         resumen.actualizados++
       } else {
-        const base = slugify(nombre)
+        const base = codigoPostal ? `${slugify(nombre)}-${codigoPostal}` : slugify(nombre)
         let slug = base
         for (let n = 2; await prisma.colonia.findUnique({ where: { slug } }); n++) slug = `${base}-${n}`
-        await prisma.colonia.create({ data: { nombre, slug, ...coords } })
+        await prisma.colonia.create({ data: { nombre, slug, codigoPostal, tipo, ...coords } })
         resumen.creados++
       }
     }

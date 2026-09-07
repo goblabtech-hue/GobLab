@@ -165,13 +165,35 @@ async function main() {
     s.normalize('NFD').replace(/[̀-ͯ]/g, '')
       .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
+  // El catálogo postal trae seis pares con el mismo nombre Y el mismo código
+  // postal, separados solo por el tipo («El Salitre» aparece como Colonia y
+  // como Fraccionamiento en el 42808). Un vecino no sabe en cuál de los dos
+  // vive, así que dos entradas idénticas en la lista solo estorban: se
+  // conserva la primera. Los nombres repetidos en códigos DISTINTOS sí se
+  // conservan los dos: son lugares diferentes del municipio.
+  const vistos = new Set<string>()
+  const unicas = COLONIAS.filter((c) => {
+    const llave = `${c.nombre}|${c.cp}`
+    if (vistos.has(llave)) return false
+    vistos.add(llave)
+    return true
+  })
+
+  // El slug lleva el código postal solo cuando hace falta para distinguir, y
+  // así la URL de la colonia más común queda limpia: /mi-colonia/centro.
+  const repetidos = new Set(
+    unicas.map((c) => c.nombre).filter((n, i, xs) => xs.indexOf(n) !== i),
+  )
+
   const colonias = []
-  for (const nombre of COLONIAS) {
+  for (const c of unicas) {
     colonias.push(
       await prisma.colonia.create({
         data: {
-          slug: slugify(nombre),
-          nombre,
+          slug: repetidos.has(c.nombre) ? `${slugify(c.nombre)}-${c.cp}` : slugify(c.nombre),
+          nombre: c.nombre,
+          codigoPostal: c.cp,
+          tipo: c.tipo,
           centroLat: municipio.centroLat + entre(-0.03, 0.03),
           centroLng: municipio.centroLng + entre(-0.03, 0.03),
         },

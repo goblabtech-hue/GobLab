@@ -37,8 +37,8 @@ fecha límite de todos los reportes que ya existen.
 
 | Catálogo | Estado | Qué falta |
 |---|---|---|
-| **Colonias** | 24 nombres genéricos | Súbelas desde Excel en `/admin/colonias` |
-| **Dependencias** | 5 genéricas | Súbelas desde Excel en `/admin/dependencias`, con responsable, teléfono y correo |
+| **Colonias** | ✅ 143 asentamientos reales (Correos de México) | Nada, salvo corregir lo que el municipio sepa mejor |
+| **Dependencias** | ✅ 8 reales (portal del ayuntamiento) | **Poner el nombre de cada titular** y el correo de Reglamentos |
 | **Plazos de atención** | Los 12 del SPEC §11 | Validarlos en `/admin/plazos`, donde se ve el cumplimiento real al lado |
 | **Días festivos** | Solo los oficiales (LFT art. 74) | Agregar los festivos locales (feria, fiestas patronales) |
 | **Usuarios** | 8 cuentas de demo | Dar de alta al personal real y **borrar las de demo** |
@@ -59,13 +59,24 @@ No hace falta teclearlas una por una. En `/admin/colonias` y
 
 | Catálogo | Columnas |
 |---|---|
-| Colonias | `nombre` (obligatoria), `lat` y `lng` (opcionales) |
+| Colonias | `nombre` (obligatoria); `cp`, `tipo`, `lat` y `lng` (opcionales) |
 | Dependencias | `nombre` y `responsable` (obligatorias), `telefono` y `correo` |
 
 Los encabezados no distinguen mayúsculas, acentos ni espacios: «Nombre de la
-Colonia» funciona igual que «nombre». **Se actualiza por nombre, no se
-duplica**, así que puedes volver a subir el mismo archivo corregido las veces
-que haga falta.
+Colonia» funciona igual que «nombre». **No se duplica**: si vuelves a subir el
+mismo archivo corregido, actualiza en vez de crear.
+
+Las colonias se identifican por **nombre y código postal**, no solo por el
+nombre. En Tula hay diez nombres que se repiten en puntos distintos —«El
+Cerrito» está en tres— y sin el código postal una reimportación sobrescribiría
+la que no era.
+
+### Los titulares se capturan a mano, a propósito
+Las dependencias vienen con el CARGO («Titular de Obras Públicas»), no con el
+nombre de la persona. Mientras la base traiga los reportes de demostración, el
+informe semanal mostraría a una funcionaria real junto a decenas de reportes
+vencidos que nadie generó. Captura los nombres en `/admin/dependencias` el día
+que los datos sean reales.
 
 ### Las promesas de servicio son un compromiso público
 Los plazos de `/admin/plazos` se publican en el tablero abierto y se miden

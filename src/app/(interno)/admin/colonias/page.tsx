@@ -18,6 +18,8 @@ export default async function PaginaColonias() {
         explicacion="Si ya tienes el listado en una hoja de cálculo, súbelo y se dan de alta todas de una vez."
         columnas={[
           { nombre: 'nombre', obligatoria: true, nota: 'también acepta «colonia» o «asentamiento»' },
+          { nombre: 'cp', obligatoria: false, nota: 'distingue nombres repetidos en distintos puntos' },
+          { nombre: 'tipo', obligatoria: false, nota: 'colonia, pueblo, fraccionamiento, barrio…' },
           { nombre: 'lat', obligatoria: false, nota: 'centra el mapa de esa colonia' },
           { nombre: 'lng', obligatoria: false 
           },
@@ -28,14 +30,25 @@ export default async function PaginaColonias() {
 
       <Catalogo
       titulo="Colonias"
-      descripcion='Alimentan el módulo "Mi colonia" del tablero público y sirven de respaldo cuando el celular del ciudadano no da ubicación. El centro es opcional: se usa para centrar el mapa de la colonia.'
+      descripcion='Alimentan el módulo "Mi colonia" del tablero público y sirven de respaldo cuando el celular del ciudadano no da ubicación. El código postal distingue los nombres que se repiten en distintos puntos del municipio; sin él, una cuadrilla puede salir al lugar equivocado.'
       etiquetaNuevo="Nueva colonia"
-      encabezados={['Colonia', 'Identificador', 'Centro', 'Reportes']}
+      encabezados={['Asentamiento', 'C.P.', 'Identificador', 'Centro', 'Reportes']}
       filas={colonias.map((c) => ({
         id: c.id,
-        valores: { nombre: c.nombre, centroLat: c.centroLat, centroLng: c.centroLng },
+        valores: {
+          nombre: c.nombre, codigoPostal: c.codigoPostal, tipo: c.tipo,
+          centroLat: c.centroLat, centroLng: c.centroLng,
+        },
         celdas: [
-          <span key="n" className="font-medium">{c.nombre}</span>,
+          <span key="n">
+            <span className="font-medium">{c.nombre}</span>
+            {c.tipo && c.tipo !== 'Colonia' && (
+              <span className="ml-1.5 text-xs text-tinta-suave">{c.tipo}</span>
+            )}
+          </span>,
+          <span key="cp" className="tabular-nums text-tinta-suave">
+            {c.codigoPostal ?? <span className="text-tenue">—</span>}
+          </span>,
           <code key="s" className="text-xs text-tinta-suave">{c.slug}</code>,
           c.centroLat != null && c.centroLng != null
             ? `${c.centroLat.toFixed(4)}, ${c.centroLng.toFixed(4)}`
@@ -45,6 +58,8 @@ export default async function PaginaColonias() {
       }))}
       campos={[
         { nombre: 'nombre', etiqueta: 'Nombre', tipo: 'texto', requerido: true },
+        { nombre: 'codigoPostal', etiqueta: 'Código postal', tipo: 'texto' },
+        { nombre: 'tipo', etiqueta: 'Tipo', tipo: 'texto' },
         { nombre: 'centroLat', etiqueta: 'Latitud del centro', tipo: 'numero' },
         { nombre: 'centroLng', etiqueta: 'Longitud del centro', tipo: 'numero' },
       ]}

@@ -30,7 +30,18 @@ export type Estado =
   | { paso: 'eligiendo_categoria'; borrador: Borrador; pagina: number }
   | { paso: 'pidiendo_foto'; borrador: Borrador }
   | { paso: 'pidiendo_ubicacion'; borrador: Borrador }
-  | { paso: 'eligiendo_colonia'; borrador: Borrador; pagina: number }
+  | {
+      paso: 'eligiendo_colonia'
+      borrador: Borrador
+      pagina: number
+      /**
+       * Ids que se le enseñaron, en el orden en que se numeraron. Con 143
+       * asentamientos, la lista que ve el ciudadano casi nunca es la lista
+       * completa: es el resultado de lo que escribió. Sin guardar qué se le
+       * mostró, su «2» apuntaría a otra colonia.
+       */
+      candidatos?: number[]
+    }
   | { paso: 'confirmando'; borrador: Borrador }
   | { paso: 'ofreciendo_adhesion'; borrador: Borrador; reporteId: string; folio: string }
   | { paso: 'pidiendo_folio' }

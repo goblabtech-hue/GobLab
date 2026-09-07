@@ -172,6 +172,68 @@ describe('alta de reporte por el bot', () => {
   })
 })
 
+describe('elegir colonia entre 143 asentamientos', () => {
+  /**
+   * Al cargar los asentamientos reales de Tula la lista pasó de 24 a 143.
+   * Paginada de ocho en ocho son dieciocho páginas: la pantalla que antes
+   * funcionaba dejó de servir, y el ciudadano tiene que poder escribir el
+   * nombre.
+   */
+  async function llegarAColonia(marca: string) {
+    await di('hola'); await di('1')
+    await di(`bache grande, prueba de colonias ${marca}`)
+    await di('1')        // categoría
+    await di('seguir')   // sin foto
+    // Una dirección que no menciona ninguna colonia: cae a elegir de la lista.
+    return di('por la calle de enfrente, junto al portón azul')
+  }
+
+  test('la lista invita a escribir el nombre en vez de paginar', async () => {
+    const salida = await llegarAColonia(`a${Date.now()}`)
+    assert.ok(dice(salida, 'scríbeme cómo se llama'), `esperaba la invitación en: ${uno(salida).texto}`)
+  })
+
+  test('escribir el nombre la encuentra sin pasar por la lista', async () => {
+    await llegarAColonia(`b${Date.now()}`)
+    const salida = await di('Xochitlán de las Flores')
+    assert.ok(
+      dice(salida, 'Voy a registrar esto') || dice(salida, 'mismo problema'),
+      `debió avanzar; dijo: ${uno(salida).texto}`,
+    )
+  })
+
+  test('sin acentos y en minúsculas también', async () => {
+    await llegarAColonia(`c${Date.now()}`)
+    const salida = await di('xochitlan de las flores')
+    assert.ok(dice(salida, 'Voy a registrar esto') || dice(salida, 'mismo problema'))
+  })
+
+  test('un nombre que existe en dos lugares pregunta cuál, con su código postal', async () => {
+    await llegarAColonia(`d${Date.now()}`)
+    const salida = await di('Bugambilias')
+    const texto = uno(salida).texto
+    assert.ok(texto.includes('varias'), `debió preguntar: ${texto}`)
+    assert.ok(texto.includes('42833') && texto.includes('42803'),
+      `debió distinguirlas por código postal: ${texto}`)
+  })
+
+  test('tras preguntar, el número se refiere a lo que acaba de mostrar', async () => {
+    await llegarAColonia(`e${Date.now()}`)
+    await di('Bugambilias')
+    const salida = await di('2')
+    assert.ok(
+      dice(salida, 'Voy a registrar esto') || dice(salida, 'mismo problema'),
+      `debió tomar la segunda opción mostrada; dijo: ${uno(salida).texto}`,
+    )
+  })
+
+  test('un nombre inexistente lo dice, no lo inventa', async () => {
+    await llegarAColonia(`f${Date.now()}`)
+    const salida = await di('Colonia Que No Existe')
+    assert.ok(dice(salida, 'No encontré'), uno(salida).texto)
+  })
+})
+
 describe('el canal queda registrado como lo que es', () => {
   const CHAT_TG = '881234567'
   let m = 0

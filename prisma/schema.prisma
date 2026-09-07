@@ -125,6 +125,14 @@ model Colonia {
   // que la entidad Colonia del SPEC §5 no define.
   slug      String   @unique
   nombre    String
+  /// Código postal del asentamiento. No es decorativo: en Tula hay nombres
+  /// repetidos en distintos puntos del municipio —«El Cerrito» existe en tres
+  /// códigos postales— y sin esto una cuadrilla puede salir al lugar
+  /// equivocado. Es además como la gente identifica su colonia.
+  codigoPostal String?
+  /// Colonia, Pueblo, Fraccionamiento, Barrio, Ranchería, Ejido… Tula tiene de
+  /// todo, y el tipo forma parte de cómo la gente nombra el lugar.
+  tipo      String?
   geojson   Json?
   centroLat Float?
   centroLng Float?
