@@ -43,6 +43,66 @@ que no explica nada.
 Los precios cambian: confírmalos en la página del proveedor antes de contratar.
 Cualquiera de los tres sirve — el instalador es el mismo.
 
+### ¿Y AWS?
+
+Sí se puede, y para la instalación que le vendan al ayuntamiento
+probablemente **sea la respuesta correcta**. Los scripts de este repositorio
+corren igual en una EC2 con Ubuntu: no hay nada aquí que dependa del
+proveedor, así que esta decisión se puede cambiar en una tarde y no es una
+arquitectura de la que uno quede preso.
+
+**Lo que AWS aporta a este proyecto en concreto:**
+
+- **Región México (`mx-central-1`), en Querétaro**, abierta desde enero de
+  2025 con tres zonas de disponibilidad. Está a unos 130 km de Tula: mejor
+  latencia imposible, y los datos personales no salen del país.
+- **Peso en una compra de gobierno.** En la revisión técnica de un
+  ayuntamiento, «región AWS México» con sus certificaciones se defiende solo.
+  «Un VPS en Vultr» hay que explicarlo. Eso no es técnica, es venta, pero la
+  venta es el punto.
+
+**Lo que cuesta de más** (precios bajo demanda en `mx-central-1`):
+
+| Concepto | Al mes |
+|---|---|
+| EC2 `t4g.small` (2 vCPU ARM, 2 GB) | ~12.85 USD |
+| Disco EBS gp3, 20 GB | ~2 USD |
+| Dirección IPv4 pública | ~3.60 USD |
+| **Total, todo en una sola instancia** | **~18.50 USD** |
+
+Contra unos ~10 USD de un VPS equivalente. La diferencia real no son esos
+ocho dólares —eso es nada si ayuda a cerrar la venta— sino **las trampas de
+facturación**, que sí muerden:
+
+1. **La IPv4 pública ya se cobra.** Desde 2024 AWS cobra por cada dirección
+   IPv4, esté o no en uso. Son ~3.60 USD/mes que nadie espera.
+2. **El NAT Gateway cuesta ~32 USD/mes**, más que todo lo demás junto. Aparece
+   solo si pones la instancia en una subred privada. Para este caso **no hace
+   falta**: subred pública, IP pública, y el firewall haciendo su trabajo.
+3. **Pon una alarma de presupuesto el primer día.** Billing → Budgets, un
+   presupuesto de 30 USD con aviso por correo al 80%. Es lo que separa un
+   error de configuración de una factura de tres dígitos.
+
+**Si eliges AWS:**
+
+- Instancia **`t4g.small`** con **Ubuntu 24.04 LTS (ARM64)**. Son procesadores
+  Graviton: más baratos a igual potencia, y todo lo que instala el script
+  —Node, PostgreSQL, Caddy, `sharp`, Prisma— tiene versión ARM64. No cambia
+  nada.
+- **Grupo de seguridad:** solo entrada por 22 (tu IP), 80 y 443 (todo
+  internet). El puerto 3000 **no se abre**: la aplicación escucha en
+  127.0.0.1 y solo Caddy la alcanza.
+- Todo en una instancia, sin RDS. Un RDS gestionado agrega ~20 USD/mes y para
+  este tamaño no compra nada que el PostgreSQL del propio servidor no dé.
+  Cuando haya varios municipios, ahí sí.
+- Asigna una **IP elástica** para que no cambie al reiniciar; si cambia,
+  el DNS deja de apuntar bien y el sitio se cae.
+
+**La recomendación honesta:** para `demosvoz.com`, que es una vitrina detrás
+de contraseña donde nadie ve dónde está hospedada, AWS es pagar complejidad
+que hoy no compra nada. Para la instalación de Tula, cuando la firmen, AWS
+Querétaro es la mejor opción disponible y además ayuda a firmarla.
+
 ### Antes de crear la máquina: una llave SSH
 
 El formulario del proveedor te va a pedir una llave SSH. Si no le das una, te
