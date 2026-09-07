@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { AlertTriangle, Bot, Building2, RotateCcw, Users } from 'lucide-react'
+import { AlertTriangle, Bot, Building2, CalendarRange, RotateCcw, Users } from 'lucide-react'
 import { requerirRol } from '@/infrastructure/auth'
 import { obtenerIndicadores } from '@/application/indicadores'
 import { calcularIndicadoresInternos, HORAS_A_TEXTO } from '@/application/indicadores-internos'
@@ -51,7 +51,16 @@ export default async function Ejecutivo() {
             aquí va además el desglose interno.
           </p>
         </div>
-        <p className="text-xs text-tenue">Actualizado {fechaHora(publicos.generadoAt)}</p>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/ejecutivo/semanal"
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-borde px-3 text-sm font-medium hover:bg-lienzo"
+          >
+            <CalendarRange className="size-4" aria-hidden />
+            Informe semanal
+          </Link>
+          <p className="text-xs text-tenue">Actualizado {fechaHora(publicos.generadoAt)}</p>
+        </div>
       </div>
 
       {/* ------------------------------------------------ alertas */}

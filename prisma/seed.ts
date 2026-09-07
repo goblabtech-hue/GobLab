@@ -52,6 +52,16 @@ function ponderado<T>(opciones: [T, number][]): T {
 const DIA = 24 * 60 * 60 * 1000
 
 /**
+ * Ninguna fecha del seed puede quedar por delante del reloj.
+ *
+ * Las fechas se derivan en cadena —creado → asignado → en atención → resuelto
+ * → cerrado— y cada eslabón suma días al anterior, así que el último tiende a
+ * salirse. Un reporte «cerrado» mañana no rompe ninguna pantalla, pero hace
+ * que el informe semanal presuma trabajo que nadie hizo.
+ */
+const noFuturo = (d: Date, ahora: Date): Date => (d > ahora ? ahora : d)
+
+/**
  * Desenlaces del reporte en la demo. `reabierto_reciente` existe para que el
  * tablero y la vista de cuadrilla tengan reaperturas todavía abiertas que
  * mostrar: las reaperturas viejas se vuelven a resolver, como en la realidad.
@@ -330,10 +340,12 @@ async function main() {
 
     const asignadoAId = elegir(cuadrillas).id
 
+    // Todos los eventos pasan por aquí, así que aquí se recorta: parchear cada
+    // fecha derivada por separado es cómo se coló el error la primera vez.
     const eventoBase = (
       tipo: TipoEvento, ts: Date,
       detalle: Prisma.InputJsonValue = {}, userId?: string | null,
-    ) => eventos.push({ id: id(), reporteId: rid, tipo, timestamp: ts, detalle, userId: userId ?? null })
+    ) => eventos.push({ id: id(), reporteId: rid, tipo, timestamp: noFuturo(ts, ahora), detalle, userId: userId ?? null })
 
     eventoBase('creado', createdAt, { origen })
     const asignadoAt = new Date(createdAt.getTime() + entre(0.02, 0.6) * DIA)
@@ -371,7 +383,12 @@ async function main() {
           motivo: 'El reporte corresponde a otra dependencia por el tipo de intervención.',
         }, elegir(supervisores).id)
       }
-      const enAtencionAt = new Date(asignadoAt.getTime() + entre(0.3, 2) * DIA)
+      // La atención tampoco puede empezar en el futuro: un reporte creado hace
+      // unas horas no puede arrastrar eventos por delante del reloj.
+      const enAtencionAt = new Date(Math.min(
+        asignadoAt.getTime() + entre(0.3, 2) * DIA,
+        Math.max(asignadoAt.getTime() + 0.05 * DIA, ahora.getTime() - 0.1 * DIA),
+      ))
       eventoBase('en_atencion', enAtencionAt, {}, asignadoAId)
 
       const margen = fechaLimite.getTime() - createdAt.getTime()
@@ -379,8 +396,15 @@ async function main() {
         ? new Date(fechaLimite.getTime() + entre(0.5, 12) * DIA)
         : new Date(createdAt.getTime() + margen * entre(0.25, 0.95))
 
-      if (resueltoAt > ahora) resueltoAt = new Date(ahora.getTime() - entre(0, 2) * DIA)
-      if (resueltoAt < enAtencionAt) resueltoAt = new Date(enAtencionAt.getTime() + 0.2 * DIA)
+      // Dos restricciones: la resolución va después de que empezó la atención,
+      // y nunca por delante del reloj. Antes se aplicaban en dos pasos y en el
+      // orden equivocado —primero se recortaba al presente y después se
+      // empujaba hacia adelante para respetar el orden—, así que en los
+      // reportes recientes el segundo ajuste devolvía la fecha al futuro. El
+      // resultado eran reportes «resueltos» mañana: el informe semanal contaba
+      // trabajo que nadie ha hecho todavía.
+      const piso = enAtencionAt.getTime() + 0.2 * DIA
+      resueltoAt = new Date(Math.min(Math.max(resueltoAt.getTime(), piso), ahora.getTime()))
 
       estatus = 'resuelto'
       eventoBase('resuelto', resueltoAt, {}, asignadoAId)
@@ -394,7 +418,7 @@ async function main() {
         calificacion = desenlace === 'reabierto_reciente'
           ? ponderado<number>([[2, 60], [1, 40]])
           : ponderado<number>([[5, 46], [4, 27], [3, 12], [2, 9], [1, 6]])
-        cerradoAt = new Date(resueltoAt.getTime() + entre(0.1, 2.5) * DIA)
+        cerradoAt = noFuturo(new Date(resueltoAt.getTime() + entre(0.1, 2.5) * DIA), ahora)
         comentario = calificacion >= 4
           ? elegir(['Quedó muy bien, gracias', 'Rápido y bien hecho', 'Sí lo arreglaron, gracias'])
           : elegir(['Lo taparon a medias, ya se volvió a hundir', 'Tardaron mucho', 'No quedó bien'])
@@ -431,8 +455,8 @@ async function main() {
           // abiertos los que se reabrieron hace poco.
           const diasDesdeReapertura = (ahora.getTime() - reabiertoAt.getTime()) / DIA
           if (diasDesdeReapertura > 25) {
-            resueltoAt = new Date(reabiertoAt.getTime() + entre(0.5, 6) * DIA)
-            cerradoAt = new Date(resueltoAt.getTime() + entre(0.2, 3) * DIA)
+            resueltoAt = noFuturo(new Date(reabiertoAt.getTime() + entre(0.5, 6) * DIA), ahora)
+            cerradoAt = noFuturo(new Date(resueltoAt.getTime() + entre(0.2, 3) * DIA), ahora)
             estatus = 'cerrado'
             eventoBase('resuelto', resueltoAt, { trasReapertura: true }, asignadoAId)
             eventoBase('cerrado', cerradoAt, { automatico: true })
@@ -581,6 +605,14 @@ async function main() {
   await prisma.conversacionBot.createMany({ data: convs })
   await prisma.mensajeBot.createMany({ data: msgs })
 
+  // ------------------------------------------------------- verificación
+  // Ninguna fecha puede quedar por delante del reloj. Parece obvio, y por eso
+  // mismo se coló: un reporte «resuelto» mañana no rompe nada visible, pero
+  // hace que el informe semanal presuma trabajo que nadie ha hecho, y esa
+  // cifra se usa para evaluar a las dependencias. Vale más un seed que se
+  // niega a terminar que unos datos que mienten en silencio.
+  await verificarSinFuturo()
+
   // ---------------------------------------------------------------- resumen
   const total = await prisma.reporte.count()
   const porEstatus = await prisma.reporte.groupBy({ by: ['estatus'], _count: true })
@@ -592,6 +624,46 @@ async function main() {
   console.log(`  Conversaciones bot: ${await prisma.conversacionBot.count()}`)
   console.log(`\n  Usuarios de demo (contraseña: ${passwordDemo}):`)
   for (const u of USUARIOS) console.log(`    ${u.rol.padEnd(11)} ${u.email}`)
+}
+
+/** Se planta si el seed dejó cualquier fecha en el futuro. */
+async function verificarSinFuturo() {
+  const ahora = new Date()
+  const problemas: string[] = []
+
+  const futuros = await prisma.reporte.findMany({
+    where: {
+      OR: [
+        { createdAt: { gt: ahora } },
+        { resueltoAt: { gt: ahora } },
+        { cerradoAt: { gt: ahora } },
+        { reabiertoAt: { gt: ahora } },
+      ],
+    },
+    select: { folio: true, createdAt: true, resueltoAt: true, cerradoAt: true, reabiertoAt: true },
+    take: 5,
+  })
+  for (const r of futuros) {
+    const cual = (['createdAt', 'resueltoAt', 'cerradoAt', 'reabiertoAt'] as const)
+      .filter((k) => r[k] !== null && r[k]! > ahora)
+      .join(', ')
+    problemas.push(`  ${r.folio}: ${cual} en el futuro`)
+  }
+
+  const eventosFuturos = await prisma.eventoReporte.count({ where: { timestamp: { gt: ahora } } })
+  if (eventosFuturos > 0) problemas.push(`  ${eventosFuturos} eventos con fecha futura`)
+
+  // Un reporte no puede estar resuelto antes de haber sido creado.
+  const invertidos = await prisma.$queryRaw<{ folio: string }[]>`
+    SELECT folio FROM "Reporte" WHERE "resueltoAt" < "createdAt" LIMIT 5
+  `
+  for (const r of invertidos) problemas.push(`  ${r.folio}: resuelto antes de existir`)
+
+  if (problemas.length > 0) {
+    console.error('\n✖ El seed generó datos imposibles:')
+    console.error(problemas.join('\n'))
+    throw new Error('Datos inconsistentes: revisa prisma/seed.ts antes de usar esta base.')
+  }
 }
 
 main()
