@@ -45,6 +45,16 @@ export type Estado =
   | { paso: 'confirmando'; borrador: Borrador }
   | { paso: 'ofreciendo_adhesion'; borrador: Borrador; reporteId: string; folio: string }
   | { paso: 'pidiendo_folio' }
+  // ── Seguimiento de un reporte que ya existe ──────────────────────────────
+  // Todos cargan `reporteId` y `folio`: el id para operar y el folio para
+  // hablarle a la persona con el número que ella conoce.
+  | { paso: 'folio_acciones'; reporteId: string; folio: string }
+  | { paso: 'sumando_foto'; reporteId: string; folio: string }
+  | { paso: 'sumando_nota'; reporteId: string; folio: string }
+  /** Le mandamos la evidencia y esperamos que diga si quedó o no. */
+  | { paso: 'confirmando_resolucion'; reporteId: string; folio: string }
+  | { paso: 'calificando'; reporteId: string; folio: string }
+  | { paso: 'motivo_rechazo'; reporteId: string; folio: string }
   | { paso: 'escalado' }
 
 export const CATEGORIAS_POR_PAGINA = 8

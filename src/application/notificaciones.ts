@@ -1,8 +1,10 @@
 import { prisma } from '@/infrastructure/prisma'
+import type { CanalMensajeria } from '@/generated/prisma/enums'
 import { obtenerConfiguracion } from '@/infrastructure/config'
 import { descifrarTelefono } from '@/domain/telefono'
 import { fecha } from '@/domain/formato'
 import { proveedor } from '@/infrastructure/mensajeria'
+import { hashTelefono } from '@/domain/telefono'
 
 /**
  * Avisos al ciudadano en cada cambio relevante (SPEC §4.1).
@@ -27,6 +29,13 @@ export async function notificarCiudadano(reporteId: string, tipo: TipoAviso): Pr
         telefonoCifrado: true,
         fechaLimite: true, resueltoAt: true, motivoImprocedente: true, notaCierre: true,
         categoria: { select: { nombre: true } },
+        // La foto del trabajo terminado: es la diferencia entre «dice que lo
+        // arregló» y «lo arregló». Se manda la más reciente.
+        fotos: {
+          where: { tipo: 'evidencia' },
+          orderBy: { createdAt: 'desc' }, take: 1,
+          select: { url: true },
+        },
       },
     })
     if (!r) return
@@ -50,7 +59,26 @@ export async function notificarCiudadano(reporteId: string, tipo: TipoAviso): Pr
     if (!texto) return
 
     const chatId = descifrarTelefono(destino)
-    await proveedor(canal).enviar({ chatId, texto })
+    const evidencia = tipo === 'resuelto' ? r.fotos[0]?.url : undefined
+
+    await proveedor(canal).enviar({
+      chatId,
+      texto,
+      ...(evidencia ? { mediaUrl: evidencia } : {}),
+      ...(tipo === 'resuelto'
+        ? {
+            botones: [
+              { id: 'quedo_si', texto: '✅ Sí, quedó' },
+              { id: 'quedo_no', texto: '❌ No, sigue igual' },
+            ],
+          }
+        : {}),
+    })
+
+    // Y se deja la conversación esperando esa respuesta. Sin esto el sistema
+    // preguntaba «¿quedó bien?» y no había nada escuchando: la persona
+    // contestaba al vacío y a los tres días el reporte se autocerraba solo.
+    if (tipo === 'resuelto') await esperarConfirmacion(reporteId, canal, chatId)
 
     await prisma.eventoReporte.create({
       data: { reporteId, tipo: 'notificacion', detalle: { tipo, canal, entregado: true } },
@@ -85,7 +113,10 @@ function redactar(
       return `${encabezado}\n\nLa cuadrilla ya está trabajando en él.`
 
     case 'resuelto':
-      return `${encabezado}\n\n✅ Terminamos el trabajo.${r.notaCierre ? `\n\n${r.notaCierre}` : ''}\n\n¿Cómo quedó? Responde con un número del 1 al 5, donde 5 es excelente. Tu calificación es la forma en que sabemos si de verdad resolvimos tu problema.`
+      // Se pregunta si quedó, no se pide una calificación a secas: quien
+      // decide si el problema se resolvió es quien lo vive, y esa respuesta
+      // es la que cierra el reporte.
+      return `${encabezado}\n\n✅ La cuadrilla terminó el trabajo. Aquí está cómo quedó.${r.notaCierre ? `\n\n«${r.notaCierre}»` : ''}\n\n*¿Quedó resuelto tu problema?* Tu respuesta es la que cierra el reporte.`
 
     case 'cerrado':
       return `${encabezado}\n\nEste reporte quedó cerrado. Gracias por ayudarnos a mejorar tu colonia.`
@@ -98,5 +129,45 @@ function redactar(
 
     default:
       return null
+  }
+}
+
+/**
+ * Deja la conversación de esa persona esperando su veredicto sobre el trabajo.
+ *
+ * Vive aquí y no en el bot porque quien resuelve es el personal municipal
+ * desde la bandeja, no el ciudadano desde el chat: el aviso es lo único que
+ * conecta las dos mitades. Si no hay conversación abierta —reportó por la web
+ * o por ventanilla— no se hace nada: al escribirle al bot con su folio verá
+ * las mismas opciones.
+ */
+async function esperarConfirmacion(
+  reporteId: string, canal: CanalMensajeria, chatId: string,
+): Promise<void> {
+  try {
+    const reporte = await prisma.reporte.findUnique({
+      where: { id: reporteId }, select: { folio: true },
+    })
+    if (!reporte) return
+
+    const conv = await prisma.conversacionBot.findFirst({
+      where: { canal, chatIdHash: hashTelefono(chatId) },
+      orderBy: { updatedAt: 'desc' },
+      select: { id: true, escaladaAHumano: true },
+    })
+    // Si está hablando con una persona del municipio, no se le interrumpe.
+    if (!conv || conv.escaladaAHumano) return
+
+    await prisma.conversacionBot.update({
+      where: { id: conv.id },
+      data: {
+        estado: {
+          paso: 'confirmando_resolucion', reporteId, folio: reporte.folio,
+        } as never,
+      },
+    })
+  } catch (e) {
+    // Que falle esto no puede tumbar el aviso, que es lo importante.
+    console.error('[notificaciones] no se pudo dejar la conversación esperando:', e)
   }
 }

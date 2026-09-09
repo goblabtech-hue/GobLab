@@ -181,6 +181,14 @@ if [ "$(leer DEV_ORIGENES_PERMITIDOS)" != "$HOST" ]; then
   REINICIAR=1
 fi
 
+# Telegram descarga las fotos de evidencia desde sus servidores: necesita una
+# URL que exista en internet, no una ruta /uploads/...
+if [ "$(leer SITIO_URL)" != "$PUBLICA" ]; then
+  escribir SITIO_URL "$PUBLICA"
+  ok "Dominio público declarado (para las fotos de evidencia)"
+  REINICIAR=1
+fi
+
 
 # ── 4. Servidor ─────────────────────────────────────────────────────────────
 # Next lee .env al arrancar: si acabamos de tocarlo, hay que reiniciarlo o el

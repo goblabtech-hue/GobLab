@@ -14,6 +14,10 @@ import {
   manejarFoto, manejarUbicacion, manejarColonia, manejarConfirmacion, manejarAdhesion,
 } from './flujo-evidencia'
 import { escalar, manejarFolio } from './flujo-consulta'
+import {
+  manejarAccionesFolio, manejarSumarFoto, manejarSumarNota,
+  manejarCalificacion, manejarMotivoRechazo, manejarConfirmacionResolucion,
+} from './flujo-seguimiento'
 import { proveedor, type MensajeEntrante, type MensajeSaliente } from '@/infrastructure/mensajeria'
 
 /**
@@ -149,7 +153,25 @@ export async function responder(
       return manejarAdhesion(ctx, estado)
 
     case 'pidiendo_folio':
-      return manejarFolio(conversacion, chatId, texto)
+      return manejarFolio(ctx, texto)
+
+    case 'folio_acciones':
+      return manejarAccionesFolio(ctx, estado)
+
+    case 'sumando_foto':
+      return manejarSumarFoto(ctx, estado)
+
+    case 'sumando_nota':
+      return manejarSumarNota(ctx, estado)
+
+    case 'confirmando_resolucion':
+      return manejarConfirmacionResolucion(ctx, estado)
+
+    case 'calificando':
+      return manejarCalificacion(ctx, estado)
+
+    case 'motivo_rechazo':
+      return manejarMotivoRechazo(ctx, estado)
 
     default:
       await guardarEstado(conversacion.id, { paso: 'menu' })

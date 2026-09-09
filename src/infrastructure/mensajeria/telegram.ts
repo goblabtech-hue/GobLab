@@ -91,7 +91,47 @@ export class TelegramProvider implements MessagingProvider {
     return respuesta.json()
   }
 
+  /**
+   * Vuelve absoluta la ruta de una foto.
+   *
+   * Telegram descarga la imagen desde sus servidores, así que `/uploads/...`
+   * no le dice nada: necesita una URL que exista en internet. Con
+   * almacenamiento S3 la URL ya viene completa; con disco local hay que
+   * anteponer el dominio público del sitio.
+   */
+  private absoluta(url: string): string | null {
+    if (/^https?:\/\//.test(url)) return url
+    const base = process.env.SITIO_URL?.trim().replace(/\/$/, '')
+    if (!base) return null
+    return `${base}${url.startsWith('/') ? '' : '/'}${url}`
+  }
+
   async enviar(mensaje: MensajeSaliente): Promise<void> {
+    // Con foto se manda `sendPhoto`: la evidencia del trabajo terminado tiene
+    // que verse en el chat, no ser un enlace que casi nadie abre.
+    if (mensaje.mediaUrl) {
+      const foto = this.absoluta(mensaje.mediaUrl)
+      if (foto) {
+        const texto = aHtmlTelegram(mensaje.texto)
+        // El pie de foto de Telegram admite 1024 caracteres; el mensaje
+        // suelto, 4096. Si no cabe, va la foto y luego el texto completo,
+        // en vez de recortar lo que se le prometió a la persona.
+        const cabe = texto.length <= 1000
+        try {
+          await this.llamar('sendPhoto', {
+            chat_id: mensaje.chatId,
+            photo: foto,
+            ...(cabe ? { caption: texto, parse_mode: 'HTML' } : {}),
+          })
+          if (cabe && !mensaje.botones?.length) return
+        } catch (e) {
+          // Que no se pueda mandar la foto no puede impedir el aviso: la
+          // persona tiene que enterarse igual de que su reporte se resolvió.
+          console.error('[telegram] no se pudo enviar la foto:', e)
+        }
+      }
+    }
+
     const cuerpo: Record<string, unknown> = {
       chat_id: mensaje.chatId,
       text: aHtmlTelegram(mensaje.texto),

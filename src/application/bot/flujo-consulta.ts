@@ -5,6 +5,8 @@ import { fecha } from '@/domain/formato'
 import type { MensajeSaliente } from '@/infrastructure/mensajeria'
 import type { Conversacion } from './conversacion'
 import { guardarEstado } from './conversacion'
+import { accionesDeFolio } from './flujo-seguimiento'
+import type { Contexto } from './estado'
 
 /**
  * Consulta de folio y escalamiento a una persona (SPEC §4.1).
@@ -26,7 +28,9 @@ export async function iniciarConsultaFolio(
       select: { folio: true, estatus: true, createdAt: true, categoria: { select: { nombre: true } } },
     })
     if (reportes.length) {
-      await guardarEstado(conversacion.id, { paso: 'menu' })
+      // Se queda esperando folio, no en el menú: un folio tiene 14 caracteres
+      // y en el menú se habría tomado por la descripción de un reporte nuevo.
+      await guardarEstado(conversacion.id, { paso: 'pidiendo_folio' })
       const lista = reportes
         .map((r) => `• *${r.folio}* — ${r.categoria.nombre}\n  ${ESTATUS[r.estatus].ciudadano} · ${fecha(r.createdAt)}`)
         .join('\n\n')
@@ -39,16 +43,19 @@ export async function iniciarConsultaFolio(
 }
 
 export async function manejarFolio(
-  conversacion: Conversacion, chatId: string, texto: string,
+  ctx: Contexto, texto: string,
 ): Promise<MensajeSaliente[]> {
+  const { conversacion, chatId } = ctx
   const folio = texto.trim().toUpperCase()
 
   const reporte = await prisma.reporte.findUnique({
     where: { folio },
     select: {
-      folio: true, estatus: true, createdAt: true, fechaLimite: true, resueltoAt: true,
+      id: true, folio: true, estatus: true, createdAt: true, fechaLimite: true,
+      resueltoAt: true, notaCierre: true,
       categoria: { select: { nombre: true } },
       colonia: { select: { nombre: true } },
+      _count: { select: { fotos: { where: { tipo: 'ciudadano' } } } },
     },
   })
 
@@ -56,14 +63,31 @@ export async function manejarFolio(
     return [{ chatId, texto: 'No encontré ese folio. Revísalo y vuelve a escribirlo, o escribe *menú*.' }]
   }
 
-  await guardarEstado(conversacion.id, { paso: 'menu' })
   const info = ESTATUS[reporte.estatus]
   const abierto = ['nuevo', 'asignado', 'en_atencion', 'reabierto'].includes(reporte.estatus)
 
-  return [{
-    chatId,
-    texto: `*${reporte.folio}* — ${reporte.categoria.nombre}\n${reporte.colonia ? `Col. ${reporte.colonia.nombre}\n` : ''}\n*${info.ciudadano}*\n${info.explicacion}\n\nRecibido el ${fecha(reporte.createdAt)}.${abierto ? `\nPlazo comprometido: ${fecha(reporte.fechaLimite)}.` : ''}${reporte.resueltoAt ? `\nTerminado el ${fecha(reporte.resueltoAt)}.` : ''}\n\nEscribe *menú* para volver.`,
-  }]
+  const resumen = [
+    `*${reporte.folio}* — ${reporte.categoria.nombre}`,
+    reporte.colonia ? `Col. ${reporte.colonia.nombre}` : null,
+    '',
+    `*${info.ciudadano}*`,
+    info.explicacion,
+    '',
+    `Recibido el ${fecha(reporte.createdAt)}.`,
+    abierto ? `Plazo comprometido: ${fecha(reporte.fechaLimite)}.` : null,
+    reporte.resueltoAt ? `Terminado el ${fecha(reporte.resueltoAt)}.` : null,
+    reporte.notaCierre ? `\n«${reporte.notaCierre}»` : null,
+    reporte._count.fotos ? `${reporte._count.fotos} foto(s) tuyas.` : null,
+  ].filter((l) => l !== null).join('\n')
+
+  // Se ofrece qué hacer con él, no solo el estado: un reporte no es una
+  // fotografía. La fuga crece, aparece otra evidencia, o el vecino se acuerda
+  // de un dato. Sin esto, la única forma de aportarlo sería levantar otro
+  // reporte, y el municipio acabaría con duplicados que nadie relaciona.
+  await guardarEstado(conversacion.id, {
+    paso: 'folio_acciones', reporteId: reporte.id, folio: reporte.folio,
+  })
+  return accionesDeFolio(ctx, reporte.id, reporte.folio, resumen)
 }
 
 // ---------------------------------------------------------------- humano
