@@ -16,7 +16,8 @@
     "telegram:conectar": "bash scripts/telegram-conectar.sh",
     "telegram:estado": "bash scripts/telegram-conectar.sh --estado",
     "telegram:ensayo": "tsx scripts/telegram-ensayo.ts",
-    "clasificador:ensayo": "tsx scripts/clasificador-ensayo.ts"
+    "clasificador:ensayo": "tsx scripts/clasificador-ensayo.ts",
+    "telegram": "bash scripts/telegram.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",
