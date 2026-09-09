@@ -151,7 +151,7 @@ export async function mostrarColonias(
 
   return [{
     chatId,
-    texto: `No identifiqué la colonia. **Escríbeme cómo se llama** y yo la busco.\n\nO elige de estas:\n${lista}${hayMas ? '\n\nEscribe *más* para ver otras.' : ''}`,
+    texto: `No identifiqué la colonia. *Escríbeme cómo se llama* y yo la busco.\n\nO elige de estas:\n${lista}${hayMas ? '\n\nEscribe *más* para ver otras.' : ''}`,
   }]
 }
 
@@ -289,8 +289,19 @@ export async function pedirConfirmacion(
       })
     : null
 
-  const lugar = borrador.direccionTexto
-    ?? (borrador.coloniaNombre ? `Col. ${borrador.coloniaNombre}` : 'ubicación en el mapa')
+  // Se enseñan las DOS cosas cuando existen. Antes, tener dirección escrita
+  // ocultaba la colonia, y el ciudadano confirmaba un lugar distinto del que
+  // quedaba archivado: alguien escribía «calle Tulipanes, colonia Obrera»,
+  // elegía otra colonia de la lista porque la suya no está en el catálogo, y
+  // aprobaba una pantalla que nunca le dijo bajo qué colonia se iba a
+  // registrar. La cuadrilla sale a donde diga la colonia.
+  const partes = [
+    borrador.direccionTexto,
+    borrador.coloniaNombre ? `Col. ${borrador.coloniaNombre}` : null,
+  ].filter(Boolean)
+  const lugar = partes.length > 0
+    ? partes.join(' · ')
+    : (borrador.lat != null ? 'ubicación en el mapa' : 'sin ubicación')
 
   return [{
     chatId,

@@ -38,6 +38,32 @@ type ActualizacionTelegram = {
   }
 }
 
+/**
+ * Traduce el formato del motor al de Telegram.
+ *
+ * El motor escribe `*así*`, que es como se marcan las negritas en WhatsApp.
+ * Telegram no interpreta nada salvo que se le pida un `parse_mode`, así que
+ * sin esto el ciudadano ve los asteriscos tal cual: «Tu folio es
+ * *TUL-2026-00346*».
+ *
+ * Se usa HTML y no Markdown a propósito. El texto que se manda incluye lo que
+ * el ciudadano escribió —su descripción aparece en la confirmación— y el
+ * Markdown de Telegram es estricto: un guion bajo suelto o un asterisco sin
+ * pareja hacen que Telegram rechace el mensaje entero con un 400. Con HTML se
+ * escapa primero todo lo peligroso y después se aplican las negritas, así que
+ * nada de lo que escriba una persona puede romper el envío.
+ */
+export function aHtmlTelegram(texto: string): string {
+  const escapado = texto
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
+  // Después de escapar: así un `<b>` que haya escrito el ciudadano ya es texto
+  // inerte y no puede colarse como etiqueta.
+  return escapado.replace(/\*{1,2}([^*\n]+)\*{1,2}/g, '<b>$1</b>')
+}
+
 export class TelegramProvider implements MessagingProvider {
   readonly canal = 'telegram' as const
 
@@ -68,7 +94,8 @@ export class TelegramProvider implements MessagingProvider {
   async enviar(mensaje: MensajeSaliente): Promise<void> {
     const cuerpo: Record<string, unknown> = {
       chat_id: mensaje.chatId,
-      text: mensaje.texto,
+      text: aHtmlTelegram(mensaje.texto),
+      parse_mode: 'HTML',
     }
 
     if (mensaje.pedirTelefono || mensaje.pedirUbicacion) {

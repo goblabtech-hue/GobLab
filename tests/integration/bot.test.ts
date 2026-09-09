@@ -5,7 +5,7 @@ import { prisma } from '../../src/infrastructure/prisma'
 import { procesarMensaje } from '../../src/application/bot/bot'
 import { hashTelefono } from '../../src/domain/telefono'
 import { pareceEmergencia } from '../../src/application/bot/clasificador'
-import { TelegramProvider } from '../../src/infrastructure/mensajeria/telegram'
+import { TelegramProvider, aHtmlTelegram } from '../../src/infrastructure/mensajeria/telegram'
 import { WhatsAppCloudProvider } from '../../src/infrastructure/mensajeria/whatsapp-cloud'
 
 /**
@@ -294,6 +294,70 @@ describe('el canal queda registrado como lo que es', () => {
       r.telefonoHash, null,
       'en Telegram el chat id no es un teléfono y no debe guardarse como tal',
     )
+  })
+})
+
+describe('formato de los mensajes en Telegram', () => {
+  /**
+   * Ambos casos salieron de la primera conversación real: el ciudadano vio
+   * «Tu folio es *TUL-2026-00346*» con los asteriscos a la vista, porque el
+   * motor escribe negritas al estilo WhatsApp y Telegram no interpreta nada
+   * sin `parse_mode`.
+   */
+  test('las negritas del motor se vuelven negritas de verdad', () => {
+    assert.equal(
+      aHtmlTelegram('Tu folio es *TUL-2026-00346*'),
+      'Tu folio es <b>TUL-2026-00346</b>',
+    )
+    assert.equal(aHtmlTelegram('escribe *seguir*'), 'escribe <b>seguir</b>')
+  })
+
+  test('lo que escribe el ciudadano no puede romper el envío ni colarse como etiqueta', () => {
+    // Telegram rechaza el mensaje ENTERO con 400 si el marcado no cuadra, y
+    // la descripción del ciudadano viaja dentro de la confirmación. Con HTML
+    // se escapa antes de aplicar negritas, así que nada de esto revienta.
+    assert.equal(
+      aHtmlTelegram('hay un <script>alert(1)</script> en la calle'),
+      'hay un &lt;script&gt;alert(1)&lt;/script&gt; en la calle',
+    )
+    assert.equal(aHtmlTelegram('Pérez & Hnos'), 'Pérez &amp; Hnos')
+    // Un asterisco suelto no debe producir etiquetas a medias.
+    assert.equal(aHtmlTelegram('cuesta 5*'), 'cuesta 5*')
+    assert.equal(aHtmlTelegram('guion_bajo_suelto'), 'guion_bajo_suelto')
+  })
+})
+
+describe('la confirmación no puede ocultar dónde se va a archivar', () => {
+  const CHAT_C = '5590000009'
+  let m = 0
+  const diC = (texto: string, extra: Record<string, unknown> = {}) =>
+    procesarMensaje({ canal: 'simulador', chatId: CHAT_C, idExterno: `cf${Date.now()}-${++m}`, texto, ...extra })
+
+  after(async () => {
+    await prisma.conversacionBot.deleteMany({
+      where: { canal: 'simulador', chatIdHash: hashTelefono(CHAT_C) },
+    })
+  })
+
+  /**
+   * De la primera conversación real: alguien escribió «calle Tulipanes,
+   * colonia Obrera», eligió otra colonia de la lista porque la suya no está en
+   * el catálogo, y la confirmación le enseñó solo su texto. Aprobó una
+   * pantalla que nunca le dijo bajo qué colonia se iba a registrar — y la
+   * cuadrilla sale a donde diga la colonia.
+   */
+  test('enseña la dirección escrita Y la colonia elegida', async () => {
+    const marca = `bache, prueba de confirmacion ${Date.now()}`
+    await diC('hola'); await diC('1')
+    await diC(marca)
+    await diC('1'); await diC('seguir')
+    await diC('calle Tulipanes, colonia Obrera')   // no existe: pide elegir
+    const salida = await diC('Acoculco')
+
+    const confirmacion = salida.find((r) => r.texto.includes('Voy a registrar esto'))
+      ?? uno(await diC('1'), 'confirmación')
+    assert.ok(confirmacion.texto.includes('Tulipanes'), `falta la dirección: ${confirmacion.texto}`)
+    assert.ok(confirmacion.texto.includes('Acoculco'), `falta la colonia: ${confirmacion.texto}`)
   })
 })
 
