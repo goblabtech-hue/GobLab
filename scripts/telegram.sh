@@ -83,15 +83,31 @@ if [ -z "$TOKEN" ]; then
      5. Te contesta con una línea como:     8123456789:AAHdq...
 
 AYUDA
-  gris "  Se teclea a ciegas: no se ve al escribir y no queda en el historial."
-  printf '  Pega el token aquí y pulsa Enter: '
-  read -rs TOKEN; echo
-  TOKEN=$(printf '%s' "$TOKEN" | tr -d '[:space:]')
-  [ -n "$TOKEN" ] || { malo "No tecleaste nada."; exit 1; }
-  case "$TOKEN" in
-    *:*) ;;
-    *) malo "Eso no parece un token (van dígitos, dos puntos y una cadena larga)."; exit 1 ;;
-  esac
+  # El token SÍ se ve al pegarlo, a propósito. La primera versión lo ocultaba
+  # con `read -s` y el resultado fue que nadie sabía si su pegado había
+  # entrado: se pulsaba Enter sobre una pantalla vacía y el script moría
+  # diciendo «no tecleaste nada». Ocultarlo tampoco compraba lo importante —
+  # lo que `read` consume nunca entra al historial del shell ni aparece en
+  # `ps`, se vea o no en pantalla.
+  gris "  Al pegarlo SÍ se va a ver. No queda en el historial de la terminal."
+  for intento in 1 2 3; do
+    printf '  Pega el token y pulsa Enter: '
+    read -r TOKEN || true
+    TOKEN=$(printf '%s' "${TOKEN:-}" | tr -d '[:space:]')
+    [ -z "$TOKEN" ] && { malo "No entró nada. Intenta con ⌘V y luego Enter."; continue; }
+    case "$TOKEN" in
+      *:*) break ;;
+      *) malo "Eso no parece un token: van dígitos, dos puntos y una cadena larga." ;;
+    esac
+    TOKEN=""
+  done
+  if [ -z "${TOKEN:-}" ]; then
+    echo
+    malo "No se pudo leer el token."
+    gris "  Alternativa: ábre el archivo .env y pon el token entre las comillas de"
+    gris "  la línea TELEGRAM_BOT_TOKEN=\"\". Luego vuelve a correr: npm run telegram"
+    exit 1
+  fi
   escribir TELEGRAM_BOT_TOKEN "$TOKEN"
   ok "Guardado en .env (que no se sube a git)"
 else
