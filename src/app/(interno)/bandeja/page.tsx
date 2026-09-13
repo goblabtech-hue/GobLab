@@ -8,6 +8,7 @@ import { ESTATUS, ESTATUS_ABIERTOS, ORIGEN, PRIORIDAD, SEMAFORO } from '@/domain
 import { fecha, haceCuanto, numero } from '@/domain/formato'
 import { Tarjeta } from '@/components/ui/tarjeta'
 import { cargaPorArea } from '@/application/reportes'
+import { EtiquetaDependencia } from '@/components/sello-dependencia'
 import { ResumenAreas } from './areas'
 import { Insignia } from '@/components/ui/insignia'
 import { Boton } from '@/components/ui/boton'
@@ -77,7 +78,7 @@ export default async function PaginaBandeja({ searchParams }: PageProps<'/bandej
           origen: true, createdAt: true, fechaLimite: true,
           categoria: { select: { nombre: true } },
           colonia: { select: { nombre: true } },
-          dependencia: { select: { nombre: true } },
+          dependencia: { select: { nombre: true, icono: true, color: true } },
           asignadoA: { select: { nombre: true } },
           _count: { select: { adhesiones: true } },
         },
@@ -211,9 +212,10 @@ export default async function PaginaBandeja({ searchParams }: PageProps<'/bandej
                     <td className="max-w-md px-4 py-3 align-top">
                       <p className="font-medium">{r.categoria.nombre}</p>
                       <p className="truncate text-xs text-tinta-suave">{r.descripcion}</p>
-                      <p className="mt-0.5 text-xs text-tenue">
-                        {r.colonia?.nombre ?? 'Sin colonia'} · {r.dependencia.nombre}
-                        {r._count.adhesiones > 0 && ` · ${r._count.adhesiones} vecinos`}
+                      <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-tenue">
+                        <EtiquetaDependencia dependencia={r.dependencia} className="text-tinta-suave" />
+                        <span>· {r.colonia?.nombre ?? 'Sin colonia'}</span>
+                        {r._count.adhesiones > 0 && <span>· {r._count.adhesiones} vecinos</span>}
                       </p>
                     </td>
                     <td className="px-4 py-3 align-top">

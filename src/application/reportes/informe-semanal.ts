@@ -37,6 +37,8 @@ export type PendienteViejo = {
 export type InformeDependencia = {
   id: number
   nombre: string
+  icono: string
+  color: string
   responsable: string
   correo: string | null
 
@@ -104,7 +106,7 @@ export async function informeSemanal(
   const dependencias = await prisma.dependencia.findMany({
     where: soloDependenciaId ? { id: soloDependenciaId } : { activa: true },
     orderBy: { nombre: 'asc' },
-    select: { id: true, nombre: true, responsable: true, correo: true },
+    select: { id: true, nombre: true, icono: true, color: true, responsable: true, correo: true },
   })
   if (dependencias.length === 0) {
     return {
@@ -158,6 +160,8 @@ export async function informeSemanal(
     return {
       id: d.id,
       nombre: d.nombre,
+      icono: d.icono,
+      color: d.color,
       responsable: d.responsable,
       correo: d.correo,
 

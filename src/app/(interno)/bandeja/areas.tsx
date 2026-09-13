@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ArrowDownToLine, CheckCircle2 } from 'lucide-react'
 import { numero } from '@/domain/formato'
 import type { CargaArea } from '@/application/reportes'
+import { SelloDependencia } from '@/components/sello-dependencia'
 
 /**
  * Carga de trabajo por área responsable.
@@ -42,7 +43,10 @@ export function ResumenAreas({ areas }: { areas: CargaArea[] }) {
               href={`/bandeja?dependencia=${a.id}&estatus=abiertos`}
               className="block h-full rounded-[--radius-tarjeta] border border-borde bg-papel p-3.5 transition-colors hover:border-marca-200 hover:bg-marca-50/40"
             >
-              <p className="line-clamp-2 text-sm leading-snug font-medium">{a.nombre}</p>
+              <p className="flex items-start gap-2">
+                <SelloDependencia dependencia={a} tamano="mediano" />
+                <span className="line-clamp-2 text-sm leading-snug font-medium">{a.nombre}</span>
+              </p>
 
               <p className="mt-2 flex items-baseline gap-1.5">
                 <span className="text-2xl font-semibold tabular-nums">{numero(a.abiertos)}</span>

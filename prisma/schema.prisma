@@ -98,6 +98,9 @@ model Dependencia {
   telefono    String
   /// Correo de la persona responsable. Es a donde llegan las alertas de su área.
   correo      String?
+  /// Identidad visual: nombre de ícono y color del catálogo (src/domain/identidad-dependencia.ts).
+  icono       String  @default("building-2")
+  color       String  @default("gris")
   activa      Boolean @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

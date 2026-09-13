@@ -12,6 +12,8 @@ import { ESTATUS_ABIERTOS } from '@/domain/estatus'
 export type CargaArea = {
   id: number
   nombre: string
+  icono: string
+  color: string
   abiertos: number
   vencidos: number
   sinCuadrilla: number
@@ -27,7 +29,7 @@ export async function cargaPorArea(soloDependenciaId?: number | null): Promise<C
   const dependencias = await prisma.dependencia.findMany({
     where: alcance,
     orderBy: { nombre: 'asc' },
-    select: { id: true, nombre: true },
+    select: { id: true, nombre: true, icono: true, color: true },
   })
   if (dependencias.length === 0) return []
 
@@ -57,6 +59,8 @@ export async function cargaPorArea(soloDependenciaId?: number | null): Promise<C
       return {
         id: d.id,
         nombre: d.nombre,
+        icono: d.icono,
+        color: d.color,
         abiertos: suyos.length,
         vencidos: suyos.filter((r) => r.fechaLimite < ahora).length,
         // "nuevo" significa que tiene área pero todavía no tiene a nadie atrás.

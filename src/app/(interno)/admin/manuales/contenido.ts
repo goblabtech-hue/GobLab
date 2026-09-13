@@ -221,7 +221,7 @@ export const MANUALES: Manual[] = [
     tareas: [
       { titulo: 'Arrancar el municipio (una vez)', pasos: [
         'Datos del municipio: nombre, prefijo del folio, teléfono de emergencias, centro del mapa, logotipo y tema visual.',
-        'Dependencias: las áreas reales, su titular y su correo institucional. Ahí llegan los avisos.',
+        'Dependencias: las áreas reales, su titular y su correo institucional. Ahí llegan los avisos. Cada una lleva un ícono y un color: es como se reconoce en la bandeja, los folios y los tableros, así que no repitas colores.',
         'Categorías: activa del catálogo las que el municipio atiende y asigna cada una a su dependencia. Cada categoría activa necesita plazo.',
         'Plazos de atención: días hábiles comprometidos por categoría. Es la promesa pública: se ve en el tablero y se mide.',
         'Colonias: importa el catálogo de Correos de México del municipio (archivo oficial) o captura a mano.',

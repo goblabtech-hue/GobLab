@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { ICONOS_DEPENDENCIA, COLORES_DEPENDENCIA, ICONO_DEPENDENCIA_POR_DEFECTO, COLOR_DEPENDENCIA_POR_DEFECTO } from '@/domain/identidad-dependencia'
 import { primerError } from '@/domain/validacion'
 import fs from 'node:fs/promises'
 import os from 'node:os'
@@ -100,6 +101,8 @@ const dependenciaSchema = z.object({
   responsable: texto(3, 120),
   telefono: z.string().trim().regex(/^\d{7,15}$/, 'Escribe solo dígitos (7 a 15).'),
   correo: z.string().trim().toLowerCase().email('Escribe un correo válido.').optional().or(z.literal('')),
+  icono: z.enum(ICONOS_DEPENDENCIA.map(([v]) => v) as [string, ...string[]]).default(ICONO_DEPENDENCIA_POR_DEFECTO),
+  color: z.enum(Object.keys(COLORES_DEPENDENCIA) as [string, ...string[]]).default(COLOR_DEPENDENCIA_POR_DEFECTO),
   activa: z.coerce.boolean().optional(),
 })
 
@@ -111,6 +114,8 @@ export async function guardarDependencia(_p: Resultado, datos: FormData): Promis
       responsable: datos.get('responsable'),
       telefono: datos.get('telefono'),
       correo: datos.get('correo'),
+      icono: datos.get('icono') || undefined,
+      color: datos.get('color') || undefined,
       activa: datos.get('activa') === 'on',
     })
     if (!parsed.success) return { error: primerError(parsed.error) }

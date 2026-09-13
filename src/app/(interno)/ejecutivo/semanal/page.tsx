@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Printer } from 'lucide-react'
 import { requerirRol } from '@/infrastructure/auth'
+import { SelloDependencia } from '@/components/sello-dependencia'
 import { informeSemanal, type InformeDependencia } from '@/application/reportes'
 import {
   etiquetaSemana, semanaAnterior, semanaDe, semanaDeClave, semanaSiguiente,
@@ -49,12 +50,15 @@ function Area({ d }: { d: InformeDependencia }) {
     <Tarjeta className="break-inside-avoid">
       <TarjetaCuerpo className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="min-w-0">
+          <div className="flex min-w-0 items-start gap-2.5">
+            <SelloDependencia dependencia={d} tamano="mediano" className="mt-0.5" />
+            <div className="min-w-0">
             <h3 className="font-semibold text-tinta">{d.nombre}</h3>
             <p className="text-sm text-tinta-suave">
               {d.responsable}
               {d.correo ? ` · ${d.correo}` : ''}
             </p>
+            </div>
           </div>
           <Insignia tono={tonoCumplimiento(d.cumplimiento)}>
             {pct1(d.cumplimiento)} en tiempo

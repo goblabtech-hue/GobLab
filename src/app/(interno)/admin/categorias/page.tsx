@@ -1,4 +1,5 @@
 import { prisma } from '@/infrastructure/prisma'
+import { EtiquetaDependencia } from '@/components/sello-dependencia'
 import { Insignia } from '@/components/ui/insignia'
 import { Catalogo } from '../catalogo'
 import { guardarCategoria } from '../acciones'
@@ -10,7 +11,7 @@ export default async function PaginaCategorias() {
   const [categorias, dependencias] = await Promise.all([
     prisma.categoria.findMany({
       orderBy: [{ activa: 'desc' }, { orden: 'asc' }],
-      include: { dependencia: { select: { nombre: true } } },
+      include: { dependencia: { select: { nombre: true, icono: true, color: true } } },
     }),
     prisma.dependencia.findMany({ where: { activa: true }, orderBy: { nombre: 'asc' } }),
   ])
@@ -37,7 +38,7 @@ export default async function PaginaCategorias() {
             {c.descripcionCorta && <p className="text-xs text-tinta-suave">{c.descripcionCorta}</p>}
           </div>,
           <span key="s" className="whitespace-nowrap">{c.slaDiasHabiles} días hábiles</span>,
-          c.dependencia.nombre,
+          <EtiquetaDependencia key="d" dependencia={c.dependencia} />,
           c.requiereEvidencia
             ? <Insignia key="e" tono="marca">Foto obligatoria</Insignia>
             : <Insignia key="e">No aplica</Insignia>,

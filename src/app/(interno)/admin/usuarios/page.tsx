@@ -1,4 +1,5 @@
 import { prisma } from '@/infrastructure/prisma'
+import { EtiquetaDependencia } from '@/components/sello-dependencia'
 import { Insignia } from '@/components/ui/insignia'
 import { ROL } from '@/domain/presentacion'
 import { Catalogo } from '../catalogo'
@@ -11,7 +12,7 @@ export default async function PaginaUsuarios() {
   const [usuarios, dependencias] = await Promise.all([
     prisma.usuario.findMany({
       orderBy: [{ activo: 'desc' }, { nombre: 'asc' }],
-      include: { dependencia: { select: { nombre: true } } },
+      include: { dependencia: { select: { nombre: true, icono: true, color: true } } },
     }),
     prisma.dependencia.findMany({ where: { activa: true }, orderBy: { nombre: 'asc' } }),
   ])
@@ -37,7 +38,7 @@ export default async function PaginaUsuarios() {
             <p className="text-xs text-tinta-suave">{u.email}</p>
           </div>,
           <Insignia key="r" tono="marca">{ROL[u.rol] ?? u.rol}</Insignia>,
-          u.dependencia?.nombre ?? <span key="d" className="text-tenue">Todas</span>,
+          u.dependencia ? <EtiquetaDependencia key="d" dependencia={u.dependencia} /> : <span key="d" className="text-tenue">Todas</span>,
           <div key="a" className="space-y-1">
             <VincularTelegram userId={u.id} vinculado={Boolean(u.telegramChatIdHash)} />
             <p className="text-xs text-tinta-suave">

@@ -10,6 +10,7 @@ import { Tarjeta, TarjetaCuerpo, TarjetaTitulo } from '@/components/ui/tarjeta'
 import { Insignia } from '@/components/ui/insignia'
 import { Alerta } from '@/components/ui/alerta'
 import { Cifra } from '@/components/tablero/cifra'
+import { SelloDependencia } from '@/components/sello-dependencia'
 
 export const metadata = { title: 'Indicadores' }
 export const dynamic = 'force-dynamic'
@@ -141,7 +142,9 @@ export default async function Ejecutivo() {
                 {internos.dependencias.map((d) => (
                   <tr key={d.id}>
                     <td className="px-4 py-3 font-medium">
-                      <Link href={`/ejecutivo/dependencia/${d.id}`} className="text-marca-700 underline decoration-marca-300 hover:decoration-marca-700">{d.nombre}</Link>
+                      <Link href={`/ejecutivo/dependencia/${d.id}`} className="inline-flex items-center gap-2 text-marca-700 underline decoration-marca-300 hover:decoration-marca-700">
+                        <SelloDependencia dependencia={d} />{d.nombre}
+                      </Link>
                     </td>
                     <td className="px-4 py-3 tabular-nums">{numero(d.abiertos)}</td>
                     <td className="px-4 py-3 tabular-nums">

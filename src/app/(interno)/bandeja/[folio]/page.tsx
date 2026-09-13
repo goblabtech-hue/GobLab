@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, MapPin, Phone, User } from 'lucide-react'
+import { ArrowLeft, Building2, MapPin, Phone, User } from 'lucide-react'
+import { EtiquetaDependencia } from '@/components/sello-dependencia'
 import { prisma } from '@/infrastructure/prisma'
 import { requerirRol } from '@/infrastructure/auth'
 import { semaforo } from '@/domain/dias-habiles'
@@ -32,7 +33,7 @@ export default async function DetalleBandeja({ params }: PageProps<'/bandeja/[fo
     include: {
       categoria: { select: { nombre: true, slaDiasHabiles: true, requiereEvidencia: true } },
       colonia: { select: { nombre: true } },
-      dependencia: { select: { id: true, nombre: true } },
+      dependencia: { select: { id: true, nombre: true, icono: true, color: true } },
       asignadoA: { select: { id: true, nombre: true } },
       reporteOriginal: { select: { folio: true } },
       duplicados: { select: { folio: true } },
@@ -108,6 +109,11 @@ export default async function DetalleBandeja({ params }: PageProps<'/bandeja/[fo
               <p className="text-pretty">{r.descripcion}</p>
 
               <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+                <Dato icono={Building2} etiqueta="Área responsable">
+                  <EtiquetaDependencia dependencia={r.dependencia} />
+                  {r.asignadoA && <span className="block text-xs text-tinta-suave">Cuadrilla: {r.asignadoA.nombre}</span>}
+                </Dato>
+
                 <Dato icono={MapPin} etiqueta="Ubicación">
                   {r.direccionTexto ?? 'Sin dirección'}
                   {r.colonia && <> · Col. {r.colonia.nombre}</>}

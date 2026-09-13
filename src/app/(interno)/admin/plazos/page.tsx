@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react'
 import { requerirRol } from '@/infrastructure/auth'
 import { obtenerIndicadores } from '@/application/indicadores'
 import { prisma } from '@/infrastructure/prisma'
+import { EtiquetaDependencia } from '@/components/sello-dependencia'
 import { numero, pct } from '@/domain/formato'
 import { Tarjeta } from '@/components/ui/tarjeta'
 import { Insignia } from '@/components/ui/insignia'
@@ -33,7 +34,7 @@ export default async function PaginaPlazos() {
       orderBy: { orden: 'asc' },
       select: {
         id: true, slug: true, nombre: true, icono: true, slaDiasHabiles: true,
-        activa: true, dependencia: { select: { nombre: true } },
+        activa: true, dependencia: { select: { nombre: true, icono: true, color: true } },
       },
     }),
   ])
@@ -98,7 +99,7 @@ export default async function PaginaPlazos() {
                         <IconoCategoria nombre={c.icono} className="size-4 shrink-0 text-marca-600" />
                         <span>
                           <span className="font-medium">{c.nombre}</span>
-                          <span className="block text-xs text-tinta-suave">{c.dependencia.nombre}</span>
+                          <EtiquetaDependencia dependencia={c.dependencia} className="mt-0.5 text-xs text-tinta-suave" />
                         </span>
                         {!c.activa && <Insignia>Inactiva</Insignia>}
                       </span>

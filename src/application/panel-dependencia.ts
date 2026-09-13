@@ -27,7 +27,7 @@ export type ResueltoBreve = {
 }
 
 export type PanelDependencia = {
-  dependencia: { id: number; nombre: string; responsable: string | null; correo: string | null }
+  dependencia: { id: number; nombre: string; icono: string; color: string; responsable: string | null; correo: string | null }
   carga: { abiertos: number; vencidos: number; sinCuadrilla: number; porVencerHoy: number }
   indicadores: Indicadores
   cuadrillas: FilaCuadrilla[]
@@ -39,7 +39,7 @@ export type PanelDependencia = {
 export async function panelDependencia(dependenciaId: number): Promise<PanelDependencia | null> {
   const dependencia = await prisma.dependencia.findUnique({
     where: { id: dependenciaId },
-    select: { id: true, nombre: true, responsable: true, correo: true },
+    select: { id: true, nombre: true, icono: true, color: true, responsable: true, correo: true },
   })
   if (!dependencia) return null
 

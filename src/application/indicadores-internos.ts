@@ -20,6 +20,8 @@ import type { EstatusReporte } from '@/generated/prisma/enums'
 export type FilaDependencia = {
   id: number
   nombre: string
+  icono: string
+  color: string
   abiertos: number
   vencidos: number
   resueltos: number
@@ -79,7 +81,7 @@ type ReporteInterno = {
 
 function armarDependencias(
   datos: {
-    dependencias: { id: number; nombre: string }[]
+    dependencias: { id: number; nombre: string; icono: string; color: string }[]
     reportes: ReporteInterno[]
     primerasRespuestas: { dependenciaId: number; horas: number }[]
     reasignados: { detalle: unknown }[]
@@ -109,6 +111,8 @@ function armarDependencias(
     return {
       id: d.id,
       nombre: d.nombre,
+      icono: d.icono,
+      color: d.color,
       abiertos: suyos.filter((r) => ESTATUS_ABIERTOS.includes(r.estatus)).length,
       vencidos: suyos.filter((r) => ESTATUS_ABIERTOS.includes(r.estatus) && r.fechaLimite < ahora).length,
       resueltos: resueltos.length,
@@ -175,7 +179,7 @@ export async function calcularIndicadoresInternos(meses = 12): Promise<Indicador
   const [festivos, dependencias, cuadrillas, reportes, primerasRespuestas, conversaciones, clasificaciones, reaperturas] =
     await Promise.all([
       cargarFestivos(),
-      prisma.dependencia.findMany({ orderBy: { nombre: 'asc' }, select: { id: true, nombre: true } }),
+      prisma.dependencia.findMany({ orderBy: { nombre: 'asc' }, select: { id: true, nombre: true, icono: true, color: true } }),
       prisma.usuario.findMany({
         where: { rol: 'cuadrilla' }, orderBy: { nombre: 'asc' },
         select: { id: true, nombre: true, dependencia: { select: { nombre: true } } },

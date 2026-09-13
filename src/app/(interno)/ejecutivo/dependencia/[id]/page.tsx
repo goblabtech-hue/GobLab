@@ -10,6 +10,7 @@ import { Insignia } from '@/components/ui/insignia'
 import { Alerta } from '@/components/ui/alerta'
 import { Cifra } from '@/components/tablero/cifra'
 import { GraficasArea } from '../graficas-area'
+import { SelloDependencia } from '@/components/sello-dependencia'
 
 export const metadata = { title: 'Mi dependencia' }
 export const dynamic = 'force-dynamic'
@@ -43,15 +44,18 @@ export default async function TableroDependencia({ params }: { params: Promise<{
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <div>
-          <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-marca-700 uppercase">
-            <Building2 className="size-3.5" aria-hidden />
-            {esSuya ? 'Mi dependencia' : 'Dependencia'}
-          </p>
-          <h1 className="mt-1 text-xl font-semibold tracking-tight">{dependencia.nombre}</h1>
-          <p className="mt-1 text-sm text-tinta-suave">
-            {dependencia.responsable ?? 'Sin titular capturado'}{dependencia.correo ? ` · ${dependencia.correo}` : ''}
-          </p>
+        <div className="flex items-start gap-3">
+          <SelloDependencia dependencia={dependencia} tamano="grande" className="mt-1" />
+          <div>
+            <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-marca-700 uppercase">
+              <Building2 className="size-3.5" aria-hidden />
+              {esSuya ? 'Mi dependencia' : 'Dependencia'}
+            </p>
+            <h1 className="mt-1 text-xl font-semibold tracking-tight">{dependencia.nombre}</h1>
+            <p className="mt-1 text-sm text-tinta-suave">
+              {dependencia.responsable ?? 'Sin titular capturado'}{dependencia.correo ? ` · ${dependencia.correo}` : ''}
+            </p>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link href="/bandeja" className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-borde px-3 text-sm font-medium hover:bg-lienzo">
