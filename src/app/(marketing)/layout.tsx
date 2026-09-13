@@ -20,16 +20,18 @@ export default async function LayoutMarketing({ children }: { children: React.Re
           </Link>
           <nav aria-label="Secciones" className="ml-auto hidden items-center gap-1 md:flex">
             {[
-              ['#problema', 'El problema'],
-              ['#cambio', 'Lo que cambia'],
-              ['#como', 'Cómo funciona'],
-              ['#implementacion', 'Implementación'],
+              ['/plataforma#reporte', 'Un reporte'],
+              ['/plataforma#cambio', 'Lo que cambia'],
+              ['/plataforma#informe', 'El informe'],
+              ['/plataforma#whatsapp', 'Por WhatsApp'],
+              ['/plataforma#arranque', 'En una tarde'],
+              ['/contacto', 'Contacto'],
             ].map(([href, texto]) => (
               <a key={href} href={href} className="cabecera-enlace rounded-lg px-3 py-2 text-sm">{texto}</a>
             ))}
           </nav>
           <Link
-            href="/"
+            href="/inicio"
             className="btn-principal inline-flex h-10 items-center rounded-lg bg-marca-600 px-4 text-sm font-medium text-white"
           >
             Ver la demostración

@@ -1,273 +1,320 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import {
-  MessageCircle, Smartphone, Globe, Clock, Camera, CheckCircle2, BarChart3,
-  Route, Bell, CalendarRange, ShieldCheck, Database, FileSpreadsheet, ArrowRight,
-  XCircle, HelpCircle, EyeOff, Layers,
-} from 'lucide-react'
+import { ArrowRight, Check } from 'lucide-react'
 import { prisma } from '@/infrastructure/prisma'
 import { CATALOGO_CATEGORIAS } from '@/domain/catalogo-categorias'
 
 export const metadata = {
-  // Absoluto: la plantilla del sitio ciudadano le pegaría el nombre del
-  // municipio, y esta página es del producto, no de un municipio.
-  title: { absolute: 'DemosVoz · Atención ciudadana con plazos públicos y evidencia' },
+  title: { absolute: 'DemosVoz · Cada reporte con dueño, plazo y foto' },
   description:
-    'Una sola plataforma para recibir, atender y demostrar cada reporte ciudadano. Plazos públicos por tipo de problema, evidencia obligatoria, y el vecino confirma el cierre.',
+    'La plataforma de atención ciudadana para municipios de México: cada reporte llega al área correcta, con un plazo público, y se cierra con evidencia cuando el vecino confirma.',
 }
 export const dynamic = 'force-dynamic'
 
 /**
- * La página del producto. Habla de lo que la plataforma hace de verdad —
- * cada afirmación corresponde a algo construido y probado— y las capturas
- * son del sistema tal como está.
+ * La página del producto.
+ *
+ * Cuenta un solo reporte de principio a fin, enseña el producto en grande y
+ * usa el marino y el cian del logotipo con fuerza. Cada afirmación es algo
+ * construido y probado; las cifras salen de la base al renderizar.
  */
-export default async function Plataforma() {
-  const [colonias, dependencias] = await Promise.all([
-    prisma.colonia.count(), prisma.dependencia.count({ where: { activa: true } }),
+
+const MARINO = '#0b1a33'
+const LIMA = '#8dc63f'
+
+async function cifrasVivas() {
+  const hace12 = new Date(Date.now() - 365 * 86_400_000)
+  const [recibidos, resueltos, aTiempo, calif, colonias, dependencias] = await Promise.all([
+    prisma.reporte.count({ where: { createdAt: { gte: hace12 } } }),
+    prisma.reporte.count({ where: { createdAt: { gte: hace12 }, resueltoAt: { not: null } } }),
+    prisma.$queryRaw<{ pct: number | null }[]>`
+      SELECT round(100.0 * count(*) FILTER (WHERE "resueltoAt" <= "fechaLimite") / nullif(count(*), 0)) AS pct
+      FROM "Reporte" WHERE "resueltoAt" IS NOT NULL AND "createdAt" >= ${hace12}`,
+    prisma.reporte.aggregate({ _avg: { calificacion: true } }),
+    prisma.colonia.count(),
+    prisma.dependencia.count({ where: { activa: true } }),
   ])
+  return {
+    recibidos, resueltos,
+    pctTiempo: Number(aTiempo[0]?.pct ?? 0),
+    calif: calif._avg.calificacion ? calif._avg.calificacion.toFixed(1) : '—',
+    colonias, dependencias,
+  }
+}
+
+export default async function Plataforma() {
+  const c = await cifrasVivas()
 
   return (
-    <article className="text-tinta">
+    <article>
 
-      {/* ── Portada ─────────────────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 pt-16 pb-14 md:pt-24">
-        <div className="grid items-center gap-10 md:grid-cols-[1.1fr_1fr]">
-          <div>
-            <p className="text-sm font-semibold tracking-wide text-marca-600 uppercase">Atención ciudadana municipal</p>
-            <h1 className="mt-3 text-4xl font-bold leading-tight text-balance md:text-5xl">
-              El municipio que responde, y lo puede demostrar.
-            </h1>
-            <p className="mt-5 max-w-xl text-lg text-tinta-suave">
-              Una sola plataforma para recibir cada reporte de la gente, mandarlo al área que lo
-              atiende, cumplir un plazo que se publica, y cerrarlo con foto — solo cuando el vecino
-              dice que quedó.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/" className="btn-principal inline-flex h-12 items-center gap-2 rounded-lg bg-marca-600 px-6 text-base font-medium text-white">
-                Ver la demostración <ArrowRight className="size-4" aria-hidden />
-              </Link>
-              <a href="https://demoscopiadigital.com/#contacto" className="inline-flex h-12 items-center rounded-lg border border-borde bg-papel px-6 text-base font-medium hover:bg-lienzo">
-                Hablar con nosotros
-              </a>
-            </div>
-            <p className="mt-4 text-sm text-tenue">Sin registro para el ciudadano. Un folio, y con él sigue su reporte.</p>
-          </div>
-          <div className="relative mx-auto w-full max-w-[320px]">
-            <Image
-              src="/marca/capturas/reportar-movil.jpg" alt="El formulario de reporte en un teléfono"
-              width={780} height={1688} priority
-              className="rounded-[2rem] border-8 border-tinta shadow-2xl"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ── El problema ─────────────────────────────────────────────────── */}
-      <section id="problema" className="border-y border-borde bg-lienzo">
-        <div className="mx-auto max-w-6xl px-5 py-16">
-          <h2 className="text-3xl font-bold text-balance">Así se atiende hoy en la mayoría de los municipios</h2>
-          <p className="mt-3 max-w-2xl text-tinta-suave">
-            No por falta de voluntad: por falta de un sistema. Los reportes llegan por todos lados y
-            no viven en ningún lado.
+      {/* ═══ Portada ═══════════════════════════════════════════════════════ */}
+      <section className="text-white" style={{ background: MARINO }}>
+        <div className="mx-auto max-w-6xl px-5 pt-20 pb-16 md:pt-28 md:pb-20">
+          <p className="text-sm font-semibold tracking-[0.18em] uppercase" style={{ color: LIMA }}>
+            Atención ciudadana para municipios de México
           </p>
-          <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {[
-              { i: Layers, t: 'Dispersos', d: 'Llegan por teléfono, Facebook, WhatsApp del regidor y ventanilla. Nadie sabe cuántos hay ni cuántos siguen abiertos.' },
-              { i: Clock, t: 'Sin plazo', d: '«Lo vamos a atender» no dice cuándo. Sin un compromiso medible, no hay forma de saber si el área cumple.' },
-              { i: EyeOff, t: 'Sin evidencia', d: 'Un reporte se cierra porque alguien dijo que ya. La foto del trabajo terminado no existe, o se pierde en un celular.' },
-              { i: HelpCircle, t: 'El vecino nunca sabe', d: 'Reportó, y ya. No le avisan si lo asignaron, si fueron, ni si quedó. Vuelve a reportar lo mismo, o deja de reportar.' },
-            ].map(({ i: Icono, t, d }) => (
-              <div key={t} className="rounded-[--radius-tarjeta] border border-borde bg-papel p-5">
-                <Icono className="size-6 text-rojo-600" aria-hidden />
-                <h3 className="mt-3 font-semibold">{t}</h3>
-                <p className="mt-1.5 text-sm text-tinta-suave">{d}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Lo que cambia ───────────────────────────────────────────────── */}
-      <section id="cambio" className="mx-auto max-w-6xl px-5 py-16">
-        <h2 className="text-3xl font-bold text-balance">Lo que cambia con DemosVoz</h2>
-        <p className="mt-3 max-w-2xl text-tinta-suave">
-          Cada reporte tiene un dueño, un plazo y una foto. Y todo eso es visible — para el
-          ciudadano, para el área y para quien dirige.
-        </p>
-        <div className="mt-10 grid gap-x-8 gap-y-8 md:grid-cols-2 lg:grid-cols-3">
-          {[
-            { i: Route, t: 'Va solo al área correcta', d: 'Cada tipo de problema está ligado a la dependencia que lo atiende. Un bache llega a Obras Públicas; una fuga, al organismo de agua. Sin pasar por nadie.' },
-            { i: Clock, t: 'Plazos públicos, medidos', d: 'El municipio fija cuántos días hábiles promete por cada problema. Ese plazo se le dice al ciudadano en su acuse y se mide contra el cumplimiento real en el tablero abierto.' },
-            { i: Camera, t: 'Evidencia obligatoria', d: 'La cuadrilla no puede marcar resuelto sin subir la foto del trabajo terminado. El antes y el después quedan en el expediente, y los mejores en una galería pública.' },
-            { i: CheckCircle2, t: 'El vecino cierra, no el sistema', d: 'Al resolver, recibe la foto y una pregunta: ¿quedó? Si dice que no, el reporte se reabre con plazo nuevo. Si dice que sí, califica. Un cierre confirmado vale más que uno declarado.' },
-            { i: MessageCircle, t: 'Por donde la gente ya habla', d: 'WhatsApp, Telegram, la web o la app instalada en el teléfono. Un asistente entiende el problema escrito con las palabras de la gente y hace las preguntas justas.' },
-            { i: Bell, t: 'El personal se entera al instante', d: 'Al titular del área le llega cada reporte nuevo por correo y Telegram; a la cuadrilla, lo que le asignan por WhatsApp. Lo que venció y lo que el vecino reabrió, también.' },
-            { i: BarChart3, t: 'Un tablero que cualquiera puede ver', d: 'Cuántos reportes, cuántos a tiempo, cuánto tarda cada área, qué dice la gente. Público, por colonia, con datos abiertos descargables. Es rendición de cuentas en vivo.' },
-            { i: CalendarRange, t: 'El informe de la junta del lunes', d: 'Por dependencia y por semana: qué resolvió, si cumplió el plazo, qué trae pendiente y qué lleva más tiempo esperando. Imprimible, con la comparación contra la semana anterior.' },
-            { i: ShieldCheck, t: 'Los datos de la gente, protegidos', d: 'Teléfonos cifrados, ninguna página pública expone nombre ni número, ubicación de los datos abiertos redondeada para no señalar una casa. Probado, no prometido.' },
-          ].map(({ i: Icono, t, d }) => (
-            <div key={t} className="flex gap-4">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-marca-50 text-marca-700">
-                <Icono className="size-5" aria-hidden />
-              </span>
-              <div>
-                <h3 className="font-semibold">{t}</h3>
-                <p className="mt-1 text-sm text-tinta-suave">{d}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Cómo funciona ───────────────────────────────────────────────── */}
-      <section id="como" className="border-y border-borde bg-lienzo">
-        <div className="mx-auto max-w-6xl px-5 py-16">
-          <h2 className="text-3xl font-bold text-balance">Cómo funciona, de un lado y del otro</h2>
-
-          <div className="mt-10 grid gap-10 lg:grid-cols-2">
-            <div>
-              <p className="text-sm font-semibold tracking-wide text-marca-600 uppercase">Para el ciudadano</p>
-              <ol className="mt-4 space-y-5">
-                {[
-                  ['Cuenta qué pasa', 'Con sus palabras, por WhatsApp o desde el teléfono. Una foto y la ubicación, y ya. Menos de dos minutos, sin cuenta ni contraseña.'],
-                  ['Recibe un folio y una fecha', '«Nos comprometemos a atenderlo a más tardar el 17 de septiembre.» Con el folio ve cómo va y puede agregar más fotos o información.'],
-                  ['Confirma que quedó', 'Le llega la foto del trabajo terminado. Si el problema sigue, lo dice y el reporte se reabre. Si quedó, califica del 1 al 5.'],
-                ].map(([t, d], i) => (
-                  <li key={t} className="flex gap-4">
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-marca-600 text-sm font-semibold text-white">{i + 1}</span>
-                    <div><h3 className="font-semibold">{t}</h3><p className="mt-1 text-sm text-tinta-suave">{d}</p></div>
-                  </li>
-                ))}
-              </ol>
-            </div>
-            <div>
-              <p className="text-sm font-semibold tracking-wide text-marca-600 uppercase">Para el municipio</p>
-              <ol className="mt-4 space-y-5">
-                {[
-                  ['Llega clasificado y ruteado', 'El reporte aparece en la bandeja del área que lo atiende, con su plazo corriendo. El titular ya recibió el aviso. Si hay uno igual cerca, se detecta y no se duplica.'],
-                  ['La cuadrilla lo atiende con evidencia', 'Desde su teléfono ve lo que le asignaron, marca que empezó, y al terminar sube la foto. Sin foto no hay cierre.'],
-                  ['Se mide, se publica, se informa', 'El cumplimiento de cada área va al tablero público y al informe semanal. Lo que se venció avisa solo. Nada depende de que alguien se acuerde.'],
-                ].map(([t, d], i) => (
-                  <li key={t} className="flex gap-4">
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-tinta text-sm font-semibold text-white">{i + 1}</span>
-                    <div><h3 className="font-semibold">{t}</h3><p className="mt-1 text-sm text-tinta-suave">{d}</p></div>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          </div>
-
-          {/* Antes y después */}
-          <div className="mt-12 grid gap-4 sm:grid-cols-2">
-            {[['/marca/escena-antes.jpg', 'Antes', 'Lo que reportó el vecino'], ['/marca/escena-despues.jpg', 'Después', 'La evidencia que subió la cuadrilla']].map(([src, t, d]) => (
-              <figure key={t} className="overflow-hidden rounded-[--radius-tarjeta] border border-borde bg-papel">
-                <Image src={src!} alt={d!} width={1200} height={900} className="aspect-[4/3] w-full object-cover" />
-                <figcaption className="flex items-baseline gap-2 p-3 text-sm"><strong>{t}</strong><span className="text-tinta-suave">{d}</span></figcaption>
-              </figure>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Capturas ────────────────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 py-16">
-        <h2 className="text-3xl font-bold text-balance">Lo que ve quien administra</h2>
-        <div className="mt-10 space-y-12">
-          {[
-            { src: '/marca/capturas/bandeja.jpg', t: 'La bandeja', d: 'Todo lo abierto, por área: cuántos, cuántos vencidos, cuántos sin cuadrilla. Filtra por categoría, colonia, dependencia o canal. Cada reporte con su plazo, su asignado y su historia completa.' },
-            { src: '/marca/capturas/semanal.jpg', t: 'El informe semanal', d: 'Por dependencia: resueltos, cuántos a tiempo, días promedio, comparación con la semana pasada, y los cinco pendientes que llevan más tiempo esperando. Es el documento de la junta del lunes.' },
-            { src: '/marca/capturas/tablero.jpg', t: 'El tablero público', d: 'Lo mismo que ve el director, lo ve cualquier vecino: reportes recibidos y resueltos, cumplimiento de plazos por tipo de problema, calificación de la gente, y un mapa por colonia. Con datos abiertos para descargar.' },
-          ].map(({ src, t, d }, i) => (
-            <div key={t} className={`grid items-center gap-8 lg:grid-cols-[1fr_1.4fr] ${i % 2 ? 'lg:[&>*:first-child]:order-2' : ''}`}>
-              <div>
-                <h3 className="text-xl font-semibold">{t}</h3>
-                <p className="mt-2 text-tinta-suave">{d}</p>
-              </div>
-              <Image src={src} alt={t} width={1600} height={950} className="rounded-[--radius-tarjeta] border border-borde shadow-lg" />
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Canales ─────────────────────────────────────────────────────── */}
-      <section className="border-y border-borde bg-lienzo">
-        <div className="mx-auto max-w-6xl px-5 py-16">
-          <h2 className="text-3xl font-bold text-balance">Un solo sistema, por todos los canales</h2>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { i: MessageCircle, t: 'WhatsApp y Telegram', d: 'Un asistente que entiende «hay un bache enorme frente a la escuela» y pregunta solo lo que falta. Reconoce emergencias y manda al 911 en vez de atenderlas por chat.' },
-              { i: Smartphone, t: 'App en el teléfono', d: 'Se instala desde el navegador, con ícono y sin barra. Cámara y GPS integrados. iOS y Android.' },
-              { i: Globe, t: 'Sitio web', d: 'Para reportar desde una computadora, consultar un folio o ver cómo va el municipio.' },
-              { i: FileSpreadsheet, t: 'Ventanilla y teléfono', d: 'Lo que llega por los canales de siempre lo captura el personal en la misma bandeja. Nada queda fuera del sistema.' },
-            ].map(({ i: Icono, t, d }) => (
-              <div key={t} className="rounded-[--radius-tarjeta] border border-borde bg-papel p-5">
-                <Icono className="size-6 text-marca-600" aria-hidden />
-                <h3 className="mt-3 font-semibold">{t}</h3>
-                <p className="mt-1.5 text-sm text-tinta-suave">{d}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Implementación ──────────────────────────────────────────────── */}
-      <section id="implementacion" className="mx-auto max-w-6xl px-5 py-16">
-        <div className="grid gap-10 lg:grid-cols-[1fr_1fr]">
-          <div>
-            <h2 className="text-3xl font-bold text-balance">Un municipio se da de alta en una tarde</h2>
-            <p className="mt-3 text-tinta-suave">
-              No hay proyecto de meses. Lo que es propio de cada municipio se carga desde pantallas
-              de administración; lo demás ya está.
-            </p>
-            <ul className="mt-6 space-y-3 text-sm">
-              {[
-                ['Identidad', 'Nombre, escudo, prefijo de folio, centro del mapa. Cuatro identidades visuales, incluida la del Gobierno de México.'],
-                ['Colonias', `Del catálogo nacional de Correos de México: cualquier municipio del país, con códigos postales, en tres clics. (${colonias} cargadas en esta demostración.)`],
-                ['Dependencias', `Con titular, teléfono y correo, desde una hoja de Excel. (${dependencias} en esta demostración.)`],
-                ['Problemas y plazos', `Un catálogo de ${CATALOGO_CATEGORIAS.length} problemas municipales; se activan con una casilla y cada uno llega con un plazo sugerido que el área ajusta.`],
-                ['Personal', 'Cuentas por rol —operador, cuadrilla, supervisor, administración— con su Telegram y WhatsApp para los avisos.'],
-              ].map(([t, d]) => (
-                <li key={t} className="flex gap-3">
-                  <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-verde-600" aria-hidden />
-                  <span><strong>{t}.</strong> <span className="text-tinta-suave">{d}</span></span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="space-y-4">
-            {[
-              { i: Database, t: 'Los datos se quedan en México', d: 'Se instala en un servidor en el país, con respaldo diario de la base y de las fotos. Los teléfonos de la gente van cifrados; ninguna página pública expone nombre ni número.' },
-              { i: ShieldCheck, t: 'Transparencia de origen', d: 'Los plazos son públicos. El cumplimiento es público. Los datos abiertos se descargan sin pedir permiso. Un municipio que usa DemosVoz está diciendo que se deja medir.' },
-              { i: XCircle, t: 'Lo que no hace', d: 'No atiende emergencias por chat: las detecta y manda al 911. No recibe casos personales —violencia, adicciones— que no deben estar en un mapa público. No es un buzón de quejas: cada reporte tiene un área, un plazo y un cierre.' },
-            ].map(({ i: Icono, t, d }) => (
-              <div key={t} className="rounded-[--radius-tarjeta] border border-borde bg-papel p-5">
-                <div className="flex items-center gap-2">
-                  <Icono className="size-5 text-marca-600" aria-hidden />
-                  <h3 className="font-semibold">{t}</h3>
-                </div>
-                <p className="mt-2 text-sm text-tinta-suave">{d}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Cierre ──────────────────────────────────────────────────────── */}
-      <section className="border-t border-borde">
-        <div className="mx-auto max-w-6xl px-5 py-16 text-center">
-          <h2 className="text-3xl font-bold text-balance">Véala funcionando con datos de un municipio real</h2>
-          <p className="mx-auto mt-3 max-w-xl text-tinta-suave">
-            La demostración está configurada como Tula de Allende, Hidalgo, con sus colonias y sus
-            dependencias reales. Entre, reporte, y sígalo hasta el cierre.
+          <h1 className="mt-5 max-w-4xl text-5xl font-extrabold leading-[1.02] tracking-tight text-balance md:text-7xl">
+            Cada reporte con dueño, plazo y foto.
+          </h1>
+          <p className="mt-7 max-w-2xl text-xl leading-relaxed text-white/75">
+            El vecino reporta por WhatsApp. El sistema lo manda al área que lo atiende, le pone un
+            plazo público, y no lo cierra hasta que hay evidencia — y el vecino dice que quedó.
           </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link href="/" className="btn-principal inline-flex h-12 items-center gap-2 rounded-lg bg-marca-600 px-6 text-base font-medium text-white">
+          <div className="mt-10 flex flex-wrap gap-3">
+            <Link href="/inicio" className="btn-principal inline-flex h-13 items-center gap-2 rounded-lg px-7 text-base font-semibold text-white">
               Ver la demostración <ArrowRight className="size-4" aria-hidden />
             </Link>
-            <a href="https://demoscopiadigital.com/#contacto" className="inline-flex h-12 items-center rounded-lg border border-borde bg-papel px-6 text-base font-medium hover:bg-lienzo">
-              Hablar con nosotros
-            </a>
+            <Link href="/contacto" className="inline-flex h-13 items-center rounded-lg border border-white/30 px-7 text-base font-semibold text-white hover:bg-white/10">
+              Hablar con ventas
+            </Link>
+          </div>
+        </div>
+
+        {/* Cifras vivas */}
+        <div className="border-t border-white/10">
+          <div className="mx-auto grid max-w-6xl grid-cols-2 divide-x divide-white/10 px-5 md:grid-cols-4">
+            {[
+              [c.recibidos.toLocaleString('es-MX'), 'reportes recibidos', 'últimos 12 meses'],
+              [c.resueltos.toLocaleString('es-MX'), 'resueltos', 'con foto de evidencia'],
+              [`${c.pctTiempo}%`, 'dentro del plazo', 'el plazo es público'],
+              [c.calif, 'de 5', 'calificación de la gente'],
+            ].map(([n, t, s]) => (
+              <div key={t} className="px-5 py-6 first:pl-0">
+                <p className="text-4xl font-bold tabular-nums tracking-tight">{n}</p>
+                <p className="mt-1 text-sm font-medium">{t}</p>
+                <p className="text-xs text-white/50">{s}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mx-auto max-w-6xl px-5 pb-4 text-xs text-white/40">
+            Cifras de la demostración, tal como están ahora mismo en el sistema.
+          </p>
+        </div>
+      </section>
+
+      {/* ═══ Un reporte, de principio a fin ═══════════════════════════════ */}
+      <section id="reporte" className="bg-papel text-tinta">
+        <div className="mx-auto max-w-6xl px-5 py-20">
+          <h2 className="max-w-3xl text-4xl font-bold leading-tight tracking-tight text-balance md:text-5xl">
+            Un bache, desde que lo reportan hasta que la vecina dice «ya quedó».
+          </h2>
+          <p className="mt-4 max-w-2xl text-lg text-tinta-suave">
+            Así se ve un reporte dentro de DemosVoz. Cada paso lo dispara alguien; el sistema se
+            encarga de que nada se quede en el aire.
+          </p>
+
+          <ol className="relative mt-14 grid gap-10 md:grid-cols-3 md:gap-8">
+            {/* riel */}
+            <div aria-hidden className="absolute top-5 right-0 left-0 hidden h-0.5 md:block" style={{ background: `linear-gradient(to right, #007595, #155dfc)` }} />
+            {[
+              { dia: 'Día 0 · 9:14', quien: 'Laura, vecina', que: 'Escribe por WhatsApp: «hay un bache enorme en Zaragoza esquina Hidalgo, ya se ponchó una llanta». Manda la foto y su ubicación.', sistema: 'Entiende que es un bache, detecta que no hay otro igual a 100 m, y le da folio: TUL-2026-00346. Plazo: 5 días hábiles.', img: '/marca/escena-antes.jpg' },
+              { dia: 'Día 0 · 9:15', quien: 'Obras Públicas', que: 'Al titular le llega el aviso al correo y al Telegram. Aparece en la bandeja del área con el plazo corriendo.', sistema: 'Ruteado sin que nadie lo toque. Si venciera sin atenderse, avisaría solo.' },
+              { dia: 'Día 2 · 11:40', quien: 'Pedro, cuadrilla', que: 'Lo recibe en su teléfono. Marca que empezó. Al terminar, sube la foto del parche.', sistema: 'Sin foto no hay cierre. La evidencia queda en el expediente, con hora y quién.', img: '/marca/escena-despues.jpg' },
+              { dia: 'Día 2 · 11:41', quien: 'Laura, otra vez', que: 'Le llega la foto: «Terminamos. ¿Quedó resuelto?». Toca «Sí» y califica con 5.', sistema: 'Si hubiera dicho «no», el reporte se reabre con plazo nuevo y el área se entera. El cierre lo da el vecino, no el sistema.' },
+              { dia: 'Lunes · 8:00', quien: 'La dirección', que: 'En el informe semanal: Obras Públicas resolvió 10, 100% a tiempo, 2.0 días promedio. Y qué lleva más tiempo esperando.', sistema: 'El mismo dato va al tablero público, por colonia. Cualquiera lo puede ver.' },
+              { dia: 'Siempre', quien: 'Cualquier vecino', que: 'Abre «Cómo vamos» y ve cuánto tarda el municipio en cada tipo de problema, y si cumple lo que prometió.', sistema: 'Los plazos son públicos y se miden contra el cumplimiento real. Es rendición de cuentas en vivo.' },
+            ].map((p, i) => (
+              <li key={p.dia} className="relative">
+                <span className="flex size-10 items-center justify-center rounded-full text-sm font-bold text-white md:relative md:z-10" style={{ background: `linear-gradient(135deg, #007595, #155dfc)` }}>{i + 1}</span>
+                <p className="mt-4 text-xs font-semibold tracking-wide text-marca-600 uppercase">{p.dia}</p>
+                <h3 className="mt-1 text-lg font-bold">{p.quien}</h3>
+                <p className="mt-2 text-tinta-suave">{p.que}</p>
+                <p className="mt-3 border-l-2 pl-3 text-sm text-tinta-suave" style={{ borderColor: LIMA }}>
+                  <span className="font-semibold text-tinta">DemosVoz: </span>{p.sistema}
+                </p>
+                {p.img && (
+                  <Image src={p.img} alt="" width={1200} height={900} className="mt-4 aspect-[4/3] w-full rounded-lg object-cover" />
+                )}
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* ═══ Hoy / Con DemosVoz ═══════════════════════════════════════════ */}
+      <section id="cambio" className="text-white" style={{ background: MARINO }}>
+        <div className="mx-auto max-w-6xl px-5 py-20">
+          <h2 className="text-4xl font-bold leading-tight tracking-tight text-balance md:text-5xl">
+            Lo que cambia en cómo se administra.
+          </h2>
+          <div className="mt-12 grid gap-12 md:grid-cols-2">
+            <div>
+              <p className="text-sm font-semibold tracking-[0.18em] text-white/40 uppercase">Hoy, en la mayoría de los municipios</p>
+              <ul className="mt-6 space-y-5 text-lg text-white/60">
+                {[
+                  'Los reportes llegan por teléfono, Facebook, el WhatsApp del regidor y ventanilla. Viven en cuadernos y chats.',
+                  'Nadie sabe cuántos hay abiertos ni desde cuándo.',
+                  '«Lo vamos a atender» no dice cuándo. No hay plazo, así que no hay incumplimiento.',
+                  'Se cierran porque alguien dijo que ya. La foto, si existe, está en un celular.',
+                  'El vecino nunca se entera. Vuelve a reportar lo mismo, o deja de reportar.',
+                  'El lunes, la junta se hace de memoria.',
+                ].map((t) => <li key={t} className="flex gap-3"><span className="mt-2.5 size-1.5 shrink-0 rounded-full bg-white/30" />{t}</li>)}
+              </ul>
+            </div>
+            <div className="rounded-2xl p-8" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.12)' }}>
+              <p className="text-sm font-semibold tracking-[0.18em] uppercase" style={{ color: LIMA }}>Con DemosVoz</p>
+              <ul className="mt-6 space-y-5 text-lg">
+                {[
+                  ['Un solo lugar.', 'WhatsApp, Telegram, la app, la web y la ventanilla entran a la misma bandeja.'],
+                  ['Cada reporte tiene dueño.', 'Va solo al área que lo atiende, y esa área se entera al instante.'],
+                  ['Cada tipo de problema tiene plazo.', 'Público, en días hábiles. Se le dice al vecino y se mide.'],
+                  ['Nada se cierra sin foto.', 'Y nada queda cerrado si el vecino dice que sigue.'],
+                  ['El vecino sabe.', 'Le avisan al asignar, al terminar, al reabrir. Puede sumar fotos e información.'],
+                  ['El lunes hay informe.', 'Por dependencia: resuelto, a tiempo, pendiente, y lo que más lleva esperando.'],
+                ].map(([t, d]) => (
+                  <li key={t} className="flex gap-3">
+                    <Check className="mt-1 size-5 shrink-0" style={{ color: LIMA }} aria-hidden />
+                    <span><strong>{t}</strong> <span className="text-white/75">{d}</span></span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ El informe del lunes ═════════════════════════════════════════ */}
+      <section id="informe" className="bg-papel text-tinta">
+        <div className="mx-auto max-w-6xl px-5 py-20">
+          <div className="grid items-end gap-6 md:grid-cols-[1fr_auto]">
+            <h2 className="text-4xl font-bold leading-tight tracking-tight text-balance md:text-5xl">
+              Lo que ve la dirección el lunes.
+            </h2>
+            <p className="max-w-sm text-tinta-suave">
+              Por dependencia y por semana. Se imprime y se lleva a la junta. Ya no se discute de
+              memoria.
+            </p>
+          </div>
+          <div className="relative mt-10">
+            <Image src="/marca/capturas/semanal.jpg" alt="El informe semanal por dependencia" width={1600} height={950} className="w-full rounded-xl border border-borde shadow-2xl" />
+          </div>
+          <div className="mt-8 grid gap-6 sm:grid-cols-3">
+            {[
+              ['Resueltos y a tiempo', 'Cuántos cerró cada área esta semana y cuántos dentro del plazo que el municipio prometió. Con la comparación contra la semana anterior.'],
+              ['Lo que lleva más tiempo', 'Los cinco reportes más viejos de cada área, con días de atraso. Son los que hay que explicar en la junta.'],
+              ['Vencidos que avisan solos', 'Cuando un reporte pasa su fecha límite, el titular y la cuadrilla se enteran sin que nadie tenga que acordarse.'],
+            ].map(([t, d]) => (
+              <div key={t}><h3 className="font-bold">{t}</h3><p className="mt-1.5 text-sm text-tinta-suave">{d}</p></div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ Por donde la gente ya habla ═════════════════════════════════ */}
+      <section id="whatsapp" className="bg-lienzo text-tinta">
+        <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-20 md:grid-cols-[1fr_1.1fr]">
+          <div>
+            <h2 className="text-4xl font-bold leading-tight tracking-tight text-balance md:text-5xl">
+              Por donde la gente ya habla.
+            </h2>
+            <p className="mt-5 text-lg text-tinta-suave">
+              Nadie instala la app de su municipio. Todo el mundo tiene WhatsApp. El asistente
+              entiende el problema escrito con las palabras de la gente, pregunta solo lo que falta y
+              entrega el folio.
+            </p>
+            <ul className="mt-6 space-y-2 text-tinta-suave">
+              {[
+                'Reconoce una emergencia y manda al 911 en vez de atenderla por chat.',
+                'Detecta si ya hay un reporte igual a cien metros y ofrece sumarse.',
+                'También por Telegram, por la web, y por la app en las tiendas.',
+              ].map((t) => <li key={t} className="flex gap-2"><Check className="mt-1 size-4 shrink-0 text-marca-600" aria-hidden />{t}</li>)}
+            </ul>
+          </div>
+
+          {/* Conversación real, de la primera prueba del bot */}
+          <div className="mx-auto w-full max-w-sm rounded-[2rem] border-8 bg-[#e5ddd5] p-3 shadow-2xl" style={{ borderColor: MARINO }}>
+            <div className="mb-3 flex items-center gap-2 rounded-xl bg-white/70 px-3 py-2 text-sm font-semibold">
+              <span className="size-7 rounded-full" style={{ background: `linear-gradient(135deg, #007595, #155dfc)` }} /> Atención Ciudadana Tula
+            </div>
+            <div className="space-y-2 text-[13px] leading-snug">
+              {[
+                ['in', 'esta un bache y unnperro muerte en frente de mi casa'],
+                ['out', 'Entendí que se trata de: Bache en la calle. ¿Es correcto?'],
+                ['in', 'si'],
+                ['out', '¿Tienes una foto? Mándala y ayuda mucho a la cuadrilla a saber qué llevar.'],
+                ['in', '📷 Foto'],
+                ['out', '¿Dónde está el problema? Puedes mandarme tu ubicación, o escribir la calle y la colonia.'],
+                ['in', 'calle tulipanes, acoculco'],
+                ['out', 'Voy a registrar esto:\n📌 Bache en la calle\n📍 calle tulipanes · Col. Acoculco\n¿Lo mando así?'],
+                ['in', 'si'],
+                ['out', '✅ Listo. Tu folio es TUL-2026-00346.\nNos comprometemos a atenderlo en máximo 5 días hábiles, a más tardar el 17 de septiembre.'],
+              ].map(([lado, texto], i) => (
+                <p key={i} className={`max-w-[85%] rounded-xl px-3 py-2 whitespace-pre-line shadow-sm ${lado === 'in' ? 'ml-auto bg-[#dcf8c6]' : 'bg-white'}`}>{texto}</p>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ Y todo eso, público ═════════════════════════════════════════ */}
+      <section className="bg-papel text-tinta">
+        <div className="mx-auto max-w-6xl px-5 py-20">
+          <div className="grid items-end gap-6 md:grid-cols-[1fr_auto]">
+            <h2 className="text-4xl font-bold leading-tight tracking-tight text-balance md:text-5xl">
+              Y todo eso, público.
+            </h2>
+            <p className="max-w-sm text-tinta-suave">
+              Lo mismo que ve la dirección lo ve cualquier vecino. Por colonia, con datos abiertos
+              para descargar.
+            </p>
+          </div>
+          <Image src="/marca/capturas/tablero.jpg" alt="El tablero público «Cómo vamos»" width={1600} height={950} className="mt-10 w-full rounded-xl border border-borde shadow-2xl" />
+          <p className="mt-6 max-w-3xl text-lg text-tinta-suave">
+            Un municipio que usa DemosVoz está diciendo que se deja medir. Los plazos son públicos, el
+            cumplimiento es público, la calificación de la gente es pública. Eso es lo que la
+            distingue de un buzón de quejas.
+          </p>
+        </div>
+      </section>
+
+      {/* ═══ En una tarde ════════════════════════════════════════════════ */}
+      <section id="arranque" className="text-white" style={{ background: MARINO }}>
+        <div className="mx-auto max-w-6xl px-5 py-20">
+          <h2 className="text-4xl font-bold leading-tight tracking-tight text-balance md:text-5xl">
+            Un municipio arranca en una tarde.
+          </h2>
+          <p className="mt-4 max-w-2xl text-lg text-white/70">
+            No hay proyecto de meses ni migración. Lo propio de cada municipio se carga desde las
+            pantallas de administración; lo demás ya está.
+          </p>
+          <ol className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
+            {[
+              ['Identidad', 'Nombre, escudo, folio. Cuatro identidades visuales, incluida la del Gobierno de México.'],
+              ['Colonias', `Del catálogo de Correos de México, en tres clics. ${c.colonias} en esta demostración.`],
+              ['Dependencias', `Con titular, teléfono y correo, desde Excel. ${c.dependencias} aquí.`],
+              ['Problemas y plazos', `${CATALOGO_CATEGORIAS.length} en el catálogo; se activan con una casilla y traen plazo sugerido.`],
+              ['Personal', 'Cuentas por rol, con su Telegram y WhatsApp para los avisos.'],
+            ].map(([t, d], i) => (
+              <li key={t}>
+                <p className="text-3xl font-bold" style={{ color: LIMA }}>{i + 1}</p>
+                <h3 className="mt-2 font-bold">{t}</h3>
+                <p className="mt-1 text-sm text-white/65">{d}</p>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-12 grid gap-4 border-t border-white/10 pt-8 text-sm text-white/65 md:grid-cols-3">
+            <p><strong className="text-white">Los datos se quedan en México.</strong> Servidor en el país, respaldo diario, teléfonos cifrados. Ninguna página pública expone nombre ni número.</p>
+            <p><strong className="text-white">No atiende emergencias por chat.</strong> Las detecta y manda al 911. Tampoco recibe casos personales que no deben estar en un mapa.</p>
+            <p><strong className="text-white">No es un buzón de quejas.</strong> Cada reporte tiene área, plazo y cierre confirmado. Si no, no entra.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ Cierre ══════════════════════════════════════════════════════ */}
+      <section className="text-white" style={{ background: 'linear-gradient(120deg, #007595, #155dfc)' }}>
+        <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-5 py-16 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight text-balance md:text-4xl">Véala con los datos de un municipio real.</h2>
+            <p className="mt-2 text-white/80">Configurada como Tula de Allende, Hidalgo, con sus colonias y dependencias reales.</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/inicio" className="inline-flex h-13 items-center gap-2 rounded-lg bg-white px-7 text-base font-semibold text-marca-700 hover:bg-white/90">
+              Ver la demostración <ArrowRight className="size-4" aria-hidden />
+            </Link>
+            <Link href="/contacto" className="inline-flex h-13 items-center rounded-lg border border-white/50 px-7 text-base font-semibold text-white hover:bg-white/10">
+              Hablar con ventas
+            </Link>
           </div>
         </div>
       </section>

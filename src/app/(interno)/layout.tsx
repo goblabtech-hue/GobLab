@@ -36,7 +36,7 @@ export default async function LayoutInterno({ children }: LayoutProps<'/'>) {
 
       <header className="cabecera sticky top-0 z-40">
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4">
-          <Link href="/" className="flex shrink-0 items-center" aria-label="Inicio">
+          <Link href="/inicio" className="flex shrink-0 items-center" aria-label="Inicio">
             <Logotipo tema={municipio.tema} municipio={municipio.nombre} logoUrl={municipio.logoUrl} logoBlancoUrl={municipio.logoBlancoUrl} alto={28} />
           </Link>
 

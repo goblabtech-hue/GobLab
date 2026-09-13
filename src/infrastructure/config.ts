@@ -125,3 +125,16 @@ export const CALIFICACION_REAPERTURA = 2
 
 /** Un reporte solo puede reabrirse una vez (SPEC §4.2). */
 export const MAX_REAPERTURAS = 1
+
+/**
+ * Contacto de ventas de DemosVoz. Es del producto, no del municipio, así que
+ * vive en variables de entorno y no en /admin/municipio. Lo que no esté
+ * definido no se muestra: la página de contacto no inventa datos.
+ */
+export function contactoVentas() {
+  const telefono = process.env.VENTAS_TELEFONO?.trim() || null
+  const whatsapp = process.env.VENTAS_WHATSAPP?.trim().replace(/\D/g, '') || null
+  const correo = process.env.VENTAS_CORREO?.trim() || null
+  const horario = process.env.VENTAS_HORARIO?.trim() || 'Lunes a viernes, de 9:00 a 18:00 (hora del centro)'
+  return { telefono, whatsapp, correo, horario }
+}

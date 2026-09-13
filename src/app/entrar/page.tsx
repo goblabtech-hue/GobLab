@@ -30,7 +30,7 @@ export default async function PaginaEntrar({ searchParams }: PageProps<'/entrar'
     <main id="contenido" className="flex flex-1 items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <Link
-          href="/"
+          href="/inicio"
           className="mb-6 inline-flex items-center gap-1.5 text-sm text-tinta-suave hover:text-tinta"
         >
           <ArrowLeft className="size-4" aria-hidden />

@@ -28,6 +28,7 @@ de `/admin`.
 | ⚖️ | Tres datos del aviso de privacidad + revisión jurídica | El jurídico | Producción |
 | 🔐 | Borrar cuentas demo y regenerar secretos | Quien despliegue | Producción |
 | 💾 | Probar una restauración del respaldo, y copiar respaldos fuera del servidor | Quien despliegue | Producción |
+| 📞 | Teléfono, WhatsApp y correo de ventas (`VENTAS_*` en `.env`) para la página /contacto | Tú, hoy | La demostración |
 | 🖥️ | Servidor y dominio en vivo | Tú | Ambos |
 
 Lo que ya **no** falta: identidad del municipio, las 8 dependencias reales con

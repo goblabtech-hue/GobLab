@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Megaphone, Search, BarChart3, Phone } from 'lucide-react'
+import { Megaphone, Search, BarChart3, Phone, Sparkles } from 'lucide-react'
 import { obtenerConfiguracion } from '@/infrastructure/config'
 import { AvisoDemo } from '@/components/aviso-demo'
 import { Logotipo } from '@/components/logotipo'
@@ -11,6 +11,13 @@ const ENLACES = [
   { href: '/tablero', texto: 'Cómo vamos', icono: BarChart3 },
 ]
 
+// Solo en la instancia de demostración: un vecino de un municipio real no
+// debe ver «Ventas» en el sitio de su ayuntamiento.
+const ENLACES_DEMO = [
+  { href: '/plataforma', texto: 'La plataforma', icono: Sparkles },
+  { href: '/contacto', texto: 'Contacto', icono: Phone },
+]
+
 export default async function LayoutPublico({ children }: { children: React.ReactNode }) {
   const municipio = await obtenerConfiguracion()
 
@@ -20,12 +27,12 @@ export default async function LayoutPublico({ children }: { children: React.Reac
 
       <header className="cabecera sticky top-0 z-40">
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-3 px-4">
-          <Link href="/" className="mr-auto flex min-w-0 items-center" aria-label="Inicio">
+          <Link href="/inicio" className="mr-auto flex min-w-0 items-center" aria-label="Inicio">
             <Logotipo tema={municipio.tema} municipio={municipio.nombre} logoUrl={municipio.logoUrl} logoBlancoUrl={municipio.logoBlancoUrl} />
           </Link>
           <nav aria-label="Principal">
             <ul className="flex items-center gap-1">
-              {ENLACES.map(({ href, texto, icono: Icono }) => (
+              {[...ENLACES, ...(process.env.MODO_DEMO === 'true' ? ENLACES_DEMO : [])].map(({ href, texto, icono: Icono }) => (
                 <li key={href}>
                   <Link
                     href={href}
