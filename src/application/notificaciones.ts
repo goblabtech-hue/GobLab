@@ -5,6 +5,7 @@ import { descifrarTelefono } from '@/domain/telefono'
 import { fecha } from '@/domain/formato'
 import { proveedor } from '@/infrastructure/mensajeria'
 import { hashTelefono } from '@/domain/telefono'
+import { pushAFolio } from '@/infrastructure/push'
 
 /**
  * Avisos al ciudadano en cada cambio relevante (SPEC §4.1).
@@ -74,6 +75,22 @@ export async function notificarCiudadano(reporteId: string, tipo: TipoAviso): Pr
           }
         : {}),
     })
+
+    // La app de las tiendas: a los teléfonos que siguen este folio también les
+    // llega un push, además del canal por el que reportaron. Es un canal más,
+    // no el único; sin credenciales de FCM simplemente no manda.
+    const titulos: Record<TipoAviso, string> = {
+      asignado: 'Tu reporte ya tiene cuadrilla', en_atencion: 'Ya están trabajando en tu reporte',
+      resuelto: '¿Quedó resuelto?', cerrado: 'Reporte cerrado', reabierto: 'Tu reporte se reabrió',
+      improcedente: 'Sobre tu reporte',
+    }
+    const enviadosPush = await pushAFolio(r.folio, titulos[tipo], texto.replace(/\*/g, '').split('\n')[0] ?? '', `/folio/${r.folio}`)
+      .catch((e) => { console.error('[push]', e); return 0 })
+    if (enviadosPush > 0) {
+      await prisma.eventoReporte.create({
+        data: { reporteId, tipo: 'notificacion', detalle: { tipo, canal: 'push', dispositivos: enviadosPush } },
+      }).catch(() => {})
+    }
 
     // Y se deja la conversación esperando esa respuesta. Sin esto el sistema
     // preguntaba «¿quedó bien?» y no había nada escuchando: la persona

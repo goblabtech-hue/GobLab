@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
+import { SeguirFolioEnApp } from '@/components/seguir-folio-en-app'
 import Link from 'next/link'
 import { CheckCircle2, Clock, MapPin, PartyPopper, Users } from 'lucide-react'
 import { prisma } from '@/infrastructure/prisma'
@@ -69,6 +70,8 @@ export default async function PaginaFolio({ params, searchParams }: PageProps<'/
   const evidencias = r.fotos.filter((f) => f.tipo === 'evidencia')
 
   return (
+    <>
+    <SeguirFolioEnApp folio={r.folio} />
     <div className="mx-auto max-w-2xl px-4 py-8">
       {nuevo && (
         <Alerta tipo="exito" titulo="¡Listo! Ya tenemos tu reporte" className="mb-5">
@@ -237,5 +240,6 @@ export default async function PaginaFolio({ params, searchParams }: PageProps<'/
         </p>
       )}
     </div>
+    </>
   )
 }

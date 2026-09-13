@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter, Montserrat } from 'next/font/google'
 import { obtenerConfiguracion } from '@/infrastructure/config'
 import { TEMAS, variablesDeTema } from '@/domain/temas'
+import { AppNativa } from '@/components/app-nativa'
 import './globals.css'
 
 // Las dos se cargan siempre; el tema elige cuál usa a través de
@@ -52,6 +53,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
     >
       <body className="flex min-h-full flex-col">
         <a href="#contenido" className="salto-contenido">Saltar al contenido</a>
+        <AppNativa />
         {children}
       </body>
     </html>

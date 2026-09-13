@@ -496,3 +496,18 @@ model AvisoPrivacidad {
 
   @@index([publicado, version])
 }
+
+/// Un teléfono con la app instalada y permiso de notificaciones. Se liga a los
+/// folios que esa persona levanta o consulta desde la app, y a esos folios se
+/// le avisa por push además de por el canal de origen. No guarda quién es: el
+/// token lo emite Apple/Google y no identifica a la persona.
+model DispositivoPush {
+  id         String   @id @default(cuid())
+  token      String   @unique
+  plataforma String
+  folios     String[] @default([])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([folios], type: Gin)
+}

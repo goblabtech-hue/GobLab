@@ -22,8 +22,9 @@ export function InstalarApp() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {})
     }
-    // Ya instalada: no hay nada que ofrecer.
+    // Ya instalada, o dentro de la app de las tiendas: no hay nada que ofrecer.
     if (window.matchMedia('(display-mode: standalone)').matches) return
+    if (document.documentElement.dataset.app) return
     try {
       const cerrado = localStorage.getItem('instalar-cerrado')
       if (cerrado && Date.now() - Number(cerrado) < 14 * 86_400_000) return
