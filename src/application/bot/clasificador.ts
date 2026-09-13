@@ -157,7 +157,7 @@ export async function clasificar(
         ? crudo.colonia_detectada
         : null,
       resumen: crudo.resumen,
-      confianza: valida ? crudo.confianza : 0,
+      confianza: valida ? Math.min(1, Math.max(0, Number(crudo.confianza) || 0)) : 0,
       usoFallback: !valida,
     }
 

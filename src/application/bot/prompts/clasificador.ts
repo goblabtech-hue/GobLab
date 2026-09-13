@@ -7,7 +7,7 @@
  * clasificación sin que nadie lo note.
  */
 
-export const VERSION_PROMPT = '2026-09-06'
+export const VERSION_PROMPT = '2026-09-13'
 
 export function promptClasificador(opciones: {
   municipio: string
@@ -78,7 +78,9 @@ export const ESQUEMA_CLASIFICACION = {
       description: 'Nombre exacto de la colonia, o null si no se puede saber.',
     },
     resumen: { type: 'string', description: 'Una frase neutra para el personal municipal.' },
-    confianza: { type: 'number', minimum: 0, maximum: 1 },
+    // Sin minimum/maximum: la salida estructurada de la API no los admite en
+    // números. El rango 0–1 va en el prompt y se recorta al leer.
+    confianza: { type: 'number', description: 'Entre 0 y 1.' },
   },
   required: ['categoria_id', 'prioridad', 'es_emergencia', 'colonia_detectada', 'resumen', 'confianza'],
   additionalProperties: false,
