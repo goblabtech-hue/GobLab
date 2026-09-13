@@ -10,7 +10,7 @@ import { hashearPassword } from '../src/infrastructure/auth'
 import {
   CATEGORIAS, COLONIAS, DEPENDENCIAS, DESCRIPCIONES, USUARIOS, festivosOficiales,
 } from './catalogos'
-import { generarImagen, prepararDirImagenes } from './imagenes'
+import { imagenDeCategoria, prepararDirImagenes } from './imagenes'
 import { borradorAviso } from './aviso-privacidad'
 import type {
   EstatusReporte, OrigenReporte, Prioridad, TipoEvento, TipoFoto,
@@ -516,23 +516,22 @@ async function main() {
       createdAt, updatedAt: cerradoAt ?? resueltoAt ?? createdAt,
     })
 
-    // foto del ciudadano
-    if (chance(0.45) || esPublicable) {
+    // Foto del ciudadano: la escena del problema. Alterna mañana y tarde
+    // para que no todas las fotos de baches sean idénticas.
+    const variante = (n % 2) as 0 | 1
+    if (chance(0.55) || esPublicable) {
       fotos.push({
         id: id(), reporteId: rid, tipo: 'ciudadano' as TipoFoto,
-        url: esPublicable
-          ? await generarImagen(`${folio}-antes`, categoria.nombre, colonia.nombre, 'antes')
-          : '/uploads/seed/generico-antes.jpg',
+        url: await imagenDeCategoria(categoria.slug, categoria.nombre, 'antes', variante),
         createdAt,
       })
     }
-    // evidencia de resolución (obligatoria si resuelto y la categoría la exige)
+    // Evidencia de la cuadrilla: la escena resuelta. Obligatoria si la
+    // categoría la exige.
     if (resueltoAt && categoria.requiereEvidencia) {
       fotos.push({
         id: id(), reporteId: rid, tipo: 'evidencia' as TipoFoto, subidaPorUserId: asignadoAId,
-        url: esPublicable
-          ? await generarImagen(`${folio}-despues`, categoria.nombre, colonia.nombre, 'despues')
-          : '/uploads/seed/generico-despues.jpg',
+        url: await imagenDeCategoria(categoria.slug, categoria.nombre, 'despues', variante),
         createdAt: resueltoAt,
       })
     }
@@ -550,8 +549,6 @@ async function main() {
   }
 
   // imágenes genéricas compartidas por los reportes no publicables
-  await generarImagen('generico-antes', 'Reporte ciudadano', 'Imagen de demostración', 'antes')
-  await generarImagen('generico-despues', 'Evidencia de resolución', 'Imagen de demostración', 'despues')
 
   console.log(`Insertando ${reportes.length} reportes…`)
   await prisma.reporte.createMany({ data: reportes })
