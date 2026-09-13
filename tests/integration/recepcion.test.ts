@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { prisma } from '../../src/infrastructure/prisma'
 import { buzonDePrueba } from '../../src/infrastructure/correo'
 import { enviadosDePrueba } from '../../src/infrastructure/mensajeria/simulador'
-import { cifrarTelefono } from '../../src/domain/telefono'
+import { cifrarTelefono, hashTelefono } from '../../src/domain/telefono'
 import { procesarMensaje } from '../../src/application/bot/bot'
 import {
   crearReporte, aceptarReporte, rechazarReporte, porValidar, asignarCuadrilla, ReglaDeNegocio,
@@ -48,11 +48,16 @@ before(async () => {
 beforeEach(() => { buzonDePrueba.length = 0; enviadosDePrueba.length = 0 })
 
 after(async () => {
-  await prisma.reporte.deleteMany({ where: { OR: [{ id: { in: creados } }, { categoriaId: { in: [categoriaId, otraCategoriaId] } }] } })
-  await prisma.conversacionBot.deleteMany({ where: { canal: 'simulador', chatIdHash: (await import('../../src/domain/telefono')).hashTelefono(CHAT) } })
-  await prisma.usuario.deleteMany({ where: { id: operadoraId } })
-  await prisma.categoria.deleteMany({ where: { id: { in: [categoriaId, otraCategoriaId] } } })
-  await prisma.dependencia.deleteMany({ where: { id: dependenciaId } })
+  // Cada paso por separado: si uno falla, los demás igual limpian. Una
+  // categoría de prueba que sobrevive aparece en el selector de recepción.
+  const pasos = [
+    () => prisma.reporte.deleteMany({ where: { OR: [{ id: { in: creados } }, { categoriaId: { in: [categoriaId, otraCategoriaId] } }] } }),
+    () => prisma.conversacionBot.deleteMany({ where: { canal: 'simulador', chatIdHash: hashTelefono(CHAT) } }),
+    () => prisma.usuario.deleteMany({ where: { id: operadoraId } }),
+    () => prisma.categoria.deleteMany({ where: { id: { in: [categoriaId, otraCategoriaId] } } }),
+    () => prisma.dependencia.deleteMany({ where: { id: dependenciaId } }),
+  ]
+  for (const p of pasos) await p().catch((e) => console.error('limpieza:', e))
   delete process.env.SMTP_HOST; delete process.env.SMTP_FROM
   await prisma.$disconnect()
 })

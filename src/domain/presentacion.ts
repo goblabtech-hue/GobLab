@@ -108,6 +108,8 @@ export function inicioPorRol(rol: string): string {
     case 'cuadrilla': return '/cuadrilla'
     case 'admin': return '/ejecutivo'
     case 'supervisor': return '/ejecutivo'
+    // Atención ciudadana empieza por lo que nadie más puede hacer: recepción.
+    case 'operador': return '/recepcion'
     default: return '/bandeja'
   }
 }

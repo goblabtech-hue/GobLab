@@ -364,8 +364,12 @@ En `/recepcion` (operador, supervisor o admin) cada reporte se ve completo
 - **No registrar**: queda *improcedente*, nunca público, y al ciudadano le
   llega el motivo que escribió quien lo revisó.
 
-Lo capturado por personal en ventanilla o por teléfono nace ya registrado.
+Lo capturado por personal en ventanilla o por teléfono (el formulario de
+/reportar con sesión abierta) nace ya registrado, con origen «ventanilla».
 El contador de pendientes aparece en el menú desde cualquier pantalla interna.
+
+Los manuales de operación por perfil están en `/admin/manuales`, en el
+código: describen la versión instalada y se imprimen desde ahí.
 
 **Pendiente de decidir con el municipio:** quién cubre recepción fuera de
 horario. Un reporte por validar no corre plazo; si nadie revisa en la noche,

@@ -7,6 +7,7 @@ import { crearReporte, posiblesDuplicados, adherirse, ReglaDeNegocio } from '@/a
 import { guardarImagen, ImagenInvalida, MAX_FOTOS_CIUDADANO } from '@/infrastructure/almacenamiento'
 import { telefonoValido } from '@/domain/telefono'
 import { limitar } from '@/infrastructure/rate-limit'
+import { usuarioActual } from '@/infrastructure/auth'
 
 /**
  * Alta de reporte desde el sitio público. Es el único punto del sistema donde
@@ -90,12 +91,19 @@ export async function enviarReporte(
     throw e
   }
 
+  // Ventanilla: si quien llena el formulario es personal con sesión, el
+  // reporte nace registrado —ya lo revisó una persona— y con origen
+  // «ventanilla» para que los indicadores distingan el canal.
+  const personal = await usuarioActual()
+  const capturadoPorId = personal && ['operador', 'supervisor', 'admin'].includes(personal.rol) ? personal.id : null
+
   let folio: string
   try {
     const r = await crearReporte({
       categoriaId: d.categoriaId,
       descripcion: d.descripcion,
-      origen: 'web',
+      origen: capturadoPorId ? 'ventanilla' : 'web',
+      capturadoPorId,
       lat: d.lat ?? null,
       lng: d.lng ?? null,
       coloniaId: d.coloniaId ?? null,
