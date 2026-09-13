@@ -38,8 +38,11 @@
   --color-cabecera: #ffffff;
   --color-cabecera-texto: #0a6a52;
   --color-cabecera-acento: #0d8465;
+  /* Degradado de marca. Si el tema no lo usa, las dos paradas son iguales. */
+  --gradiente-a: #0d8465;
+  --gradiente-b: #0d8465;
 
-  --font-sans: var(--font-sans-app), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--fuente-tema, var(--font-inter)), ui-sans-serif, system-ui, sans-serif;
 
   --radius-tarjeta: 0.875rem;
 }
@@ -93,7 +96,17 @@ body {
 .cabecera {
   background: var(--color-cabecera);
   color: var(--color-cabecera-texto);
-  border-bottom: 3px solid var(--color-cabecera-acento);
+  /* La línea de abajo lleva el degradado de marca cuando la identidad lo
+     tiene (Demoscopia: cian → azul); si no, es un color liso. */
+  border-bottom: 3px solid transparent;
+  border-image: linear-gradient(to right, var(--gradiente-a), var(--gradiente-b)) 1;
+}
+/* El botón principal toma el degradado por la misma razón. */
+.btn-principal {
+  background-image: linear-gradient(to right, var(--gradiente-a), var(--gradiente-b));
+}
+.btn-principal:hover {
+  filter: brightness(.92);
 }
 .cabecera-enlace {
   color: var(--color-cabecera-texto);

@@ -31,7 +31,7 @@ const schema = z.object({
   centroLat: z.coerce.number().min(-90).max(90),
   centroLng: z.coerce.number().min(-180).max(180),
   zoomInicial: z.coerce.number().int().min(8, 'Mínimo 8.').max(18, 'Máximo 18.'),
-  tema: z.enum(['institucional', 'federal', 'sobrio']),
+  tema: z.enum(['demoscopia', 'institucional', 'federal', 'sobrio']),
 })
 
 export async function guardarMunicipio(
@@ -47,7 +47,7 @@ export async function guardarMunicipio(
       centroLat: datos.get('centroLat'),
       centroLng: datos.get('centroLng'),
       zoomInicial: datos.get('zoomInicial'),
-      tema: datos.get('tema') ?? 'institucional',
+      tema: datos.get('tema') ?? 'demoscopia',
     })
     if (!parsed.success) return { error: primerError(parsed.error) }
 

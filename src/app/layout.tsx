@@ -1,10 +1,14 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Montserrat } from 'next/font/google'
 import { obtenerConfiguracion } from '@/infrastructure/config'
 import { TEMAS, variablesDeTema } from '@/domain/temas'
 import './globals.css'
 
-const inter = Inter({ variable: '--font-sans-app', subsets: ['latin'], display: 'swap' })
+// Las dos se cargan siempre; el tema elige cuál usa a través de
+// --fuente-tema (ver src/domain/temas.ts). Cargar una fuente no la muestra:
+// solo la deja disponible.
+const inter = Inter({ variable: '--font-inter', subsets: ['latin'], display: 'swap' })
+const montserrat = Montserrat({ variable: '--font-montserrat', subsets: ['latin'], display: 'swap' })
 
 export async function generateMetadata(): Promise<Metadata> {
   const { nombre } = await obtenerConfiguracion()
@@ -39,7 +43,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
     <html
       lang="es-MX"
       data-tema={tema}
-      className={`${inter.variable} h-full antialiased`}
+      className={`${inter.variable} ${montserrat.variable} h-full antialiased`}
       style={variablesDeTema(tema) as React.CSSProperties}
     >
       <body className="flex min-h-full flex-col">

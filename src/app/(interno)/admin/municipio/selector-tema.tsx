@@ -21,12 +21,12 @@ export function SelectorTema({ inicial }: { inicial: Tema }) {
       <legend className="font-semibold">Identidad visual</legend>
       <p className="text-sm text-tinta-suave">
         Cambia los colores de todo el sitio, el bot no. Los colores de estado
-        (verde, ámbar, rojo) son iguales en las tres: significan «en tiempo»,
+        (verde, ámbar, rojo) son iguales en todas: significan «en tiempo»,
         «por vencer» y «vencido», no identidad.
       </p>
       <input type="hidden" name="tema" value={tema} />
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {(Object.keys(TEMAS) as Tema[]).map((clave) => {
           const t = TEMAS[clave]
           const activo = tema === clave
@@ -51,7 +51,9 @@ export function SelectorTema({ inicial }: { inicial: Tema }) {
                   style={{
                     background: t.cabecera.fondo,
                     color: t.cabecera.texto,
-                    borderBottom: `2px solid ${t.cabecera.acento}`,
+                    borderBottom: '2px solid transparent',
+                    borderImage: `linear-gradient(to right, ${t.gradiente?.[0] ?? t.cabecera.acento}, ${t.gradiente?.[1] ?? t.cabecera.acento}) 1`,
+                    fontFamily: t.fuente === 'montserrat' ? 'var(--font-montserrat)' : undefined,
                   }}
                 >
                   Municipio
@@ -59,7 +61,7 @@ export function SelectorTema({ inicial }: { inicial: Tema }) {
                 <div className="space-y-2 p-3">
                   <div
                     className="h-6 w-2/3 rounded-md"
-                    style={{ background: t.marca[600] }}
+                    style={{ background: t.gradiente ? `linear-gradient(to right, ${t.gradiente[0]}, ${t.gradiente[1]})` : t.marca[600] }}
                     aria-hidden
                   />
                   <div

@@ -6,7 +6,7 @@ export const botonVariantes = cva(
   {
     variants: {
       variante: {
-        principal: 'bg-marca-600 text-white hover:bg-marca-700',
+        principal: 'btn-principal bg-marca-600 text-white hover:bg-marca-700',
         secundario: 'bg-papel text-tinta border border-borde hover:bg-lienzo',
         suave: 'bg-marca-50 text-marca-700 hover:bg-marca-100',
         peligro: 'bg-rojo-600 text-white hover:brightness-95',

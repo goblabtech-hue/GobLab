@@ -22,8 +22,15 @@ function contraste(a: string, b: string): number {
 const temas = Object.keys(TEMAS) as Tema[]
 
 describe('los tres temas', () => {
-  test('existen los tres que pide la configuración', () => {
-    assert.deepEqual(temas.sort(), ['federal', 'institucional', 'sobrio'])
+  test('existen los cuatro que ofrece la configuración', () => {
+    assert.deepEqual(temas.sort(), ['demoscopia', 'federal', 'institucional', 'sobrio'])
+  })
+
+  test('cada tema dice qué versión del logotipo se lee sobre su cabecera', () => {
+    for (const t of temas) assert.ok(['color', 'blanco'].includes(TEMAS[t].logotipo), t)
+    // Sobre fondo oscuro, el logotipo a color (marino sobre marino) se pierde.
+    assert.equal(TEMAS.federal.logotipo, 'blanco')
+    assert.equal(TEMAS.sobrio.logotipo, 'blanco')
   })
 
   test('todos definen exactamente las mismas variables', () => {
@@ -68,6 +75,26 @@ describe('legibilidad', () => {
       assert.ok(r >= 4.5, `contraste ${r.toFixed(2)}:1 de marca-700 sobre marca-50`)
     })
   }
+})
+
+describe('el tema oficial es Demoscopia', () => {
+  test('es el que arranca por defecto', async () => {
+    const { TEMA_POR_DEFECTO } = await import('../../src/domain/temas')
+    assert.equal(TEMA_POR_DEFECTO, 'demoscopia')
+  })
+  test('usa un degradado cian → azul y Montserrat, como demoscopiadigital.com', () => {
+    const d = TEMAS.demoscopia
+    assert.equal(d.gradiente?.[1].toLowerCase(), '#155dfc', 'azul-600, el del sitio')
+    assert.equal(d.fuente, 'montserrat')
+  })
+  test('el blanco se lee sobre las DOS puntas del degradado (botones)', () => {
+    // El texto del botón cruza todo el degradado: tiene que leerse en ambos
+    // extremos, no solo en el promedio. El sitio original falla en la punta
+    // cian (2.4:1); esta prueba impide copiar ese defecto.
+    const [a, b] = TEMAS.demoscopia.gradiente!
+    assert.ok(contraste('#ffffff', a) >= 4.5, `sobre el cian: ${contraste('#ffffff', a).toFixed(2)}`)
+    assert.ok(contraste('#ffffff', b) >= 4.5, `sobre el azul: ${contraste('#ffffff', b).toFixed(2)}`)
+  })
 })
 
 describe('el tema federal es el del Gobierno de México', () => {

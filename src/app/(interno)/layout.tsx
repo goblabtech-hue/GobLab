@@ -7,6 +7,7 @@ import { ROL } from '@/domain/presentacion'
 import { obtenerConfiguracion } from '@/infrastructure/config'
 import { Boton } from '@/components/ui/boton'
 import { AvisoDemo } from '@/components/aviso-demo'
+import { Logotipo } from '@/components/logotipo'
 import { salir } from '@/app/entrar/acciones'
 import { NavInterna } from './nav'
 
@@ -35,8 +36,8 @@ export default async function LayoutInterno({ children }: LayoutProps<'/'>) {
 
       <header className="cabecera sticky top-0 z-40">
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4">
-          <Link href="/" className="shrink-0 text-sm font-semibold">
-            {municipio.nombre}
+          <Link href="/" className="flex shrink-0 items-center" aria-label="Inicio">
+            <Logotipo tema={municipio.tema} municipio={municipio.nombre} alto={28} />
           </Link>
 
           <NavInterna enlaces={permitidos.map(({ href, texto }) => ({ href, texto }))} />
