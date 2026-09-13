@@ -35,7 +35,9 @@ export default async function Tablero() {
   const [datos, puntosCrudos, categorias, colonias, galeria, municipio] = await Promise.all([
     obtenerIndicadores(),
     prisma.reporte.findMany({
-      where: { lat: { not: null }, lng: { not: null } },
+      // Lo que espera a recepción todavía no es un reporte registrado: no va
+      // al mapa hasta que una persona lo valide.
+      where: { lat: { not: null }, lng: { not: null }, estatus: { not: 'por_validar' } },
       select: {
         folio: true, lat: true, lng: true, estatus: true, fechaLimite: true, createdAt: true,
         categoria: { select: { nombre: true, slug: true } },

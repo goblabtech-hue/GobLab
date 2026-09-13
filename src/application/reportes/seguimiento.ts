@@ -1,6 +1,6 @@
 import { prisma } from '@/infrastructure/prisma'
 import { MAX_REAPERTURAS } from '@/infrastructure/config'
-import { ESTATUS_ABIERTOS, puedeTransicionar } from '@/domain/estatus'
+import { ESTATUS_VIVOS, puedeTransicionar } from '@/domain/estatus'
 import { calcularFechaLimite } from '@/domain/dias-habiles'
 import { cargarFestivos } from '@/infrastructure/festivos'
 import { ReglaDeNegocio, registrarEvento } from './nucleo'
@@ -29,7 +29,7 @@ export async function agregarFotoCiudadano(reporteId: string, url: string) {
     },
   })
   if (!r) throw new ReglaDeNegocio('No encontramos ese reporte.')
-  if (!ESTATUS_ABIERTOS.includes(r.estatus) && r.estatus !== 'resuelto') {
+  if (!ESTATUS_VIVOS.includes(r.estatus) && r.estatus !== 'resuelto') {
     throw new ReglaDeNegocio('Este reporte ya está cerrado. Si el problema volvió, levanta uno nuevo.')
   }
   if (r._count.fotos >= MAX_FOTOS_SEGUIMIENTO) {
@@ -63,7 +63,7 @@ export async function agregarNotaCiudadano(reporteId: string, texto: string) {
 
   const r = await prisma.reporte.findUnique({ where: { id: reporteId }, select: { estatus: true } })
   if (!r) throw new ReglaDeNegocio('No encontramos ese reporte.')
-  if (!ESTATUS_ABIERTOS.includes(r.estatus) && r.estatus !== 'resuelto') {
+  if (!ESTATUS_VIVOS.includes(r.estatus) && r.estatus !== 'resuelto') {
     throw new ReglaDeNegocio('Este reporte ya está cerrado. Si el problema volvió, levanta uno nuevo.')
   }
 

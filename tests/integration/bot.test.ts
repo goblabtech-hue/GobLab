@@ -122,7 +122,9 @@ describe('alta de reporte por el bot', () => {
       where: { folio },
       select: { estatus: true, lat: true, canalNotificacion: true, telefonoHash: true },
     })
-    assert.equal(r.estatus, 'nuevo')
+    // Lo que manda la gente no es del área todavía: espera a que una persona
+    // lo revise en recepción.
+    assert.equal(r.estatus, 'por_validar')
     assert.equal(r.lat, 19.4401)
     assert.ok(r.canalNotificacion, 'debe quedar registrado a dónde avisarle')
     assert.ok(r.telefonoHash, 'el simulador imita a WhatsApp: el chat id es el teléfono')

@@ -72,7 +72,12 @@ export async function crearReporte(datos: DatosNuevoReporte): Promise<ReporteCre
         descripcion: datos.descripcion.trim(),
         origen: datos.origen,
         prioridad: datos.prioridad ?? 'normal',
-        estatus: 'nuevo',
+        // Nace esperando a recepción. Una persona decide si se registra; hasta
+        // entonces no es del área ni es público. Las capturas del personal
+        // (ventanilla, teléfono) ya pasaron por una persona: entran directo.
+        estatus: datos.capturadoPorId ? 'nuevo' : 'por_validar',
+        // Y lo que captura el personal ya lo revisó una persona.
+        moderacion: datos.capturadoPorId ? 'aprobado' : 'pendiente',
         lat: datos.lat ?? null,
         lng: datos.lng ?? null,
         direccionTexto: datos.direccionTexto?.trim() || null,
@@ -88,7 +93,7 @@ export async function crearReporte(datos: DatosNuevoReporte): Promise<ReporteCre
         slaDiasHabilesAplicado: categoria.slaDiasHabiles,
         createdAt: creado,
       },
-      select: { id: true, folio: true, fechaLimite: true },
+      select: { id: true, folio: true, fechaLimite: true, estatus: true },
     })
 
     if (datos.fotos?.length) {
@@ -106,9 +111,10 @@ export async function crearReporte(datos: DatosNuevoReporte): Promise<ReporteCre
     return r
   })
 
-  // El área se entera de que le llegó trabajo. Fuera de la transacción: un
-  // aviso que falla no puede deshacer el alta.
-  await avisarArea(reporte.id, 'nuevo_en_area')
+  // El área se entera de que le llegó trabajo — solo si ya está registrado.
+  // Lo que espera a recepción no es del área todavía. Fuera de la
+  // transacción: un aviso que falla no puede deshacer el alta.
+  if (reporte.estatus === 'nuevo') await avisarArea(reporte.id, 'nuevo_en_area')
 
   return {
     ...reporte,

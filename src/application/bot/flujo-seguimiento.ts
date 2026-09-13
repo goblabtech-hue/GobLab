@@ -5,7 +5,7 @@ import {
 } from '@/application/reportes'
 import { ReglaDeNegocio } from '@/application/reportes/nucleo'
 import { guardarImagen, ImagenInvalida } from '@/infrastructure/almacenamiento'
-import { ESTATUS_ABIERTOS } from '@/domain/estatus'
+import { ESTATUS_VIVOS } from '@/domain/estatus'
 import { fecha } from '@/domain/formato'
 import { proveedor, type MensajeSaliente } from '@/infrastructure/mensajeria'
 import { esAfirmativo, esNegativo, type Contexto, type Estado } from './estado'
@@ -44,7 +44,7 @@ export async function accionesDeFolio(
     }]
   }
 
-  if (!ESTATUS_ABIERTOS.includes(r.estatus)) {
+  if (!ESTATUS_VIVOS.includes(r.estatus)) {
     await guardarEstado(ctx.conversacion.id, { paso: 'menu' })
     return [{
       chatId: ctx.chatId,

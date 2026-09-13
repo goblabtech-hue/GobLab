@@ -32,8 +32,8 @@ de `/admin`.
 | 🖥️ | Servidor y dominio en vivo | Tú | Ambos |
 
 Lo que ya **no** falta: identidad del municipio, las 8 dependencias reales con
-su ruteo, los 143 asentamientos, el bot completo, el informe semanal, el
-tablero público y el kit de despliegue.
+su ruteo, los 143 asentamientos, el bot completo, la recepción con validación
+humana, el informe semanal, el tablero público y el kit de despliegue.
 
 ---
 
@@ -344,6 +344,32 @@ todos los canales que tenga conectados:
   (sección 4); hasta entonces se registra pero no sale.
 
 El correo institucional de cada dependencia se captura en `/admin/dependencias`.
+
+## 4c. Recepción: una persona decide qué se registra
+
+Todo lo que manda la gente —WhatsApp, Telegram, web, app— nace **por validar**.
+Hasta que alguien lo revisa, no existe para el área, no sale en el mapa ni en
+datos abiertos, y la página pública del folio solo dice «recibido, en
+validación». No hay filtro automático ni IA: la decisión es de una persona y
+queda en la bitácora con su nombre.
+
+En `/recepcion` (operador, supervisor o admin) cada reporte se ve completo
+—texto, fotos, lugar— y se decide:
+
+- **Registrar**: pasa a *nuevo*, se rutea al área y ahí sí se avisa. Se puede
+  corregir la categoría en el mismo paso.
+- **Registrar sin mostrar al público**: para cuando el problema es real pero el
+  texto o las fotos no se pueden publicar (groserías, datos personales). El
+  área lo ve completo; el público solo ve categoría, colonia y estatus.
+- **No registrar**: queda *improcedente*, nunca público, y al ciudadano le
+  llega el motivo que escribió quien lo revisó.
+
+Lo capturado por personal en ventanilla o por teléfono nace ya registrado.
+El contador de pendientes aparece en el menú desde cualquier pantalla interna.
+
+**Pendiente de decidir con el municipio:** quién cubre recepción fuera de
+horario. Un reporte por validar no corre plazo; si nadie revisa en la noche,
+un bache reportado a las 10 pm empieza a contar hasta la mañana siguiente.
 
 ## 5. Integraciones que necesitan credenciales
 

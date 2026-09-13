@@ -53,6 +53,9 @@ const soloFecha = (d: Date | null) => (d === null ? null : claveDeFecha(d))
 export async function generarDataset(): Promise<FilaAbierta[]> {
   const [reportes, festivos, reasignados] = await Promise.all([
     prisma.reporte.findMany({
+      // Solo lo que recepción ya registró: lo demás aún no existe para el
+      // municipio, y publicar su fecha y colonia sería adelantarse.
+      where: { estatus: { not: 'por_validar' } },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true, folio: true, estatus: true, prioridad: true, origen: true,

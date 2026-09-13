@@ -29,6 +29,8 @@ enum OrigenReporte {
 }
 
 enum EstatusReporte {
+  /// Recibido, esperando que recepción decida si se registra.
+  por_validar
   nuevo
   asignado
   en_atencion
@@ -65,6 +67,15 @@ enum TipoEvento {
   duplicado
   improcedente
   publicable
+}
+
+/// Qué tan público puede ser lo que escribió y subió el ciudadano. No afecta
+/// la atención: el área ve todo. Solo decide si la descripción y las fotos
+/// salen en las páginas públicas.
+enum EstadoModeracion {
+  pendiente
+  aprobado
+  oculto
 }
 
 enum DireccionMensaje {
@@ -251,6 +262,12 @@ model Reporte {
   destinoNotificacion String?
 
   publicable         Boolean @default(false)
+  /// Contenido ciudadano (descripción y fotos) ante el público.
+  moderacion         EstadoModeracion @default(pendiente)
+  moderadoAt         DateTime?
+  moderadoPorId      String?
+  /// Por qué está pendiente u oculto: «groserías», «datos personales», «foto»…
+  motivoModeracion   String?
   motivoImprocedente String?
   reporteOriginalId  String?
   vecesReabierto     Int     @default(0)
@@ -280,6 +297,7 @@ model Reporte {
   @@index([telefonoHash])
   @@index([estatus, fechaLimite])
   @@index([publicable, estatus])
+  @@index([moderacion])
 }
 
 model FotoReporte {

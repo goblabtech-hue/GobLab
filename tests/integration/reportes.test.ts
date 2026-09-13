@@ -52,12 +52,15 @@ after(async () => {
 })
 
 async function nuevo(over: Partial<Parameters<typeof crearReporte>[0]> = {}) {
+  // Capturado por personal (ventanilla): nace registrado. Lo que manda la
+  // gente pasa antes por recepción; eso se prueba en recepcion.test.ts.
   const r = await crearReporte({
     categoriaId,
     descripcion: 'Hay un problema en la calle de prueba',
     origen: 'web',
     lat: 19.4326, lng: -99.1332,
     telefono: TEL,
+    capturadoPorId: supervisorId,
     ...over,
   })
   creados.push(r.id)

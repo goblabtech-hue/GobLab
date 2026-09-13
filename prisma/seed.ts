@@ -520,6 +520,10 @@ async function main() {
       calificacion, comentarioCalificacion: comentario,
       notaCierre: resueltoAt ? elegir(['Se atendió con cuadrilla y material propio.', 'Trabajo concluido en sitio.', 'Se realizó la reparación completa.']) : null,
       publicable: esPublicable, motivoImprocedente, vecesReabierto,
+      // Todo lo histórico ya pasó por recepción: lo que espera validación se
+      // siembra aparte, abajo.
+      moderacion: 'aprobado',
+      moderadoAt: new Date(createdAt.getTime() + 0.01 * DIA), moderadoPorId: elegir(operadores).id,
       createdAt, updatedAt: cerradoAt ?? resueltoAt ?? createdAt,
     })
 
@@ -554,6 +558,53 @@ async function main() {
       }
     }
   }
+
+  // ---- Recepción: lo que acaba de llegar y nadie ha revisado todavía.
+  // Es lo que ve el operador al abrir /recepcion en la demo: reportes reales
+  // mezclados con uno con groserías y uno que no es un problema municipal,
+  // para que se entienda por qué la decisión es de una persona.
+  const POR_VALIDAR: { slug: string; descripcion: string; foto: boolean; horas: number; origen: OrigenReporte }[] = [
+    { slug: 'bache', descripcion: 'Bache grande frente a la primaria, ya se le dañó la llanta a dos coches esta semana.', foto: true, horas: 0.4, origen: 'whatsapp' },
+    { slug: 'luminaria', descripcion: 'La lámpara de la esquina lleva tres noches apagada y la calle queda muy oscura.', foto: false, horas: 1.2, origen: 'web' },
+    { slug: 'drenaje', descripcion: 'Alcantarilla sin tapa a media calle, de noche no se ve y es un peligro.', foto: true, horas: 2.5, origen: 'whatsapp' },
+    { slug: 'basura', descripcion: 'PINCHES INÚTILES DEL AYUNTAMIENTO NO PASAN POR LA BASURA, BOLA DE HUEVONES CABRONES', foto: false, horas: 3.1, origen: 'whatsapp' },
+    { slug: 'informacion', descripcion: 'Vendo tinacos y tubería PVC a buen precio, mándenme mensaje al número de arriba.', foto: false, horas: 4.6, origen: 'web' },
+    { slug: 'arbol-riesgo', descripcion: 'Árbol con una rama seca muy grande encima de la banqueta donde pasan los niños a la escuela.', foto: true, horas: 6, origen: 'whatsapp' },
+  ]
+  const porValidar: Prisma.ReporteCreateManyInput[] = []
+  const fotosPorValidar: Prisma.FotoReporteCreateManyInput[] = []
+  for (const p of POR_VALIDAR) {
+    const categoria = categorias.find((c) => c.slug === p.slug) ?? categorias[0]!
+    const colonia = elegir(colonias)
+    const createdAt = new Date(ahora.getTime() - p.horas * 3600_000)
+    const anioR = createdAt.getFullYear()
+    const n = (secuencias.get(anioR) ?? 0) + 1
+    secuencias.set(anioR, n)
+    const rid = id()
+    const t = derivarTelefono(elegir(TELEFONOS_DEMO))
+    porValidar.push({
+      id: rid, folio: formatearFolio(municipio.prefijoFolio, anioR, n),
+      categoriaId: categoria.id, descripcion: p.descripcion, prioridad: 'normal',
+      estatus: 'por_validar', moderacion: 'pendiente', origen: p.origen,
+      lat: municipio.centroLat + entre(-0.02, 0.02), lng: municipio.centroLng + entre(-0.02, 0.02),
+      direccionTexto: `Calle ${entero(1, 40)} #${entero(100, 999)}, Col. ${colonia.nombre}`,
+      coloniaId: colonia.id, ...t,
+      dependenciaId: categoria.dependenciaId, asignadoAId: null,
+      fechaLimite: calcularFechaLimite(createdAt, categoria.slaDiasHabiles, festivos),
+      slaDiasHabilesAplicado: categoria.slaDiasHabiles,
+      createdAt, updatedAt: createdAt,
+    })
+    eventos.push({ id: id(), reporteId: rid, tipo: 'creado', timestamp: createdAt, detalle: { origen: p.origen }, userId: null })
+    if (p.foto) {
+      fotosPorValidar.push({
+        id: id(), reporteId: rid, tipo: 'ciudadano' as TipoFoto,
+        url: await imagenDeCategoria(categoria.slug, categoria.nombre, 'antes', (n % 2) as 0 | 1),
+        createdAt,
+      })
+    }
+  }
+  reportes.push(...porValidar)
+  fotos.push(...fotosPorValidar)
 
   // imágenes genéricas compartidas por los reportes no publicables
 

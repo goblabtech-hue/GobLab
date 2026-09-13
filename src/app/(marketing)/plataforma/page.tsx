@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ArrowRight, Check } from 'lucide-react'
 import { prisma } from '@/infrastructure/prisma'
 import { CATALOGO_CATEGORIAS } from '@/domain/catalogo-categorias'
+import { DiagramaFlujo } from './diagrama-flujo'
 
 export const metadata = {
   title: { absolute: 'DemosVoz · Cada reporte con dueño, plazo y foto' },
@@ -108,12 +109,12 @@ export default async function Plataforma() {
             {/* riel */}
             <div aria-hidden className="absolute top-5 right-0 left-0 hidden h-0.5 md:block" style={{ background: `linear-gradient(to right, #007595, #155dfc)` }} />
             {[
-              { dia: 'Día 0 · 9:14', quien: 'Laura, vecina', que: 'Escribe por WhatsApp: «hay un bache enorme en Zaragoza esquina Hidalgo, ya se ponchó una llanta». Manda la foto y su ubicación.', sistema: 'Entiende que es un bache, detecta que no hay otro igual a 100 m, y le da folio: TUL-2026-00346. Plazo: 5 días hábiles.', img: '/marca/escena-antes.jpg' },
-              { dia: 'Día 0 · 9:15', quien: 'Obras Públicas', que: 'Al titular le llega el aviso al correo y al Telegram. Aparece en la bandeja del área con el plazo corriendo.', sistema: 'Ruteado sin que nadie lo toque. Si venciera sin atenderse, avisaría solo.' },
+              { dia: 'Día 0 · 9:14', quien: 'Laura, vecina', que: 'Escribe por WhatsApp: «hay un bache enorme en Zaragoza esquina Hidalgo, ya se ponchó una llanta». Manda la foto y su ubicación.', sistema: 'Le da folio al instante: TUL-2026-00346, «recibido, en validación». Detecta que no hay otro igual a 100 m.', img: '/marca/escena-antes.jpg' },
+              { dia: 'Día 0 · 9:20', quien: 'Recepción', que: 'Una persona del municipio lee el reporte, ve la foto y el lugar, y lo registra. Si fuera una grosería o una venta, no lo registraría y a Laura le llegaría el motivo.', sistema: 'Nada llega al área ni al mapa sin que alguien lo haya visto. No es un filtro automático: es una persona, y queda con su nombre.' },
+              { dia: 'Día 0 · 9:21', quien: 'Obras Públicas', que: 'Al titular le llega el aviso al correo y al Telegram. Aparece en la bandeja del área con el plazo corriendo: 5 días hábiles.', sistema: 'Ruteado por categoría. Si venciera sin atenderse, avisaría solo.' },
               { dia: 'Día 2 · 11:40', quien: 'Pedro, cuadrilla', que: 'Lo recibe en su teléfono. Marca que empezó. Al terminar, sube la foto del parche.', sistema: 'Sin foto no hay cierre. La evidencia queda en el expediente, con hora y quién.', img: '/marca/escena-despues.jpg' },
               { dia: 'Día 2 · 11:41', quien: 'Laura, otra vez', que: 'Le llega la foto: «Terminamos. ¿Quedó resuelto?». Toca «Sí» y califica con 5.', sistema: 'Si hubiera dicho «no», el reporte se reabre con plazo nuevo y el área se entera. El cierre lo da el vecino, no el sistema.' },
-              { dia: 'Lunes · 8:00', quien: 'La dirección', que: 'En el informe semanal: Obras Públicas resolvió 10, 100% a tiempo, 2.0 días promedio. Y qué lleva más tiempo esperando.', sistema: 'El mismo dato va al tablero público, por colonia. Cualquiera lo puede ver.' },
-              { dia: 'Siempre', quien: 'Cualquier vecino', que: 'Abre «Cómo vamos» y ve cuánto tarda el municipio en cada tipo de problema, y si cumple lo que prometió.', sistema: 'Los plazos son públicos y se miden contra el cumplimiento real. Es rendición de cuentas en vivo.' },
+              { dia: 'Lunes · 8:00', quien: 'La dirección, y cualquier vecino', que: 'En el informe semanal: Obras Públicas resolvió 10, 100% a tiempo, 2.0 días promedio, y qué lleva más tiempo esperando. El mismo dato está en «Cómo vamos», por colonia, para quien quiera verlo.', sistema: 'Los plazos son públicos y se miden contra el cumplimiento real. Es rendición de cuentas en vivo.' },
             ].map((p, i) => (
               <li key={p.dia} className="relative">
                 <span className="flex size-10 items-center justify-center rounded-full text-sm font-bold text-white md:relative md:z-10" style={{ background: `linear-gradient(135deg, #007595, #155dfc)` }}>{i + 1}</span>
@@ -129,6 +130,35 @@ export default async function Plataforma() {
               </li>
             ))}
           </ol>
+        </div>
+      </section>
+
+      {/* ═══ Diagrama de flujo ════════════════════════════════════════════ */}
+      <section id="flujo" className="bg-lienzo text-tinta">
+        <div className="mx-auto max-w-6xl px-5 py-20">
+          <h2 className="max-w-3xl text-4xl font-bold leading-tight tracking-tight text-balance md:text-5xl">
+            Cómo funciona, paso por paso.
+          </h2>
+          <p className="mt-4 max-w-2xl text-lg text-tinta-suave">
+            Siete pasos y dos decisiones. Las dos las toman personas: la de recepción, que
+            decide qué se registra, y la del vecino, que decide si quedó resuelto. Lo que
+            está en rojo es lo que pasa cuando la respuesta es «no».
+          </p>
+          <div className="mt-12 rounded-2xl border border-borde bg-papel p-4 md:p-8">
+            <DiagramaFlujo />
+          </div>
+          <dl className="mt-8 grid gap-6 text-sm sm:grid-cols-3">
+            {[
+              ['Nada se publica sin que alguien lo lea', 'Un reporte no existe para el área, el mapa ni la página del folio hasta que una persona lo registra. Si el problema es real pero el texto no se puede mostrar, se registra sin hacerlo público.'],
+              ['El cierre lo da el vecino', 'La cuadrilla marca terminado con foto; el reporte se cierra cuando quien reportó dice que sí quedó. Si dice que no, se reabre con plazo nuevo.'],
+              ['Los plazos se miden solos', 'Cada categoría tiene un plazo público. Si vence, el área recibe la alerta sin que nadie la pida, y el informe semanal lo cuenta.'],
+            ].map(([t, d]) => (
+              <div key={t}>
+                <dt className="font-bold">{t}</dt>
+                <dd className="mt-1 text-tinta-suave">{d}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
 

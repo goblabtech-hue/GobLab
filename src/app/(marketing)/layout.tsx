@@ -21,6 +21,7 @@ export default async function LayoutMarketing({ children }: { children: React.Re
           <nav aria-label="Secciones" className="ml-auto hidden items-center gap-1 md:flex">
             {[
               ['/plataforma#reporte', 'Un reporte'],
+              ['/plataforma#flujo', 'Cómo funciona'],
               ['/plataforma#cambio', 'Lo que cambia'],
               ['/plataforma#informe', 'El informe'],
               ['/plataforma#whatsapp', 'Por WhatsApp'],

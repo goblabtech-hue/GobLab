@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/domain/formato'
 
-export function NavInterna({ enlaces }: { enlaces: { href: string; texto: string }[] }) {
+export function NavInterna({ enlaces }: { enlaces: { href: string; texto: string; conteo?: number }[] }) {
   const ruta = usePathname()
 
   return (
@@ -23,6 +23,11 @@ export function NavInterna({ enlaces }: { enlaces: { href: string; texto: string
                 )}
               >
                 {e.texto}
+                {e.conteo ? (
+                  <span className="ml-1.5 rounded-full bg-white/90 px-1.5 text-[11px] font-semibold text-marca-700 tabular-nums" aria-label={`${e.conteo} por validar`}>
+                    {e.conteo}
+                  </span>
+                ) : null}
               </Link>
             </li>
           )

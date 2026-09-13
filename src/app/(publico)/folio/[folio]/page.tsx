@@ -30,7 +30,7 @@ async function cargarReporte(folio: string) {
   return prisma.reporte.findUnique({
     where: { folio },
     select: {
-      id: true, folio: true, descripcion: true, estatus: true, prioridad: true,
+      id: true, folio: true, descripcion: true, estatus: true, prioridad: true, moderacion: true,
       createdAt: true, fechaLimite: true, resueltoAt: true, cerradoAt: true,
       calificacion: true, comentarioCalificacion: true, notaCierre: true,
       slaDiasHabilesAplicado: true,
@@ -66,7 +66,12 @@ export default async function PaginaFolio({ params, searchParams }: PageProps<'/
   const luz = abierto ? semaforo(r.fechaLimite, festivos) : null
   const info = ESTATUS[r.estatus]
 
-  const fotosCiudadano = r.fotos.filter((f) => f.tipo === 'ciudadano')
+  // Lo que escribió y subió el ciudadano solo se muestra si una persona del
+  // municipio lo aprobó. Los folios son consecutivos: cualquiera puede
+  // recorrerlos, y sin esto vería todo lo que la gente escribe y sube antes
+  // de que nadie lo revise.
+  const contenidoPublico = r.moderacion === 'aprobado'
+  const fotosCiudadano = contenidoPublico ? r.fotos.filter((f) => f.tipo === 'ciudadano') : []
   const evidencias = r.fotos.filter((f) => f.tipo === 'evidencia')
 
   return (
@@ -142,7 +147,15 @@ export default async function PaginaFolio({ params, searchParams }: PageProps<'/
         <h2 className="mb-2 text-base font-semibold">Lo que reportaste</h2>
         <Tarjeta>
           <TarjetaCuerpo className="space-y-3">
-            <p className="text-pretty">{r.descripcion}</p>
+            {contenidoPublico ? (
+              <p className="text-pretty">{r.descripcion}</p>
+            ) : (
+              <p className="text-tinta-suave">
+                {r.estatus === 'por_validar'
+                  ? 'La descripción y las fotos se muestran cuando una persona del municipio valide el reporte.'
+                  : 'La descripción y las fotos de este reporte no se muestran al público.'}
+              </p>
+            )}
 
             {(r.direccionTexto || r.colonia) && (
               <p className="flex items-start gap-1.5 text-sm text-tinta-suave">

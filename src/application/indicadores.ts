@@ -175,8 +175,8 @@ export async function calcularIndicadores(meses = 12): Promise<Indicadores> {
     reabiertosPeriodo, cerradosPeriodo,
     recibidosPorMes,
   ] = await Promise.all([
-    prisma.reporte.count({ where: { createdAt: { gte: desde, lte: hasta } } }),
-    prisma.reporte.count({ where: { createdAt: { gte: desdeAnterior, lt: desde } } }),
+    prisma.reporte.count({ where: { createdAt: { gte: desde, lte: hasta }, estatus: { not: 'por_validar' } } }),
+    prisma.reporte.count({ where: { createdAt: { gte: desdeAnterior, lt: desde }, estatus: { not: 'por_validar' } } }),
 
     // Se traen las fechas, no un conteo: el promedio de días hábiles lo hace JS.
     prisma.reporte.findMany({

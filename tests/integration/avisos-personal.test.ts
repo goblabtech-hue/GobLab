@@ -87,6 +87,7 @@ async function nuevo(marca: string) {
     categoriaId, descripcion: marca, origen: 'web',
     lat: 20.05, lng: -99.34, coloniaId: null, direccionTexto: 'calle de prueba 1',
     telefono: null, nombreContacto: null, fotos: [],
+    capturadoPorId: supervisoraId, // ventanilla: nace registrado, sin pasar por recepción
   })
   creados.push(r.id)
   return r

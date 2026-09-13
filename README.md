@@ -57,7 +57,7 @@ Las crea el seed. Todas usan la contraseña **`Demo1234!`**.
 |---|---|---|
 | Administración | `admin@municipio.gob.mx` | Todo |
 | Supervisión | `supervisor@municipio.gob.mx` | Indicadores, bandeja, cuadrilla |
-| Atención ciudadana | `operador@municipio.gob.mx` | Bandeja |
+| Atención ciudadana | `operador@municipio.gob.mx` | Recepción y bandeja |
 | Cuadrilla | `cuadrilla@municipio.gob.mx` | Sus reportes asignados |
 
 **Bórralas antes de producción.** Ver `PENDIENTES.md`.

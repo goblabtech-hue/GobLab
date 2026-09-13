@@ -69,7 +69,7 @@ export default async function MiColonia({ params }: PageProps<'/mi-colonia/[slug
       }),
       prisma.reporte.groupBy({
         by: ['categoriaId'], _count: true,
-        where: { coloniaId: colonia.id, createdAt: { gte: hace12 } },
+        where: { coloniaId: colonia.id, createdAt: { gte: hace12 }, estatus: { not: 'por_validar' } },
         orderBy: { _count: { categoriaId: 'desc' } },
         take: 5,
       }),

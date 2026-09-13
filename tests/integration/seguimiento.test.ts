@@ -42,6 +42,7 @@ async function reporteHasta(paso: 'abierto' | 'resuelto', marca: string) {
     categoriaId, descripcion: marca, origen: 'whatsapp',
     lat: 20.05, lng: -99.34, coloniaId: null, direccionTexto: null,
     telefono: CHAT, nombreContacto: 'Prueba', fotos: [],
+    capturadoPorId: supervisorId, // nace registrado; recepción tiene su propia prueba
   })
   creados.push(r.id)
   // Como lo deja el bot al levantarlo: por dónde avisarle a esta persona.

@@ -16,6 +16,12 @@ export const ESTATUS: Record<
   EstatusReporte,
   { ciudadano: string; interno: string; tono: Tono; explicacion: string }
 > = {
+  por_validar: {
+    ciudadano: 'Recibido, en validación',
+    interno: 'Por validar',
+    tono: 'ambar',
+    explicacion: 'Ya tenemos tu reporte. Una persona del municipio lo está revisando para registrarlo y mandarlo al área que le toca.',
+  },
   nuevo: {
     ciudadano: 'Recibido',
     interno: 'Nuevo',

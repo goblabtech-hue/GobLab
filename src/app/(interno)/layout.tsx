@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Inbox, Wrench, BarChart3, Settings, LogOut, Images } from 'lucide-react'
+import { Inbox, Wrench, BarChart3, Settings, LogOut, Images, MailOpen } from 'lucide-react'
 import { auth } from '@/infrastructure/auth'
 import { RUTAS_PROTEGIDAS } from '@/infrastructure/auth.config'
 import { ROL } from '@/domain/presentacion'
 import { obtenerConfiguracion } from '@/infrastructure/config'
+import { prisma } from '@/infrastructure/prisma'
 import { Boton } from '@/components/ui/boton'
 import { AvisoDemo } from '@/components/aviso-demo'
 import { Logotipo } from '@/components/logotipo'
@@ -12,6 +13,7 @@ import { salir } from '@/app/entrar/acciones'
 import { NavInterna } from './nav'
 
 const ENLACES = [
+  { href: '/recepcion', texto: 'Recepción', icono: MailOpen },
   { href: '/bandeja', texto: 'Bandeja', icono: Inbox },
   { href: '/cuadrilla', texto: 'Mis reportes', icono: Wrench },
   { href: '/ejecutivo', texto: 'Indicadores', icono: BarChart3 },
@@ -29,6 +31,11 @@ export default async function LayoutInterno({ children }: LayoutProps<'/'>) {
     const regla = RUTAS_PROTEGIDAS.find((r) => r.prefijo === e.href)
     return !regla || regla.roles.includes(rol)
   })
+  // Lo que espera en recepción se ve desde cualquier pantalla: es trabajo
+  // que nadie más puede hacer.
+  const porValidar = permitidos.some((e) => e.href === '/recepcion')
+    ? await prisma.reporte.count({ where: { estatus: 'por_validar' } })
+    : 0
 
   return (
     <div className="flex min-h-full flex-col">
@@ -40,7 +47,7 @@ export default async function LayoutInterno({ children }: LayoutProps<'/'>) {
             <Logotipo tema={municipio.tema} municipio={municipio.nombre} logoUrl={municipio.logoUrl} logoBlancoUrl={municipio.logoBlancoUrl} alto={28} />
           </Link>
 
-          <NavInterna enlaces={permitidos.map(({ href, texto }) => ({ href, texto }))} />
+          <NavInterna enlaces={permitidos.map(({ href, texto }) => ({ href, texto, conteo: href === '/recepcion' ? porValidar : undefined }))} />
 
           <div className="ml-auto flex items-center gap-3">
             <div className="hidden text-right sm:block">
