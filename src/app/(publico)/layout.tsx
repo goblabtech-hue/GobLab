@@ -1,6 +1,8 @@
 import Link from 'next/link'
-import { Megaphone, Search, BarChart3, Phone, Sparkles } from 'lucide-react'
+import { Megaphone, Search, BarChart3, Phone, Sparkles, LogIn, LayoutDashboard } from 'lucide-react'
 import { obtenerConfiguracion } from '@/infrastructure/config'
+import { auth } from '@/infrastructure/auth'
+import { inicioPorRol } from '@/domain/presentacion'
 import { AvisoDemo } from '@/components/aviso-demo'
 import { Logotipo } from '@/components/logotipo'
 import { InstalarApp } from '@/components/instalar-app'
@@ -19,7 +21,13 @@ const ENLACES_DEMO = [
 ]
 
 export default async function LayoutPublico({ children }: { children: React.ReactNode }) {
-  const municipio = await obtenerConfiguracion()
+  const [municipio, sesion] = await Promise.all([obtenerConfiguracion(), auth()])
+  // Con sesión abierta el enlace lleva a la pantalla de ese perfil; sin
+  // sesión, a entrar. Va aparte y en tono bajo: es para el personal, no
+  // para el vecino.
+  const personal = sesion?.user
+    ? { href: inicioPorRol(sesion.user.rol), texto: 'Sistema', icono: LayoutDashboard }
+    : { href: '/entrar', texto: 'Entrar', icono: LogIn }
 
   return (
     <div className="flex min-h-full flex-col">
@@ -43,6 +51,16 @@ export default async function LayoutPublico({ children }: { children: React.Reac
                   </Link>
                 </li>
               ))}
+              <li className="ml-1 border-l border-current/15 pl-2">
+                <Link
+                  href={personal.href}
+                  className="cabecera-enlace inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-sm opacity-80 hover:opacity-100 sm:px-3"
+                  title="Acceso para personal del municipio"
+                >
+                  <personal.icono className="size-4 shrink-0" aria-hidden />
+                  <span className="hidden sm:inline">{personal.texto}</span>
+                </Link>
+              </li>
             </ul>
           </nav>
         </div>
