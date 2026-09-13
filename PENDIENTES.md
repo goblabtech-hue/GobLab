@@ -100,6 +100,34 @@ cuadrilla puede salir al lugar equivocado.
 Si el municipio sabe de alguno que falte o sobre, se corrige en
 `/admin/colonias`.
 
+### Para el siguiente municipio: el catálogo nacional de SEPOMEX
+
+No existe una API oficial de colonias con llave. Lo oficial es el **catálogo
+de Correos de México**, un archivo gratuito con todos los asentamientos del
+país — colonia, tipo, código postal, municipio y estado. Los servicios que se
+anuncian como «API de códigos postales» son terceros revendiendo ese archivo.
+
+Con él, dar de alta cualquier municipio es una línea:
+
+1. Bájalo de
+   [correosdemexico.gob.mx → Descarga de Códigos Postales](https://www.correosdemexico.gob.mx/SSLServicios/ConsultaCP/CodigoPostal_Exportar.aspx),
+   opción **todo el país**, formato **TXT**. Pesa unos 25 MB.
+2. Si no sabes el nombre exacto del municipio como lo escribe SEPOMEX:
+
+   ```bash
+   npm run colonias:sepomex -- CPdescarga.txt --municipios Hidalgo
+   ```
+3. Cárgalo:
+
+   ```bash
+   npm run colonias:sepomex -- CPdescarga.txt "Tula de Allende" Hidalgo
+   ```
+
+No distingue mayúsculas ni acentos, no duplica si se corre dos veces, y aplica
+la misma regla que el seed: dos entradas con el mismo nombre y código postal
+se quedan en una. Las colonias llegan sin coordenadas; el centro de cada una
+se pone después en `/admin/colonias` si se quiere.
+
 ---
 
 ## 2. Lo que falta para la demostración

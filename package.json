@@ -18,7 +18,8 @@
     "telegram:ensayo": "tsx scripts/telegram-ensayo.ts",
     "clasificador:ensayo": "tsx scripts/clasificador-ensayo.ts",
     "telegram": "bash scripts/telegram.sh",
-    "respaldar": "bash scripts/respaldar.sh"
+    "respaldar": "bash scripts/respaldar.sh",
+    "colonias:sepomex": "tsx scripts/sepomex-importar.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",
