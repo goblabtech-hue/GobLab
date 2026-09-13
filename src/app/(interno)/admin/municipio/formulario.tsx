@@ -8,6 +8,7 @@ import { Alerta } from '@/components/ui/alerta'
 import { Campo, Entrada } from '@/components/ui/campo'
 import { Tarjeta, TarjetaCuerpo } from '@/components/ui/tarjeta'
 import { guardarMunicipio, type Resultado } from './acciones'
+import { SelectorTema } from './selector-tema'
 import type { ConfigMunicipio } from '@/infrastructure/config'
 
 const MapaSelector = dynamic(
@@ -70,6 +71,12 @@ export function FormularioMunicipio({
               defaultValue={inicial.telEmergencias} required maxLength={20}
             />
           </Campo>
+        </TarjetaCuerpo>
+      </Tarjeta>
+
+      <Tarjeta>
+        <TarjetaCuerpo>
+          <SelectorTema inicial={inicial.tema} />
         </TarjetaCuerpo>
       </Tarjeta>
 

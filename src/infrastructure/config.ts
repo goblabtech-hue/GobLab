@@ -1,4 +1,5 @@
 import { prisma } from '@/infrastructure/prisma'
+import { esTema, TEMA_POR_DEFECTO, type Tema } from '@/domain/temas'
 
 /**
  * Configuración del municipio.
@@ -31,6 +32,8 @@ export type ConfigMunicipio = {
   centroLng: number
   zoomInicial: number
   telEmergencias: string
+  /** Identidad visual (src/domain/temas.ts). */
+  tema: Tema
 }
 
 /** Valores de arranque: solo se usan si todavía no hay fila en la base. */
@@ -41,6 +44,7 @@ export const CONFIG_POR_DEFECTO: ConfigMunicipio = {
   centroLng: num(process.env.MUNICIPIO_CENTRO_LNG, -99.1332),
   zoomInicial: num(process.env.MUNICIPIO_ZOOM_INICIAL, 13),
   telEmergencias: process.env.TEL_EMERGENCIAS ?? '911',
+  tema: TEMA_POR_DEFECTO,
 }
 
 let cache: { valor: ConfigMunicipio; leidaEn: number } | null = null
@@ -63,6 +67,7 @@ export async function obtenerConfiguracion(): Promise<ConfigMunicipio> {
           centroLng: fila.centroLng,
           zoomInicial: fila.zoomInicial,
           telEmergencias: fila.telEmergencias,
+          tema: esTema(fila.tema) ? fila.tema : TEMA_POR_DEFECTO,
         }
       : CONFIG_POR_DEFECTO
     cache = { valor, leidaEn: Date.now() }

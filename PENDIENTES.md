@@ -48,6 +48,7 @@ Se edita en **`/admin/municipio`**, sin tocar archivos ni reiniciar nada.
 | Centro del mapa | 20.0517, −99.3450 |
 | Acercamiento | 14 |
 | Teléfono de emergencias | 911 |
+| Identidad visual | Institucional (también: Gobierno de México en guinda y oro, y Sobrio en grises) |
 
 **Revisar el teléfono de emergencias.** Quedó en 911, que es el nacional y
 funciona en Tula. Si el municipio prefiere publicar su línea local de

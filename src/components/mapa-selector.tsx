@@ -24,7 +24,7 @@ const pin = L.divIcon({
   html: `<span style="
     display:block;width:28px;height:28px;margin:-28px 0 0 -14px;
     border-radius:50% 50% 50% 0;transform:rotate(-45deg);
-    background:#0d8465;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)"></span>`,
+    background:var(--color-marca-600);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)"></span>`,
   iconSize: [28, 28],
   iconAnchor: [14, 28],
 })

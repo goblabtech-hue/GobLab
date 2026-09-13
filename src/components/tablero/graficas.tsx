@@ -13,22 +13,25 @@ import { descargarCsv } from './csv'
  * ámbar = atención, rojo = incumplido. Se mantienen consistentes entre todas
  * las gráficas para que el ciudadano no tenga que releer la leyenda.
  */
+// Variables CSS y no hexadecimales: así las gráficas siguen a la identidad
+// visual que se elija en /admin/municipio. El semáforo (verde/ámbar/rojo) es
+// igual en los tres temas a propósito: significa estado, no identidad.
 export const COLORES = {
-  marca: '#0d8465',
-  marcaClaro: '#14a37b',
-  verde: '#087443',
-  ambar: '#9a5b06',
-  rojo: '#b42318',
-  azul: '#1d4ed8',
-  tenue: '#7c8c87',
+  marca: 'var(--color-marca-600)',
+  marcaClaro: 'var(--color-marca-500)',
+  verde: 'var(--color-verde-600)',
+  ambar: 'var(--color-ambar-600)',
+  rojo: 'var(--color-rojo-600)',
+  azul: 'var(--color-azul-600)',
+  tenue: 'var(--color-tenue)',
 }
 
 const SERIE = [COLORES.marca, COLORES.azul, COLORES.ambar, COLORES.rojo, COLORES.marcaClaro, COLORES.tenue]
 
 const ejeComun = {
-  tick: { fontSize: 12, fill: '#4a5f59' },
+  tick: { fontSize: 12, fill: 'var(--color-tinta-suave)' },
   tickLine: false,
-  axisLine: { stroke: '#dfe6e2' },
+  axisLine: { stroke: 'var(--color-borde)' },
 }
 
 const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
@@ -108,10 +111,10 @@ export function BarrasHorizontales({
 }) {
   return (
     <BarChart data={datos} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
-      <CartesianGrid horizontal={false} stroke="#dfe6e2" />
+      <CartesianGrid horizontal={false} stroke="var(--color-borde)" />
       <XAxis type="number" {...ejeComun} />
       <YAxis type="category" dataKey={claveNombre} width={150} {...ejeComun} />
-      <Tooltip content={<CajaTooltip />} cursor={{ fill: '#f4f7f5' }} />
+      <Tooltip content={<CajaTooltip />} cursor={{ fill: 'var(--color-lienzo)' }} />
       <Bar dataKey={claveValor} name={etiqueta} fill={COLORES.marca} radius={[0, 4, 4, 0]} />
     </BarChart>
   )
@@ -125,7 +128,7 @@ export function LineasMensuales({
 }) {
   return (
     <LineChart data={datos} margin={{ left: 0, right: 12, top: 4, bottom: 4 }}>
-      <CartesianGrid stroke="#dfe6e2" vertical={false} />
+      <CartesianGrid stroke="var(--color-borde)" vertical={false} />
       <XAxis dataKey="mesCorto" {...ejeComun} />
       <YAxis {...ejeComun} width={40} />
       <Tooltip content={<CajaTooltip />} />
@@ -149,10 +152,10 @@ export function BarrasApiladas({
 }) {
   return (
     <BarChart data={datos} margin={{ left: 0, right: 12, top: 4, bottom: 4 }}>
-      <CartesianGrid stroke="#dfe6e2" vertical={false} />
+      <CartesianGrid stroke="var(--color-borde)" vertical={false} />
       <XAxis dataKey="mesCorto" {...ejeComun} />
       <YAxis {...ejeComun} width={40} />
-      <Tooltip content={<CajaTooltip />} cursor={{ fill: '#f4f7f5' }} />
+      <Tooltip content={<CajaTooltip />} cursor={{ fill: 'var(--color-lienzo)' }} />
       <Legend wrapperStyle={{ fontSize: 12 }} />
       {series.map((s) => (
         <Bar key={s.clave} dataKey={s.clave} name={s.nombre} stackId="a" fill={s.color} />
@@ -172,10 +175,10 @@ export function BarrasSimples({
 }) {
   return (
     <BarChart data={datos} margin={{ left: 0, right: 12, top: 4, bottom: 4 }}>
-      <CartesianGrid stroke="#dfe6e2" vertical={false} />
+      <CartesianGrid stroke="var(--color-borde)" vertical={false} />
       <XAxis dataKey={claveNombre} {...ejeComun} />
       <YAxis {...ejeComun} width={40} />
-      <Tooltip content={<CajaTooltip />} cursor={{ fill: '#f4f7f5' }} />
+      <Tooltip content={<CajaTooltip />} cursor={{ fill: 'var(--color-lienzo)' }} />
       <Bar dataKey={claveValor} name={etiqueta} radius={[4, 4, 0, 0]}>
         {datos.map((_, i) => (
           <Cell key={i} fill={colores?.[i] ?? COLORES.marca} />

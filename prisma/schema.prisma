@@ -466,6 +466,8 @@ model ConfiguracionMunicipio {
   centroLng      Float
   zoomInicial    Int      @default(13)
   telEmergencias String
+  /// Identidad visual: institucional | federal | sobrio (ver src/domain/temas.ts).
+  tema           String   @default("institucional")
   actualizadoAt  DateTime @updatedAt
   actualizadoPor String?
 }

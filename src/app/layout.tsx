@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { obtenerConfiguracion } from '@/infrastructure/config'
+import { TEMAS, variablesDeTema } from '@/domain/temas'
 import './globals.css'
 
 const inter = Inter({ variable: '--font-sans-app', subsets: ['latin'], display: 'swap' })
@@ -20,15 +21,27 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  themeColor: '#0d8465',
+export async function generateViewport(): Promise<Viewport> {
+  const { tema } = await obtenerConfiguracion()
+  return {
+    width: 'device-width',
+    initialScale: 1,
+    // El color de la barra del navegador en el celular sigue a la identidad.
+    themeColor: TEMAS[tema].cabecera.fondo,
+  }
 }
 
-export default function RootLayout({ children }: LayoutProps<'/'>) {
+export default async function RootLayout({ children }: LayoutProps<'/'>) {
+  const { tema } = await obtenerConfiguracion()
   return (
-    <html lang="es-MX" className={`${inter.variable} h-full antialiased`}>
+    // Los tokens del tema van como variables en <html>: así Tailwind y todo
+    // lo que use `var(--color-…)` cambia de identidad sin recompilar nada.
+    <html
+      lang="es-MX"
+      data-tema={tema}
+      className={`${inter.variable} h-full antialiased`}
+      style={variablesDeTema(tema) as React.CSSProperties}
+    >
       <body className="flex min-h-full flex-col">
         <a href="#contenido" className="salto-contenido">Saltar al contenido</a>
         {children}

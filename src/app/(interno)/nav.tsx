@@ -18,10 +18,8 @@ export function NavInterna({ enlaces }: { enlaces: { href: string; texto: string
                 href={e.href}
                 aria-current={activo ? 'page' : undefined}
                 className={cn(
-                  'inline-flex h-9 items-center rounded-lg px-3 text-sm whitespace-nowrap transition-colors',
-                  activo
-                    ? 'bg-marca-50 font-medium text-marca-700'
-                    : 'text-tinta-suave hover:bg-lienzo hover:text-tinta',
+                  'cabecera-enlace inline-flex h-9 items-center rounded-lg px-3 text-sm whitespace-nowrap transition-colors',
+                  activo && 'cabecera-activo font-medium',
                 )}
               >
                 {e.texto}

@@ -16,9 +16,9 @@ export default async function LayoutPublico({ children }: { children: React.Reac
     <div className="flex min-h-full flex-col">
       <AvisoDemo municipio={municipio.nombre} />
 
-      <header className="sticky top-0 z-40 border-b border-borde bg-papel/95 backdrop-blur">
+      <header className="cabecera sticky top-0 z-40">
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-3 px-4">
-          <Link href="/" className="mr-auto min-w-0 truncate font-semibold text-marca-700">
+          <Link href="/" className="mr-auto min-w-0 truncate font-semibold">
             {municipio.nombre}
           </Link>
           <nav aria-label="Principal">
@@ -27,7 +27,7 @@ export default async function LayoutPublico({ children }: { children: React.Reac
                 <li key={href}>
                   <Link
                     href={href}
-                    className="inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-sm text-tinta-suave hover:bg-lienzo hover:text-tinta sm:px-3"
+                    className="cabecera-enlace inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-sm sm:px-3"
                   >
                     <Icono className="size-4 shrink-0" aria-hidden />
                     <span className="hidden sm:inline">{texto}</span>

@@ -33,9 +33,9 @@ export default async function LayoutInterno({ children }: LayoutProps<'/'>) {
     <div className="flex min-h-full flex-col">
       <AvisoDemo municipio={municipio.nombre} />
 
-      <header className="sticky top-0 z-40 border-b border-borde bg-papel">
+      <header className="cabecera sticky top-0 z-40">
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4">
-          <Link href="/" className="shrink-0 text-sm font-semibold text-marca-700">
+          <Link href="/" className="shrink-0 text-sm font-semibold">
             {municipio.nombre}
           </Link>
 
@@ -44,10 +44,10 @@ export default async function LayoutInterno({ children }: LayoutProps<'/'>) {
           <div className="ml-auto flex items-center gap-3">
             <div className="hidden text-right sm:block">
               <p className="text-sm leading-tight font-medium">{name}</p>
-              <p className="text-xs leading-tight text-tinta-suave">{ROL[rol] ?? rol}</p>
+              <p className="cabecera-secundario text-xs leading-tight">{ROL[rol] ?? rol}</p>
             </div>
             <form action={salir}>
-              <Boton variante="fantasma" tamano="icono" type="submit" title="Salir">
+              <Boton variante="fantasma" tamano="icono" type="submit" title="Salir" className="cabecera-enlace">
                 <LogOut aria-hidden />
                 <span className="sr-only">Salir</span>
               </Boton>

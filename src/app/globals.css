@@ -31,6 +31,14 @@
   --color-azul-50: #eff6ff;
   --color-azul-600: #1d4ed8;
 
+  /* La barra superior. Los tres temas la pintan distinto: es lo primero que
+     se ve y lo que más identidad carga. Los valores por defecto son los del
+     tema institucional; los otros se inyectan en <html style> desde
+     src/domain/temas.ts. */
+  --color-cabecera: #ffffff;
+  --color-cabecera-texto: #0a6a52;
+  --color-cabecera-acento: #0d8465;
+
   --font-sans: var(--font-sans-app), ui-sans-serif, system-ui, sans-serif;
 
   --radius-tarjeta: 0.875rem;
@@ -77,4 +85,29 @@ body {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* La barra superior toma su identidad del tema: fondo, texto y una línea de
+   acento debajo. En el tema federal es guinda con línea de oro — la
+   composición que la gente reconoce de gob.mx. */
+.cabecera {
+  background: var(--color-cabecera);
+  color: var(--color-cabecera-texto);
+  border-bottom: 3px solid var(--color-cabecera-acento);
+}
+.cabecera-enlace {
+  color: var(--color-cabecera-texto);
+  opacity: 0.85;
+}
+.cabecera-enlace:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--color-cabecera-texto) 12%, transparent);
+}
+.cabecera-activo {
+  opacity: 1;
+  background: color-mix(in srgb, var(--color-cabecera-texto) 16%, transparent);
+}
+.cabecera-secundario {
+  color: var(--color-cabecera-texto);
+  opacity: 0.7;
 }
