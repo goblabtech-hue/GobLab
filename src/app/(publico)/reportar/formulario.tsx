@@ -4,7 +4,7 @@ import { useActionState, useEffect, useMemo, useRef, useState, useTransition } f
 import { useFormStatus } from 'react-dom'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
-import { Camera, Crosshair, Loader2, MapPin, Users, X } from 'lucide-react'
+import { Camera, Check, Crosshair, Loader2, MapPin, Users, X } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Alerta } from '@/components/ui/alerta'
 import { Campo, Entrada, AreaTexto, Selector, Etiqueta, Ayuda } from '@/components/ui/campo'
@@ -54,11 +54,6 @@ export function FormularioReporte({
   const [parecidos, setParecidos] = useState<Cercano[]>([])
   const [, empezar] = useTransition()
   const inputFotos = useRef<HTMLInputElement>(null)
-
-  const categoria = useMemo(
-    () => categorias.find((c) => c.id === categoriaId) ?? null,
-    [categorias, categoriaId],
-  )
 
   // Reportes parecidos: se consultan en cuanto hay categoría y pin, para poder
   // ofrecer la adhesión ANTES de crear un duplicado (SPEC §4.2).
@@ -130,32 +125,34 @@ export function FormularioReporte({
         <p className="mt-1 mb-3 text-sm text-tinta-suave">Elige lo que más se parezca.</p>
 
         <input type="hidden" name="categoriaId" value={categoriaId ?? ''} />
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+        {/* Las mismas tarjetas que en el inicio: mismo tamaño, ícono en el
+            color de la marca y el plazo a la vista. Elegir aquí no debe
+            sentirse distinto a elegir allá. */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {categorias.map((c) => {
             const activa = c.id === categoriaId
             return (
               <button
                 key={c.id} type="button" onClick={() => setCategoriaId(c.id)}
                 aria-pressed={activa}
-                className={`rounded-lg border p-3 text-left transition-colors ${
+                className={`relative rounded-[--radius-tarjeta] border p-3.5 text-left transition-colors ${
                   activa
                     ? 'border-marca-600 bg-marca-50 ring-1 ring-marca-600'
-                    : 'border-borde bg-papel hover:bg-lienzo'
+                    : 'border-borde bg-papel hover:border-marca-200 hover:bg-marca-50/40'
                 }`}
               >
-                <IconoCategoria nombre={c.icono} className={activa ? 'size-6 text-marca-700' : 'size-6 text-tinta-suave'} />
-                <span className="mt-1.5 block text-sm leading-snug font-medium">{c.nombre}</span>
+                {activa && (
+                  <span className="absolute top-2.5 right-2.5 flex size-5 items-center justify-center rounded-full bg-marca-600 text-white">
+                    <Check className="size-3.5" aria-hidden />
+                  </span>
+                )}
+                <IconoCategoria nombre={c.icono} className="size-6 text-marca-600" />
+                <span className="mt-2 block text-sm leading-snug font-medium">{c.nombre}</span>
+                <span className="mt-0.5 block text-xs text-tinta-suave">{c.slaDiasHabiles} días hábiles</span>
               </button>
             )
           })}
         </div>
-
-        {categoria && (
-          <p className="mt-3 rounded-lg bg-marca-50 p-3 text-sm text-marca-700">
-            Los reportes de <strong>{categoria.nombre.toLowerCase()}</strong> se atienden
-            en un máximo de <strong>{categoria.slaDiasHabiles} días hábiles</strong>.
-          </p>
-        )}
       </fieldset>
 
       {/* ---------------------------------------------------- descripción */}
