@@ -124,7 +124,7 @@ export const MANUALES: Manual[] = [
     entra: '/entrar desde su teléfono. Cae en «Mis reportes». Conviene instalar la app (el sistema lo ofrece) para tenerla como ícono.',
     tareas: [
       { titulo: 'Atender un reporte', pasos: [
-        'Abre «Mis reportes»: solo ve los que le asignaron, con el plazo de cada uno. Primero los que vencen antes.',
+        'Abre «Mis reportes»: solo ve los que le asignaron, con el plazo de cada uno, el área con su sello y el teléfono de trabajo de quien lo tiene. Primero los que vencen antes.',
         'Al llegar al lugar pulsa «Empezar». El vecino se entera de que ya van.',
         'Al terminar, toma la foto del trabajo desde la misma pantalla y escribe una nota breve de qué se hizo.',
         '«Marcar resuelto». Sin foto el botón no cierra si la categoría la exige (baches, luminarias, fugas…).',
@@ -161,6 +161,7 @@ export const MANUALES: Manual[] = [
         'Filtra «Vencidos». Cada uno ya le avisó una vez por correo y Telegram; aquí se ve el acumulado.',
         'Indicadores → su área: cumplimiento del plazo, días promedio, reabiertos. Es el mismo dato que ve la dirección.',
         'Informe semanal (Indicadores → Semanal): qué resolvió su área la semana pasada, qué porcentaje a tiempo, y los cinco pendientes más viejos.',
+        'Por colonia (Indicadores → Por colonia): en qué colonias se concentran los pendientes de su área, y cada colonia abre la lista de sus reportes con estatus.',
       ] },
       { titulo: 'Decidir qué se publica en «Antes y después»', pasos: [
         'Galería: los reportes cerrados de su área con foto de antes y después.',

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { AlertTriangle, Bot, Building2, CalendarRange, RotateCcw, Users } from 'lucide-react'
+import { AlertTriangle, Bot, Building2, CalendarRange, MapPinned, RotateCcw, Users } from 'lucide-react'
 import { requerirRol } from '@/infrastructure/auth'
 import { obtenerIndicadores } from '@/application/indicadores'
 import { calcularIndicadoresInternos, HORAS_A_TEXTO } from '@/application/indicadores-internos'
@@ -62,6 +62,13 @@ export default async function Ejecutivo() {
           >
             <CalendarRange className="size-4" aria-hidden />
             Informe semanal
+          </Link>
+          <Link
+            href="/ejecutivo/colonias"
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-borde px-3 text-sm font-medium hover:bg-lienzo"
+          >
+            <MapPinned className="size-4" aria-hidden />
+            Por colonia
           </Link>
           <p className="text-xs text-tenue">Actualizado {fechaHora(publicos.generadoAt)}</p>
         </div>

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { AlertTriangle, Building2, CalendarRange, Inbox, Star, Users } from 'lucide-react'
+import { AlertTriangle, Building2, CalendarRange, Inbox, MapPinned, Star, Users } from 'lucide-react'
 import { requerirRol } from '@/infrastructure/auth'
 import { panelDependencia } from '@/application/panel-dependencia'
 import { ESTATUS } from '@/domain/presentacion'
@@ -63,6 +63,9 @@ export default async function TableroDependencia({ params }: { params: Promise<{
           </Link>
           <Link href="/ejecutivo/semanal" className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-borde px-3 text-sm font-medium hover:bg-lienzo">
             <CalendarRange className="size-4" aria-hidden />Informe semanal
+          </Link>
+          <Link href="/ejecutivo/colonias" className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-borde px-3 text-sm font-medium hover:bg-lienzo">
+            <MapPinned className="size-4" aria-hidden />Por colonia
           </Link>
         </div>
       </div>

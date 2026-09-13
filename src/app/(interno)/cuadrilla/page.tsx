@@ -9,6 +9,8 @@ import { fecha, numero } from '@/domain/formato'
 import { Tarjeta, TarjetaCuerpo } from '@/components/ui/tarjeta'
 import { Insignia } from '@/components/ui/insignia'
 import { IconoCategoria } from '@/components/icono-categoria'
+import { ResponsableReporte } from '@/components/responsable-reporte'
+import { descifrarTelefono } from '@/domain/telefono'
 
 export const metadata = { title: 'Mis reportes' }
 export const dynamic = 'force-dynamic'
@@ -34,6 +36,8 @@ export default async function PaginaCuadrilla() {
         fechaLimite: true, direccionTexto: true,
         categoria: { select: { nombre: true, icono: true } },
         colonia: { select: { nombre: true } },
+        dependencia: { select: { nombre: true, icono: true, color: true } },
+        asignadoA: { select: { id: true, nombre: true, telefonoCifrado: true } },
       },
     }),
     cargarFestivos(),
@@ -92,9 +96,17 @@ export default async function PaginaCuadrilla() {
                         <MapPin className="mt-0.5 size-3.5 shrink-0" aria-hidden />
                         <span>
                           {r.direccionTexto ?? 'Sin dirección'}
-                          {r.colonia && ` · Col. ${r.colonia.nombre}`}
+                          {r.colonia && !r.direccionTexto?.includes(r.colonia.nombre) && ` · Col. ${r.colonia.nombre}`}
                         </span>
                       </p>
+
+                      <ResponsableReporte
+                        className="mt-2 border-t border-borde pt-2"
+                        dependencia={r.dependencia}
+                        persona={r.asignadoA ? { nombre: r.asignadoA.nombre, telefono: r.asignadoA.telefonoCifrado ? descifrarTelefono(r.asignadoA.telefonoCifrado) : null } : null}
+                        esUsuarioActual={r.asignadoA?.id === usuario.id}
+                        enlaceTelefono={false}
+                      />
 
                       <p className="mt-1.5 text-xs text-tenue">
                         {r.folio} · {ESTATUS[r.estatus].interno} · vence {fecha(r.fechaLimite)}

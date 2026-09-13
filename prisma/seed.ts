@@ -214,6 +214,13 @@ async function main() {
   const passwordDemo = process.env.SEED_PASSWORD ?? 'Demo1234!'
   const hash = await hashearPassword(passwordDemo)
   const usuarios = []
+  // Teléfono de trabajo ficticio y distinto para cada persona: es lo que ve
+  // el titular en «Mis reportes» para localizar a quien tiene el reporte.
+  let telN = 0
+  const telefonoDeTrabajo = () => {
+    const t = derivarTelefono(`77310${String(++telN).padStart(5, '0')}`)
+    return { telefonoCifrado: t.telefonoCifrado, telefonoHash: t.telefonoHash }
+  }
   for (const u of USUARIOS) {
     usuarios.push(
       await prisma.usuario.create({
@@ -223,6 +230,7 @@ async function main() {
           hashPassword: hash,
           rol: u.rol,
           dependenciaId: u.dependencia === null ? null : elegirDependencia(dependencias, u.dependencia).id,
+          ...(u.rol === 'cuadrilla' || u.rol === 'supervisor' ? telefonoDeTrabajo() : {}),
         },
       }),
     )
@@ -234,10 +242,10 @@ async function main() {
     const dep = elegirDependencia(dependencias, i)
     usuarios.push(
       await prisma.usuario.create({
-        data: { nombre: d.responsable, email: `${d.clave}@municipio.gob.mx`, hashPassword: hash, rol: 'supervisor', dependenciaId: dep.id },
+        data: { nombre: d.responsable, email: `${d.clave}@municipio.gob.mx`, hashPassword: hash, rol: 'supervisor', dependenciaId: dep.id, ...telefonoDeTrabajo() },
       }),
       await prisma.usuario.create({
-        data: { nombre: `Cuadrilla de ${d.nombre.replace(/^(Dirección|Secretaría|Unidad) de /, '').split(/,| · /)[0]}`, email: `cuadrilla.${d.clave}@municipio.gob.mx`, hashPassword: hash, rol: 'cuadrilla', dependenciaId: dep.id },
+        data: { nombre: `Cuadrilla de ${d.nombre.replace(/^(Dirección|Secretaría|Unidad) de /, '').split(/,| · /)[0]}`, email: `cuadrilla.${d.clave}@municipio.gob.mx`, hashPassword: hash, rol: 'cuadrilla', dependenciaId: dep.id, ...telefonoDeTrabajo() },
       }),
     )
   }

@@ -12,6 +12,8 @@ import { Tarjeta, TarjetaCuerpo } from '@/components/ui/tarjeta'
 import { Insignia } from '@/components/ui/insignia'
 import { Alerta } from '@/components/ui/alerta'
 import { FormularioResolver } from './resolver'
+import { ResponsableReporte } from '@/components/responsable-reporte'
+import { descifrarTelefono } from '@/domain/telefono'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,7 +23,7 @@ export async function generateMetadata({ params }: PageProps<'/cuadrilla/[folio]
 }
 
 export default async function DetalleCuadrilla({ params }: PageProps<'/cuadrilla/[folio]'>) {
-  await requerirRol('cuadrilla', 'supervisor', 'admin')
+  const usuario = await requerirRol('cuadrilla', 'supervisor', 'admin')
   const { folio } = await params
 
   const r = await prisma.reporte.findUnique({
@@ -32,6 +34,8 @@ export default async function DetalleCuadrilla({ params }: PageProps<'/cuadrilla
       resueltoAt: true, notaCierre: true, slaDiasHabilesAplicado: true,
       categoria: { select: { nombre: true, requiereEvidencia: true, slaDiasHabiles: true } },
       colonia: { select: { nombre: true } },
+      dependencia: { select: { nombre: true, icono: true, color: true } },
+      asignadoA: { select: { id: true, nombre: true, telefonoCifrado: true } },
       fotos: { select: { id: true, url: true, tipo: true }, orderBy: { createdAt: 'asc' } },
       _count: { select: { adhesiones: true } },
     },
@@ -78,9 +82,16 @@ export default async function DetalleCuadrilla({ params }: PageProps<'/cuadrilla
             <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden />
             <span>
               {r.direccionTexto ?? 'Sin dirección'}
-              {r.colonia && ` · Col. ${r.colonia.nombre}`}
+              {r.colonia && !r.direccionTexto?.includes(r.colonia.nombre) && ` · Col. ${r.colonia.nombre}`}
             </span>
           </p>
+
+          <ResponsableReporte
+            className="rounded-lg bg-lienzo p-3"
+            dependencia={r.dependencia}
+            persona={r.asignadoA ? { nombre: r.asignadoA.nombre, telefono: r.asignadoA.telefonoCifrado ? descifrarTelefono(r.asignadoA.telefonoCifrado) : null } : null}
+            esUsuarioActual={r.asignadoA?.id === usuario.id}
+          />
 
           {r.lat != null && r.lng != null && (
             <a
