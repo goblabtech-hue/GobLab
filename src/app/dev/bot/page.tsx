@@ -37,7 +37,8 @@ export default async function PaginaSimulador({ searchParams }: PageProps<'/dev/
   const conIA = hayClasificadorIA()
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8">
+      <div className="max-w-3xl">
       <h1 className="text-2xl font-semibold tracking-tight">Simulador del bot</h1>
       <p className="mt-1 text-tinta-suave">
         Prueba el flujo conversacional completo sin credenciales de WhatsApp ni
@@ -81,6 +82,7 @@ export default async function PaginaSimulador({ searchParams }: PageProps<'/dev/
           centroLat={municipio.centroLat}
           centroLng={municipio.centroLng}
         />
+      </div>
       </div>
     </div>
   )

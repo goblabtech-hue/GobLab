@@ -98,7 +98,8 @@ export default async function MiColonia({ params }: PageProps<'/mi-colonia/[slug
   const nombreCat = new Map(categorias.map((c) => [c.id, c]))
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8">
+      <div className="max-w-3xl">
       <Link href="/tablero" className="inline-flex items-center gap-1.5 text-sm text-tinta-suave hover:text-tinta">
         <ArrowLeft className="size-4" aria-hidden />
         Volver al tablero
@@ -179,6 +180,7 @@ export default async function MiColonia({ params }: PageProps<'/mi-colonia/[slug
           ))}
         </ul>
       </section>
+      </div>
     </div>
   )
 }

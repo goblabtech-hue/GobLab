@@ -77,7 +77,8 @@ export default async function PaginaFolio({ params, searchParams }: PageProps<'/
   return (
     <>
     <SeguirFolioEnApp folio={r.folio} />
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8">
+      <div className="max-w-2xl">
       {nuevo && (
         <Alerta tipo="exito" titulo="¡Listo! Ya tenemos tu reporte" className="mb-5">
           Guarda este folio: <strong className="font-mono">{r.folio}</strong>. Con él
@@ -252,6 +253,7 @@ export default async function PaginaFolio({ params, searchParams }: PageProps<'/
           Gracias por ayudarnos a mejorar tu colonia.
         </p>
       )}
+      </div>
     </div>
     </>
   )

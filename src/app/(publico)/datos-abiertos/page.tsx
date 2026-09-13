@@ -16,7 +16,8 @@ export default async function DatosAbiertos() {
   const total = await prisma.reporte.count()
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8">
+      <div className="max-w-3xl">
       <h1 className="text-3xl font-semibold tracking-tight">Datos abiertos</h1>
       <p className="mt-2 text-tinta-suave text-pretty">
         Toda la base de reportes, actualizada en tiempo real, para que cualquiera
@@ -95,6 +96,7 @@ export default async function DatosAbiertos() {
           <pre className="overflow-x-auto"><code>curl -s https://TU-DOMINIO/api/datos-abiertos/reportes.json | jq &apos;.total&apos;</code></pre>
         </TarjetaCuerpo>
       </section>
+      </div>
     </div>
   )
 }

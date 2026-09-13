@@ -19,7 +19,8 @@ export default async function PaginaReportar({ searchParams }: PageProps<'/repor
   ])
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8">
+      <div className="max-w-2xl">
       <h1 className="text-2xl font-semibold tracking-tight">Reportar un problema</h1>
       <p className="mt-1 mb-8 text-tinta-suave">
         Te toma menos de dos minutos. Al terminar te damos un folio para que puedas
@@ -32,6 +33,7 @@ export default async function PaginaReportar({ searchParams }: PageProps<'/repor
         centro={{ lat: municipio.centroLat, lng: municipio.centroLng, zoom: municipio.zoomInicial }}
         categoriaInicial={typeof categoria === 'string' ? categoria : undefined}
       />
+      </div>
     </div>
   )
 }

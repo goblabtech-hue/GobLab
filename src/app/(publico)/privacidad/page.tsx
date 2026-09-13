@@ -24,7 +24,7 @@ export default async function Privacidad() {
 
   if (!aviso) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-8">
+      <div className="mx-auto max-w-5xl px-4 py-8"><div className="max-w-2xl">
         <h1 className="text-3xl font-semibold tracking-tight">Aviso de privacidad</h1>
         <Alerta tipo="aviso" titulo="Todavía no se ha publicado" className="mt-5">
           El municipio de {municipio.nombre} aún no publica su aviso de privacidad
@@ -37,12 +37,12 @@ export default async function Privacidad() {
           Si necesitas el aviso formal, pídelo en la Unidad de Transparencia del
           municipio.
         </p>
-      </div>
+      </div></div>
     )
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8"><div className="max-w-2xl">
       <h1 className="text-3xl font-semibold tracking-tight text-balance">{aviso.titulo}</h1>
       <p className="mt-2 text-sm text-tenue">
         {municipio.nombre} · versión {aviso.version} · vigente desde {fecha(aviso.updatedAt)}
@@ -58,6 +58,6 @@ export default async function Privacidad() {
         <Link href="/reportar" className="text-marca-700 underline">el formulario de reporte</Link>{' '}
         o acude a la Unidad de Transparencia del municipio.
       </p>
-    </div>
+    </div></div>
   )
 }
