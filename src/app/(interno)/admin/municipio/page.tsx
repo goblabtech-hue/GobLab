@@ -6,6 +6,7 @@ import { obtenerConfiguracion, TZ_MUNICIPIO } from '@/infrastructure/config'
 import { fechaHora } from '@/domain/formato'
 import { Alerta } from '@/components/ui/alerta'
 import { FormularioMunicipio } from './formulario'
+import { LogotipoMunicipio } from './logotipo'
 
 export const metadata = { title: 'Datos del municipio' }
 export const dynamic = 'force-dynamic'
@@ -39,6 +40,9 @@ export default async function PaginaMunicipio() {
           </p>
         )}
       </div>
+
+      <LogotipoMunicipio logoUrl={config.logoUrl} logoBlancoUrl={config.logoBlancoUrl} municipio={config.nombre} />
+
 
       <FormularioMunicipio inicial={config} hayReportes={reportes > 0} />
 

@@ -2,26 +2,40 @@ import Image from 'next/image'
 import { TEMAS, type Tema } from '@/domain/temas'
 
 /**
- * El logotipo de la plataforma en la cabecera.
+ * El logotipo de la cabecera.
  *
- * Dos versiones del mismo archivo: a color para cabeceras claras y en blanco
- * para las oscuras (guinda, negro). Cuál va la decide el tema, no la página.
- * El nombre del municipio sigue siendo el texto alternativo: es lo que lee
- * un lector de pantalla y lo que aparece si la imagen no carga.
+ * Si el municipio subió el suyo en /admin/municipio, va ese; si no, el de la
+ * plataforma. En los dos casos hay una versión a color para cabeceras claras
+ * y una en blanco para las oscuras, y cuál se usa lo decide el tema, no la
+ * página. El nombre del municipio sigue siendo el texto alternativo.
  */
-export function Logotipo({ tema, municipio, alto = 32 }: { tema: Tema; municipio: string; alto?: number }) {
-  const version = TEMAS[tema].logotipo
-  const src = version === 'blanco' ? '/marca/demosvoz-blanco.png' : '/marca/demosvoz.png'
-  // El archivo mide 1151×260: se conserva la proporción.
-  const ancho = Math.round(alto * (1151 / 260))
+export function Logotipo({
+  tema, municipio, logoUrl, logoBlancoUrl, alto = 32,
+}: {
+  tema: Tema
+  municipio: string
+  logoUrl?: string | null
+  logoBlancoUrl?: string | null
+  alto?: number
+}) {
+  const blanco = TEMAS[tema].logotipo === 'blanco'
+  const propio = logoUrl && logoBlancoUrl
+  const src = propio
+    ? (blanco ? logoBlancoUrl : logoUrl)
+    : (blanco ? '/marca/demosvoz-blanco.png' : '/marca/demosvoz.png')
+
   return (
     <Image
       src={src}
-      alt={`DemosVoz · ${municipio}`}
-      width={ancho}
+      alt={propio ? municipio : `DemosVoz · ${municipio}`}
+      // Las dimensiones son un tope: el logotipo del municipio puede tener
+      // cualquier proporción y el alto lo fija la clase.
+      width={alto * 5}
       height={alto}
       priority
-      className="h-8 w-auto"
+      unoptimized={Boolean(propio)}
+      className="w-auto"
+      style={{ height: alto }}
     />
   )
 }

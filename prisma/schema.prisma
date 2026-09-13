@@ -466,8 +466,12 @@ model ConfiguracionMunicipio {
   centroLng      Float
   zoomInicial    Int      @default(13)
   telEmergencias String
-  /// Identidad visual: institucional | federal | sobrio (ver src/domain/temas.ts).
-  tema           String   @default("institucional")
+  /// Identidad visual (ver src/domain/temas.ts).
+  tema           String   @default("demoscopia")
+  /// Logotipo propio del municipio, a color y en blanco para cabeceras
+  /// oscuras. Sin logotipo se usa el de la plataforma.
+  logoUrl        String?
+  logoBlancoUrl  String?
   actualizadoAt  DateTime @updatedAt
   actualizadoPor String?
 }

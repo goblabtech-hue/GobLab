@@ -49,6 +49,7 @@ Se edita en **`/admin/municipio`**, sin tocar archivos ni reiniciar nada.
 | Acercamiento | 14 |
 | Teléfono de emergencias | 911 |
 | Identidad visual | **Demoscopia** (oficial: cian→azul, Montserrat, logotipo DemosVoz). También: Institucional, Gobierno de México, Sobrio |
+| Logotipo | El de la plataforma. **El escudo del municipio se sube en la misma pantalla**: se recorta, se le quita el fondo y se genera la versión en blanco sola |
 
 **Revisar el teléfono de emergencias.** Quedó en 911, que es el nacional y
 funciona en Tula. Si el municipio prefiere publicar su línea local de

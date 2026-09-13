@@ -20,7 +20,7 @@ export default async function LayoutPublico({ children }: { children: React.Reac
       <header className="cabecera sticky top-0 z-40">
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-3 px-4">
           <Link href="/" className="mr-auto flex min-w-0 items-center" aria-label="Inicio">
-            <Logotipo tema={municipio.tema} municipio={municipio.nombre} />
+            <Logotipo tema={municipio.tema} municipio={municipio.nombre} logoUrl={municipio.logoUrl} logoBlancoUrl={municipio.logoBlancoUrl} />
           </Link>
           <nav aria-label="Principal">
             <ul className="flex items-center gap-1">
