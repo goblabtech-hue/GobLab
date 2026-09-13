@@ -3,7 +3,15 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { primerError } from '@/domain/validacion'
+import fs from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
+import crypto from 'node:crypto'
 import { prisma } from '@/infrastructure/prisma'
+import {
+  leerCatalogoSepomex, estadosDe, municipiosDe, importarMunicipioSepomex, ErrorSepomex,
+  type FilaSepomex, type ResumenSepomex,
+} from '@/application/sepomex'
 import { cifrarTelefono, hashTelefono } from '@/domain/telefono'
 import { nombreDelBot } from '@/infrastructure/mensajeria/telegram'
 import { requerirRol, hashearPassword, NoAutorizado } from '@/infrastructure/auth'
@@ -443,4 +451,74 @@ export async function importarDependencias(
     revalidatePath('/admin/dependencias')
     return { ok: true, resumen }
   }) as Promise<ResultadoImport>
+}
+
+// ---------------------------------------------------------------- SEPOMEX
+
+/**
+ * El catálogo se sube UNA vez y se guarda ya leído en un archivo temporal con
+ * un token; los pasos siguientes (elegir estado, elegir municipio, importar)
+ * usan el token. Subir 25 MB tres veces para tres clics sería absurdo.
+ */
+const SEPOMEX_VIGENCIA_MS = 30 * 60_000
+
+function rutaTemporalSepomex(token: string): string {
+  if (!/^[a-f0-9]{32}$/.test(token)) throw new Error('Token inválido.')
+  return path.join(os.tmpdir(), `sepomex-${token}.json`)
+}
+
+async function leerTemporalSepomex(token: string): Promise<FilaSepomex[]> {
+  const ruta = rutaTemporalSepomex(token)
+  const info = await fs.stat(ruta).catch(() => null)
+  if (!info || Date.now() - info.mtimeMs > SEPOMEX_VIGENCIA_MS) {
+    await fs.rm(ruta, { force: true }).catch(() => {})
+    throw new ErrorSepomex('El archivo subido ya venció (30 minutos). Vuelve a subirlo.')
+  }
+  return JSON.parse(await fs.readFile(ruta, 'utf-8')) as FilaSepomex[]
+}
+
+export type ResultadoSubidaSepomex = { token?: string; estados?: string[]; total?: number; error?: string }
+
+export async function subirCatalogoSepomex(datos: FormData): Promise<ResultadoSubidaSepomex> {
+  return comoAdmin(async () => {
+    const archivo = datos.get('archivo')
+    if (!(archivo instanceof File) || archivo.size === 0) return { error: 'Elige el archivo del catálogo.' }
+    if (archivo.size > 40 * 1024 * 1024) return { error: 'El archivo es demasiado grande (máximo 40 MB).' }
+    try {
+      const filas = leerCatalogoSepomex(new Uint8Array(await archivo.arrayBuffer()))
+      const token = crypto.randomBytes(16).toString('hex')
+      await fs.writeFile(rutaTemporalSepomex(token), JSON.stringify(filas), { mode: 0o600 })
+      return { token, estados: estadosDe(filas), total: filas.length }
+    } catch (e) {
+      return { error: e instanceof ErrorSepomex ? e.message : 'No pude leer el archivo.' }
+    }
+  }) as Promise<ResultadoSubidaSepomex>
+}
+
+export async function municipiosSepomex(
+  token: string, estado: string,
+): Promise<{ municipios?: { nombre: string; asentamientos: number }[]; error?: string }> {
+  return comoAdmin(async () => {
+    try {
+      return { municipios: municipiosDe(await leerTemporalSepomex(token), estado) }
+    } catch (e) {
+      return { error: e instanceof ErrorSepomex ? e.message : 'No pude leer el catálogo.' }
+    }
+  }) as Promise<{ municipios?: { nombre: string; asentamientos: number }[]; error?: string }>
+}
+
+export async function importarSepomex(
+  token: string, municipio: string, estado: string,
+): Promise<{ resumen?: ResumenSepomex; error?: string }> {
+  return comoAdmin(async () => {
+    try {
+      const filas = await leerTemporalSepomex(token)
+      const resumen = await importarMunicipioSepomex(filas, municipio, estado)
+      await fs.rm(rutaTemporalSepomex(token), { force: true }).catch(() => {})
+      revalidatePath('/admin/colonias')
+      return { resumen }
+    } catch (e) {
+      return { error: e instanceof ErrorSepomex ? e.message : 'No pude importar el municipio.' }
+    }
+  }) as Promise<{ resumen?: ResumenSepomex; error?: string }>
 }

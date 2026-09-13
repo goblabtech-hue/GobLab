@@ -107,21 +107,20 @@ de Correos de México**, un archivo gratuito con todos los asentamientos del
 país — colonia, tipo, código postal, municipio y estado. Los servicios que se
 anuncian como «API de códigos postales» son terceros revendiendo ese archivo.
 
-Con él, dar de alta cualquier municipio es una línea:
+Con él, dar de alta cualquier municipio son tres clics, en
+**`/admin/colonias` → Cargar desde el catálogo nacional**:
 
-1. Bájalo de
+1. Baja el catálogo de
    [correosdemexico.gob.mx → Descarga de Códigos Postales](https://www.correosdemexico.gob.mx/SSLServicios/ConsultaCP/CodigoPostal_Exportar.aspx),
    opción **todo el país**, formato **TXT**. Pesa unos 25 MB.
-2. Si no sabes el nombre exacto del municipio como lo escribe SEPOMEX:
+2. Súbelo en la pantalla: te lista los estados.
+3. Elige el estado, luego el municipio de la lista, y carga.
 
-   ```bash
-   npm run colonias:sepomex -- CPdescarga.txt --municipios Hidalgo
-   ```
-3. Cárgalo:
+También existe por línea de comandos, para quien despliega sin navegador:
 
-   ```bash
-   npm run colonias:sepomex -- CPdescarga.txt "Tula de Allende" Hidalgo
-   ```
+```bash
+npm run colonias:sepomex -- CPdescarga.txt "Tula de Allende" Hidalgo
+```
 
 No distingue mayúsculas ni acentos, no duplica si se corre dos veces, y aplica
 la misma regla que el seed: dos entradas con el mismo nombre y código postal

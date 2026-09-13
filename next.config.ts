@@ -93,6 +93,10 @@ const origenesDev = (process.env.DEV_ORIGENES_PERMITIDOS ?? '')
 const nextConfig: NextConfig = {
   ...(origenesDev.length > 0 ? { allowedDevOrigins: origenesDev } : {}),
 
+  // El catálogo nacional de SEPOMEX pesa unos 25 MB y se sube por una acción
+  // de servidor. El límite por defecto es 1 MB.
+  experimental: { serverActions: { bodySizeLimit: '40mb' } },
+
   ...(almacenamiento
     ? {
         images: {

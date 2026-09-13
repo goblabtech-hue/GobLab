@@ -1,6 +1,7 @@
 import { prisma } from '@/infrastructure/prisma'
 import { Catalogo } from '../catalogo'
 import { Importador } from '../importador'
+import { ImportadorSepomex } from './importador-sepomex'
 import { guardarColonia, importarColonias } from '../acciones'
 
 export const metadata = { title: 'Colonias' }
@@ -13,6 +14,8 @@ export default async function PaginaColonias() {
 
   return (
     <div className="space-y-6">
+      <ImportadorSepomex />
+
       <Importador
         titulo="Cargar colonias desde Excel"
         explicacion="Si ya tienes el listado en una hoja de cálculo, súbelo y se dan de alta todas de una vez."
