@@ -187,7 +187,9 @@ paso "Respaldo diario"
 # hasta que ya pasó.
 install -d -m 700 -o "$USUARIO" -g "$USUARIO" "/home/$USUARIO/respaldos"
 LINEA="0 2 * * * cd $DESTINO && bash scripts/respaldar.sh >> /home/$USUARIO/respaldos/respaldo.log 2>&1"
-( sudo -u "$USUARIO" crontab -l 2>/dev/null | grep -v 'respaldar.sh'; echo "$LINEA" ) | sudo -u "$USUARIO" crontab -
+# `|| true`: en un servidor nuevo el crontab está vacío, `grep -v` devuelve 1 y
+# con `pipefail` el instalador se detenía aquí sin decir nada —y sin servicio.
+( sudo -u "$USUARIO" crontab -l 2>/dev/null | grep -v 'respaldar.sh' || true; echo "$LINEA" ) | sudo -u "$USUARIO" crontab -
 ok_="  ✓ programado a las 02:00, en /home/$USUARIO/respaldos"
 echo "$ok_"
 
