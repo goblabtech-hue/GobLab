@@ -47,7 +47,10 @@ npm run build
 
 paso "Reiniciando el servicio"
 if systemctl list-unit-files | grep -q "^${SERVICIO}.service"; then
-  sudo systemctl restart "$SERVICIO"
+  # -n: si no hay permiso, que falle aquí con un mensaje y no se quede
+  # esperando una contraseña que nadie va a teclear.
+  sudo -n systemctl restart "$SERVICIO" \
+    || { rojo "No hay permiso para reiniciar el servicio. Como root: bash despliegue/instalar-servidor.sh (vuelve a crear /etc/sudoers.d/atencion-ciudadana)."; exit 1; }
   sleep 3
   systemctl is-active --quiet "$SERVICIO" \
     && echo "  servicio activo" \

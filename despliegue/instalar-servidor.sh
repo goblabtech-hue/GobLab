@@ -226,6 +226,12 @@ UNIT
 systemctl daemon-reload
 systemctl enable atencion-ciudadana >/dev/null
 
+# desplegar.sh corre como el usuario de servicio y tiene que poder reiniciar
+# el servicio —solo eso—. Sin esta regla la compilación nueva queda en disco
+# y el proceso viejo sigue sirviendo, sin ningún error a la vista.
+echo "$USUARIO ALL=(root) NOPASSWD: /usr/bin/systemctl restart atencion-ciudadana, /usr/bin/systemctl status atencion-ciudadana" > /etc/sudoers.d/atencion-ciudadana
+chmod 440 /etc/sudoers.d/atencion-ciudadana
+
 cat <<FIN
 
 ────────────────────────────────────────────────────────────
