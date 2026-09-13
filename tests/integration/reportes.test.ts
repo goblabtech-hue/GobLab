@@ -27,7 +27,15 @@ const OTRO_TEL = '5599000002'
 before(async () => {
   const cat = await prisma.categoria.findFirstOrThrow({ where: { requiereEvidencia: true, activa: true } })
   const sinEv = await prisma.categoria.findFirstOrThrow({ where: { requiereEvidencia: false } })
-  const otra = await prisma.dependencia.findFirstOrThrow({ where: { id: { not: cat.dependenciaId } } })
+  // La otra dependencia se toma del catálogo real (una que tenga categoría
+  // del SPEC, orden < 100) y no de «cualquiera distinta»: las suites corren en
+  // paralelo y otras crean dependencias temporales que borran al terminar.
+  // Elegir una de esas rompía la reasignación con una violación de llave.
+  const otraCat = await prisma.categoria.findFirstOrThrow({
+    where: { activa: true, orden: { lt: 100 }, dependenciaId: { not: cat.dependenciaId } },
+    select: { dependenciaId: true },
+  })
+  const otra = { id: otraCat.dependenciaId }
   categoriaId = cat.id
   categoriaSinEvidenciaId = sinEv.id
   otraDependenciaId = otra.id
