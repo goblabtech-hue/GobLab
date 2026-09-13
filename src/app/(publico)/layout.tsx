@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Megaphone, Search, BarChart3, Phone, Sparkles, LogIn, LayoutDashboard } from 'lucide-react'
+import { Megaphone, Search, BarChart3, Phone, Home, LogIn, LayoutDashboard } from 'lucide-react'
 import { obtenerConfiguracion } from '@/infrastructure/config'
 import { auth } from '@/infrastructure/auth'
 import { inicioPorRol } from '@/domain/presentacion'
@@ -14,9 +14,10 @@ const ENLACES = [
 ]
 
 // Solo en la instancia de demostración: un vecino de un municipio real no
-// debe ver «Ventas» en el sitio de su ayuntamiento.
+// debe ver la página del producto en el sitio de su ayuntamiento. Va junto
+// a «Sistema», separado de lo que usa el vecino.
 const ENLACES_DEMO = [
-  { href: '/plataforma', texto: 'La plataforma', icono: Sparkles },
+  { href: '/plataforma', texto: 'Home', icono: Home },
 ]
 
 export default async function LayoutPublico({ children }: { children: React.ReactNode }) {
@@ -39,7 +40,7 @@ export default async function LayoutPublico({ children }: { children: React.Reac
           </Link>
           <nav aria-label="Principal">
             <ul className="flex items-center gap-1">
-              {[...ENLACES, ...(process.env.MODO_DEMO === 'true' ? ENLACES_DEMO : [])].map(({ href, texto, icono: Icono }) => (
+              {ENLACES.map(({ href, texto, icono: Icono }) => (
                 <li key={href}>
                   <Link
                     href={href}
@@ -50,7 +51,18 @@ export default async function LayoutPublico({ children }: { children: React.Reac
                   </Link>
                 </li>
               ))}
-              <li className="ml-1 border-l border-current/15 pl-2">
+              {(process.env.MODO_DEMO === 'true' ? ENLACES_DEMO : []).map(({ href, texto, icono: Icono }, i) => (
+                <li key={href} className={i === 0 ? 'ml-1 border-l border-current/15 pl-2' : undefined}>
+                  <Link
+                    href={href}
+                    className="cabecera-enlace inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-sm opacity-80 hover:opacity-100 sm:px-3"
+                  >
+                    <Icono className="size-4 shrink-0" aria-hidden />
+                    <span className="hidden sm:inline">{texto}</span>
+                  </Link>
+                </li>
+              ))}
+              <li>
                 <Link
                   href={personal.href}
                   className="cabecera-enlace inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-sm opacity-80 hover:opacity-100 sm:px-3"
