@@ -66,9 +66,6 @@ export default async function Plataforma() {
             <Link href="/inicio" className="btn-principal inline-flex h-13 items-center gap-2 rounded-lg px-7 text-base font-semibold text-white">
               Ver la demostración <ArrowRight className="size-4" aria-hidden />
             </Link>
-            <Link href="/contacto" className="inline-flex h-13 items-center rounded-lg border border-white/30 px-7 text-base font-semibold text-white hover:bg-white/10">
-              Hablar con ventas
-            </Link>
           </div>
         </div>
 
@@ -341,9 +338,6 @@ export default async function Plataforma() {
           <div className="flex flex-wrap gap-3">
             <Link href="/inicio" className="inline-flex h-13 items-center gap-2 rounded-lg bg-white px-7 text-base font-semibold text-marca-700 hover:bg-white/90">
               Ver la demostración <ArrowRight className="size-4" aria-hidden />
-            </Link>
-            <Link href="/contacto" className="inline-flex h-13 items-center rounded-lg border border-white/50 px-7 text-base font-semibold text-white hover:bg-white/10">
-              Hablar con ventas
             </Link>
           </div>
         </div>

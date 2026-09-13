@@ -34,9 +34,6 @@ export default async function LayoutMarketing({ children }: { children: React.Re
             ))}
           </nav>
           <div className="ml-auto flex shrink-0 items-center gap-2">
-            <Link href="/contacto" className="cabecera-enlace hidden rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap sm:inline-flex">
-              Contacto
-            </Link>
             <Link
               href="/inicio"
               className="btn-principal inline-flex h-10 items-center gap-1.5 rounded-lg bg-marca-600 px-4 text-sm font-semibold whitespace-nowrap text-white"

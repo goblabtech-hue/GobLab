@@ -17,7 +17,6 @@ const ENLACES = [
 // debe ver «Ventas» en el sitio de su ayuntamiento.
 const ENLACES_DEMO = [
   { href: '/plataforma', texto: 'La plataforma', icono: Sparkles },
-  { href: '/contacto', texto: 'Contacto', icono: Phone },
 ]
 
 export default async function LayoutPublico({ children }: { children: React.ReactNode }) {

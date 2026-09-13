@@ -61,7 +61,7 @@ export async function planDeImplementacion(): Promise<{ fases: Fase[]; hechos: n
       pasos: [
         { id: 'contacto', titulo: 'Presentación y demostración', quien: 'demoscopia', estado: 'manual',
           que: 'Enseñar la plataforma con el municipio configurado como demo (nombre, logotipo, sus dependencias). La página /plataforma cuenta el producto; el diagrama de flujo explica el ciclo.',
-          detalle: 'Se agenda desde /contacto. Lo confirma una persona.', href: '/plataforma' },
+          detalle: 'Lo confirma una persona.', href: '/plataforma' },
         { id: 'responsable', titulo: 'Nombrar al responsable municipal', quien: 'municipio', estado: 'manual',
           que: 'Una persona del municipio con autoridad para decidir catálogos, plazos y quién entra: normalmente secretaría técnica o sistemas. Es quien lleva esta lista.',
           detalle: 'Lo confirma una persona.' },
