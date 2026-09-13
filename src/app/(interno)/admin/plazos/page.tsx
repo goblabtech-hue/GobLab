@@ -27,6 +27,9 @@ export default async function PaginaPlazos() {
   const [indicadores, categorias] = await Promise.all([
     obtenerIndicadores(),
     prisma.categoria.findMany({
+      // Solo las activas: con el catálogo maestro habría decenas de inactivas
+      // y el plazo de un problema que el municipio no atiende no es de nadie.
+      where: { activa: true },
       orderBy: { orden: 'asc' },
       select: {
         id: true, slug: true, nombre: true, icono: true, slaDiasHabiles: true,

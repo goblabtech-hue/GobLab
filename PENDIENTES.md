@@ -189,7 +189,8 @@ detalle de imagen.
 
 | Catálogo | Estado | Qué falta |
 |---|---|---|
-| **Plazos de atención** | Los 12 del SPEC §11 | Validarlos en `/admin/plazos` |
+| **Problemas que se atienden** | 12 activos de un catálogo de 44 | Marcar en `/admin/categorias` los que aplican; cada uno llega a `/admin/plazos` con plazo sugerido |
+| **Plazos de atención** | Sugeridos por el catálogo | Validarlos en `/admin/plazos` |
 | **Días festivos** | 21 oficiales (LFT art. 74) | Los locales: feria, fiestas patronales |
 | **Usuarios** | 8 cuentas de demostración | El personal real, y **borrar las de demo** |
 

@@ -26,6 +26,9 @@ export const DEPENDENCIAS = [
   { nombre: 'Dirección de Reglamentos y Espectáculos', responsable: 'Titular de Reglamentos y Espectáculos', telefono: '7737320002', correo: null },
   { nombre: 'Dirección de Salud Municipal', responsable: 'Titular de Salud Municipal', telefono: '7737320002', correo: 'salud@tula.gob.mx' },
   { nombre: 'Unidad de Transparencia y Modernización', responsable: 'Titular de la Unidad de Transparencia', telefono: '7737320002', correo: 'transparencia@tula.gob.mx' },
+  // Atiende los riesgos: postes, cables, bardas, deslaves. El directorio no
+  // publica su correo.
+  { nombre: 'Dirección de Protección Civil', responsable: 'Titular de Protección Civil', telefono: '7737320002', correo: null },
 ] as const
 
 type CatSemilla = {

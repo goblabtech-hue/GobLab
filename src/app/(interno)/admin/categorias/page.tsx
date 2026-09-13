@@ -2,6 +2,7 @@ import { prisma } from '@/infrastructure/prisma'
 import { Insignia } from '@/components/ui/insignia'
 import { Catalogo } from '../catalogo'
 import { guardarCategoria } from '../acciones'
+import { CatalogoMaestro } from './catalogo-maestro'
 
 export const metadata = { title: 'Categorías' }
 
@@ -15,6 +16,9 @@ export default async function PaginaCategorias() {
   ])
 
   return (
+    <div className="space-y-6">
+      <CatalogoMaestro activos={categorias.filter((c) => c.activa).map((c) => c.slug)} />
+
     <Catalogo
       titulo="Categorías y promesas de servicio"
       descripcion="El plazo que pongas aquí es el compromiso público del municipio: aparece en el acuse del ciudadano y se mide en el tablero abierto. Cambiarlo solo afecta a los reportes nuevos, no recalcula los que ya existen."
@@ -56,5 +60,6 @@ export default async function PaginaCategorias() {
       ]}
       accion={guardarCategoria}
     />
+    </div>
   )
 }

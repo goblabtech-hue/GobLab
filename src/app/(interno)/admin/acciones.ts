@@ -8,6 +8,7 @@ import os from 'node:os'
 import path from 'node:path'
 import crypto from 'node:crypto'
 import { prisma } from '@/infrastructure/prisma'
+import { AREAS, categoriaMaestra } from '@/domain/catalogo-categorias'
 import {
   leerCatalogoSepomex, estadosDe, municipiosDe, importarMunicipioSepomex, ErrorSepomex,
   type FilaSepomex, type ResumenSepomex,
@@ -521,4 +522,55 @@ export async function importarSepomex(
       return { error: e instanceof ErrorSepomex ? e.message : 'No pude importar el municipio.' }
     }
   }) as Promise<{ resumen?: ResumenSepomex; error?: string }>
+}
+
+// ---------------------------------------------------------------- catálogo maestro
+
+const normalizarNombre = (t: string) =>
+  t.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+
+/**
+ * Activa o desactiva un problema del catálogo maestro.
+ *
+ * Si la categoría no existe todavía, se crea con los valores sugeridos y se
+ * rutea a la dependencia cuyo nombre corresponde al área (Obras, Agua,
+ * Tránsito…). Con eso aparece de inmediato en /admin/plazos para afinar su
+ * promesa. Si el municipio no tiene una dependencia para esa área, no se
+ * adivina: mandar los deslaves a Obras Públicas porque «algo había que poner»
+ * es peor que pedir que se dé de alta el área primero.
+ */
+export async function alternarCategoriaCatalogo(slug: string, activar: boolean): Promise<Resultado> {
+  return comoAdmin(async () => {
+    const maestra = categoriaMaestra(slug)
+    if (!maestra) return { error: 'Ese problema no está en el catálogo.' }
+
+    const existente = await prisma.categoria.findUnique({ where: { slug }, select: { id: true } })
+    if (existente) {
+      await prisma.categoria.update({ where: { id: existente.id }, data: { activa: activar } })
+    } else if (activar) {
+      const palabras = AREAS[maestra.area].palabras.map(normalizarNombre)
+      const dependencias = await prisma.dependencia.findMany({
+        where: { activa: true }, select: { id: true, nombre: true },
+      })
+      const dependencia = dependencias.find((d) => palabras.some((p) => normalizarNombre(d.nombre).includes(p)))
+      if (!dependencia) {
+        return {
+          error: `No hay una dependencia de «${AREAS[maestra.area].nombre}» a la cual rutear «${maestra.nombre}». ` +
+            'Dala de alta en Dependencias y vuelve a intentar.',
+        }
+      }
+      const ultimo = await prisma.categoria.aggregate({ _max: { orden: true } })
+      await prisma.categoria.create({
+        data: {
+          slug, nombre: maestra.nombre, icono: maestra.icono, descripcionCorta: maestra.descripcion,
+          slaDiasHabiles: maestra.sla, requiereEvidencia: maestra.evidencia ?? true,
+          dependenciaId: dependencia.id, orden: (ultimo._max.orden ?? 0) + 1, activa: true,
+        },
+      })
+    }
+    revalidatePath('/admin/categorias')
+    revalidatePath('/admin/plazos')
+    revalidatePath('/reportar')
+    return { ok: true }
+  }) as Promise<Resultado>
 }
