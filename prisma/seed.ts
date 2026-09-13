@@ -253,6 +253,11 @@ async function main() {
   const operadores = usuarios.filter((u) => u.rol === 'operador')
   const supervisores = usuarios.filter((u) => u.rol === 'supervisor')
   /** Una cuadrilla del área del reporte; si el área no tiene, cualquiera. */
+  /** El supervisor del área del reporte: quien de verdad lo marcaría. */
+  const supervisorDe = (dependenciaId: number) => {
+    const propios = supervisores.filter((u) => u.dependenciaId === dependenciaId)
+    return elegir(propios.length ? propios : supervisores)
+  }
   const cuadrillaDe = (dependenciaId: number) => {
     const propias = cuadrillas.filter((c) => c.dependenciaId === dependenciaId)
     return elegir(propias.length ? propias : cuadrillas)
@@ -407,7 +412,7 @@ async function main() {
         'Se trata de un predio particular; no procede intervención municipal.',
       ])
       eventoBase('asignado', asignadoAt, { dependenciaId })
-      eventoBase('improcedente', new Date(asignadoAt.getTime() + DIA), { motivo: motivoImprocedente }, elegir(supervisores).id)
+      eventoBase('improcedente', new Date(asignadoAt.getTime() + DIA), { motivo: motivoImprocedente }, supervisorDe(dependenciaId).id)
     } else if (desenlace === 'duplicado') {
       estatus = 'duplicado'
       eventoBase('duplicado', asignadoAt, {}, elegir(operadores).id)
@@ -420,7 +425,7 @@ async function main() {
         eventoBase('reasignado', new Date(asignadoAt.getTime() + entre(0.2, 2) * DIA), {
           de: categoria.dependenciaId, a: dependenciaId,
           motivo: 'El reporte corresponde a otra dependencia por el tipo de intervención.',
-        }, elegir(supervisores).id)
+        }, supervisorDe(dependenciaId).id)
       }
       if (estatus === 'en_atencion') eventoBase('en_atencion', new Date(asignadoAt.getTime() + entre(0.5, 2) * DIA), {}, asignadoAId)
     } else {
