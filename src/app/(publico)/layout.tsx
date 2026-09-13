@@ -3,6 +3,7 @@ import { Megaphone, Search, BarChart3, Phone } from 'lucide-react'
 import { obtenerConfiguracion } from '@/infrastructure/config'
 import { AvisoDemo } from '@/components/aviso-demo'
 import { Logotipo } from '@/components/logotipo'
+import { InstalarApp } from '@/components/instalar-app'
 
 const ENLACES = [
   { href: '/reportar', texto: 'Reportar', icono: Megaphone },
@@ -41,6 +42,8 @@ export default async function LayoutPublico({ children }: { children: React.Reac
       </header>
 
       <main id="contenido" className="flex-1">{children}</main>
+
+      <InstalarApp />
 
       <footer className="mt-12 border-t border-borde bg-papel">
         <div className="mx-auto max-w-5xl space-y-4 px-4 py-8 text-sm text-tinta-suave">

@@ -130,3 +130,31 @@ de este.
 - **Chat en vivo con operador.** El escalamiento actual —marcar la conversación
   y que un operador la retome— resuelve el mismo problema sin exigir que haya
   alguien conectado todo el día.
+
+## App en las tiendas (App Store y Google Play)
+
+El sitio ya es una aplicación instalable (PWA): ícono en la pantalla de
+inicio, pantalla completa, cámara y GPS. Para la mayoría de los ciudadanos es
+suficiente y no requiere tiendas ni cuentas de desarrollador.
+
+Lo que la PWA no da es **presencia en la tienda** — que alguien busque
+«DemosVoz» en la App Store y la encuentre — y notificaciones push nativas en
+iOS. Cuando eso tenga valor (normalmente político: un alcalde quiere
+enseñarla en la tienda), el camino es **Capacitor**: envuelve este mismo
+sitio en una app nativa. No se reescribe nada; el formulario, el mapa y la
+cámara son los mismos.
+
+Qué hace falta, y ninguno lo puede conseguir el proveedor:
+- Cuenta Apple Developer (99 USD/año, a nombre del municipio o de DemosVoz).
+- Cuenta Google Play Console (25 USD, una vez).
+- Un Mac con Xcode para compilar la versión de iOS.
+- Capturas, descripción y política de privacidad para las fichas de tienda.
+- Revisión de Apple: entre 1 y 7 días, y suelen rechazar apps que «solo
+  envuelven un sitio web» si no aportan algo nativo — el push y la cámara
+  bastan, pero hay que declararlo.
+
+Una tarde de trabajo para el envoltorio; el resto es trámite.
+
+No se hace una app nativa aparte (React Native, Swift, Kotlin) a propósito:
+sería una segunda base de código que hace exactamente lo que ya hace el
+formulario web, y cada cambio habría que hacerlo dos veces.

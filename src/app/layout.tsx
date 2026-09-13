@@ -16,6 +16,10 @@ export async function generateMetadata(): Promise<Metadata> {
     title: { default: `Atención Ciudadana · ${nombre}`, template: `%s · ${nombre}` },
     description:
       'Reporta un problema de tu colonia, dale seguimiento con tu folio y consulta cómo vamos, en tiempo real.',
+    // iOS no lee el manifest para esto: el ícono de inicio y el modo app se
+    // declaran aparte.
+    appleWebApp: { capable: true, statusBarStyle: 'default', title: 'DemosVoz' },
+    icons: { apple: '/marca/apple-touch-icon.png', icon: '/marca/icono-192.png' },
     // robots.txt le pide al buscador que no entre; esto se lo pide a la página
     // ya indexada que la saque. Hacen falta los dos: el primero no deshace lo
     // que un buscador ya guardó.
