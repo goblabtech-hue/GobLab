@@ -505,7 +505,14 @@ async function main() {
       telefonoHash: tel?.telefonoHash ?? null,
       telefonoCifrado: tel?.telefonoCifrado ?? null,
       telefonoMascara: tel?.telefonoMascara ?? null,
-      nombreContacto: tieneTel && chance(0.6) ? elegir(['María', 'José', 'Laura', 'Miguel', 'Sofía', 'Ricardo']) : null,
+      // Nombre completo, no de pila: «María» y «José» aparecen en las colonias
+      // reales del municipio (Santa María Macua, San José) y la prueba de
+      // privacidad —que busca el nombre del ciudadano en las páginas
+      // públicas— no tiene cómo distinguir una fuga de una coincidencia.
+      nombreContacto: tieneTel && chance(0.6)
+        ? elegir(['Guadalupe Trejo Olvera', 'Ramiro Cadena Ángeles', 'Laura Hernández Cruz',
+                  'Fernando Nájera Pérez', 'Sofía Bautista Lugo', 'Ricardo Montiel Vera'])
+        : null,
       dependenciaId,
       asignadoAId: ['nuevo', 'duplicado', 'improcedente'].includes(estatus) ? null : asignadoAId,
       fechaLimite: fechaLimiteFinal, slaDiasHabilesAplicado: categoria.slaDiasHabiles,
