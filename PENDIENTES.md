@@ -37,6 +37,10 @@ humana, el informe semanal, el tablero público y el kit de despliegue.
 
 ---
 
+> Esta misma lista, ordenada como implantación y revisada en vivo contra la
+> base y la configuración, está en el sistema: **Administración → Qué sigue**
+> (`/admin/que-sigue`). Lo que el sistema puede comprobar se marca solo.
+
 ## 1. Lo que ya es real
 
 ### Identidad del municipio ✅

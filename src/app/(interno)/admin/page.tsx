@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Tags, Building2, MapPin, CalendarDays, Users, Landmark, Timer, ShieldCheck, BookOpen } from 'lucide-react'
+import { Tags, Building2, MapPin, CalendarDays, Users, Landmark, Timer, ShieldCheck, BookOpen, ListChecks } from 'lucide-react'
 import { prisma } from '@/infrastructure/prisma'
 import { Tarjeta, TarjetaCuerpo } from '@/components/ui/tarjeta'
 
@@ -15,6 +15,8 @@ export default async function PaginaAdmin() {
   ])
 
   const secciones = [
+    { href: '/admin/que-sigue', icono: ListChecks, titulo: 'Qué sigue', cuenta: null,
+      texto: 'Los pasos para implementar DemosVoz en un municipio, en orden, con lo que ya está hecho marcado solo. La agenda de la primera reunión y el tablero de avance después.' },
     { href: '/admin/municipio', icono: Landmark, titulo: 'Datos del municipio', cuenta: null,
       texto: 'Nombre, prefijo del folio, teléfono de emergencias y dónde se centra el mapa. Es lo que ve el ciudadano en cada pantalla.' },
     { href: '/admin/plazos', icono: Timer, titulo: 'Plazos de atención', cuenta: categorias,
