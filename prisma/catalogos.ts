@@ -15,20 +15,21 @@
  * Las categorías y sus SLA son las 12 que pide el SPEC §11.
  */
 
+/** `clave` es el usuario de demostración del área: `<clave>@municipio.gob.mx` y `cuadrilla.<clave>@…`. */
 export const DEPENDENCIAS = [
-  { nombre: 'Dirección de Servicios Municipales', responsable: 'Titular de Servicios Municipales', telefono: '7737320002', correo: 'serviciospublicos@tula.gob.mx' },
-  { nombre: 'Dirección de Obras Públicas, Desarrollo Urbano y Catastro', responsable: 'Titular de Obras Públicas', telefono: '7737320002', correo: 'obraspublicas@tula.gob.mx' },
-  { nombre: 'CAPyAT · Comisión de Agua Potable y Alcantarillado de Tula', responsable: 'Titular de CAPyAT', telefono: '7737320002', correo: 'capyat@tula.gob.mx' },
-  { nombre: 'Secretaría de Seguridad Pública y Tránsito Municipal', responsable: 'Titular de Seguridad Pública y Tránsito', telefono: '7737320002', correo: 'ssptula@tula.gob.mx' },
-  { nombre: 'Dirección de Protección Ambiental', responsable: 'Titular de Protección Ambiental', telefono: '7737320002', correo: 'ecologia@tula.gob.mx' },
+  { clave: 'servicios', nombre: 'Dirección de Servicios Municipales', responsable: 'Titular de Servicios Municipales', telefono: '7737320002', correo: 'serviciospublicos@tula.gob.mx' },
+  { clave: 'obras', nombre: 'Dirección de Obras Públicas, Desarrollo Urbano y Catastro', responsable: 'Titular de Obras Públicas', telefono: '7737320002', correo: 'obraspublicas@tula.gob.mx' },
+  { clave: 'capyat', nombre: 'CAPyAT · Comisión de Agua Potable y Alcantarillado de Tula', responsable: 'Titular de CAPyAT', telefono: '7737320002', correo: 'capyat@tula.gob.mx' },
+  { clave: 'seguridad', nombre: 'Secretaría de Seguridad Pública y Tránsito Municipal', responsable: 'Titular de Seguridad Pública y Tránsito', telefono: '7737320002', correo: 'ssptula@tula.gob.mx' },
+  { clave: 'ambiental', nombre: 'Dirección de Protección Ambiental', responsable: 'Titular de Protección Ambiental', telefono: '7737320002', correo: 'ecologia@tula.gob.mx' },
   // El directorio público no publica correo de esta dirección; se deja vacío
   // en vez de inventarlo. Se completa en Admin → Dependencias.
-  { nombre: 'Dirección de Reglamentos y Espectáculos', responsable: 'Titular de Reglamentos y Espectáculos', telefono: '7737320002', correo: null },
-  { nombre: 'Dirección de Salud Municipal', responsable: 'Titular de Salud Municipal', telefono: '7737320002', correo: 'salud@tula.gob.mx' },
-  { nombre: 'Unidad de Transparencia y Modernización', responsable: 'Titular de la Unidad de Transparencia', telefono: '7737320002', correo: 'transparencia@tula.gob.mx' },
+  { clave: 'reglamentos', nombre: 'Dirección de Reglamentos y Espectáculos', responsable: 'Titular de Reglamentos y Espectáculos', telefono: '7737320002', correo: null },
+  { clave: 'salud', nombre: 'Dirección de Salud Municipal', responsable: 'Titular de Salud Municipal', telefono: '7737320002', correo: 'salud@tula.gob.mx' },
+  { clave: 'transparencia', nombre: 'Unidad de Transparencia y Modernización', responsable: 'Titular de la Unidad de Transparencia', telefono: '7737320002', correo: 'transparencia@tula.gob.mx' },
   // Atiende los riesgos: postes, cables, bardas, deslaves. El directorio no
   // publica su correo.
-  { nombre: 'Dirección de Protección Civil', responsable: 'Titular de Protección Civil', telefono: '7737320002', correo: null },
+  { clave: 'proteccioncivil', nombre: 'Dirección de Protección Civil', responsable: 'Titular de Protección Civil', telefono: '7737320002', correo: null },
 ] as const
 
 type CatSemilla = {

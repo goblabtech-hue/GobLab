@@ -132,7 +132,7 @@ async function main() {
   // ---------------------------------------------------------------- catálogos
   console.log('Catálogos…')
   const dependencias = []
-  for (const d of DEPENDENCIAS) {
+  for (const { clave: _clave, ...d } of DEPENDENCIAS) {
     dependencias.push(await prisma.dependencia.create({ data: { ...d } }))
   }
 
@@ -227,9 +227,28 @@ async function main() {
       }),
     )
   }
+  // Cada dependencia tiene su titular (supervisión de esa área) y al menos
+  // una cuadrilla: sin eso, el tablero del área no tiene a quién asignarle
+  // nada. Nombres de puesto, no de personas: no se inventa a nadie.
+  for (const [i, d] of DEPENDENCIAS.entries()) {
+    const dep = elegirDependencia(dependencias, i)
+    usuarios.push(
+      await prisma.usuario.create({
+        data: { nombre: d.responsable, email: `${d.clave}@municipio.gob.mx`, hashPassword: hash, rol: 'supervisor', dependenciaId: dep.id },
+      }),
+      await prisma.usuario.create({
+        data: { nombre: `Cuadrilla de ${d.nombre.replace(/^(Dirección|Secretaría|Unidad) de /, '').split(/,| · /)[0]}`, email: `cuadrilla.${d.clave}@municipio.gob.mx`, hashPassword: hash, rol: 'cuadrilla', dependenciaId: dep.id },
+      }),
+    )
+  }
   const cuadrillas = usuarios.filter((u) => u.rol === 'cuadrilla')
   const operadores = usuarios.filter((u) => u.rol === 'operador')
   const supervisores = usuarios.filter((u) => u.rol === 'supervisor')
+  /** Una cuadrilla del área del reporte; si el área no tiene, cualquiera. */
+  const cuadrillaDe = (dependenciaId: number) => {
+    const propias = cuadrillas.filter((c) => c.dependenciaId === dependenciaId)
+    return elegir(propias.length ? propias : cuadrillas)
+  }
 
   // ---------------------------------------------------------------- reportes
   console.log('Generando imágenes placeholder…')
@@ -360,7 +379,7 @@ async function main() {
       ? elegir(dependencias.filter((d) => d.id !== categoria.dependenciaId)).id
       : categoria.dependenciaId
 
-    const asignadoAId = elegir(cuadrillas).id
+    const asignadoAId = cuadrillaDe(dependenciaId).id
 
     // Todos los eventos pasan por aquí, así que aquí se recorta: parchear cada
     // fecha derivada por separado es cómo se coló el error la primera vez.
@@ -701,6 +720,8 @@ async function main() {
   console.log(`  Conversaciones bot: ${await prisma.conversacionBot.count()}`)
   console.log(`\n  Usuarios de demo (contraseña: ${passwordDemo}):`)
   for (const u of USUARIOS) console.log(`    ${u.rol.padEnd(11)} ${u.email}`)
+  console.log('  Una por dependencia (titular + cuadrilla):')
+  for (const d of DEPENDENCIAS) console.log(`    ${d.clave.padEnd(16)} ${d.clave}@municipio.gob.mx · cuadrilla.${d.clave}@municipio.gob.mx`)
 }
 
 /** Se planta si el seed dejó cualquier fecha en el futuro. */

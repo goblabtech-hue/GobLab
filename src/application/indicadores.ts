@@ -155,7 +155,12 @@ function armarPromesas(
   })
 }
 
-export async function calcularIndicadores(meses = 12): Promise<Indicadores> {
+/**
+ * Con `dependenciaId` se calcula lo mismo pero solo para esa área: es el
+ * tablero del titular. Las mismas definiciones que el tablero público, para
+ * que lo que ve la dirección y lo que ve el área sean el mismo número.
+ */
+export async function calcularIndicadores(meses = 12, dependenciaId?: number | null): Promise<Indicadores> {
   const hasta = new Date()
   const desde = new Date(hasta)
   desde.setMonth(desde.getMonth() - meses)
@@ -163,6 +168,8 @@ export async function calcularIndicadores(meses = 12): Promise<Indicadores> {
   desdeAnterior.setMonth(desdeAnterior.getMonth() - meses)
 
   const festivos = await cargarFestivos()
+  const area = dependenciaId ? { dependenciaId } : {}
+  const areaEvento = dependenciaId ? { reporte: { dependenciaId } } : {}
 
   const [
     recibidos, recibidosAntes,
@@ -175,62 +182,62 @@ export async function calcularIndicadores(meses = 12): Promise<Indicadores> {
     reabiertosPeriodo, cerradosPeriodo,
     recibidosPorMes,
   ] = await Promise.all([
-    prisma.reporte.count({ where: { createdAt: { gte: desde, lte: hasta }, estatus: { not: 'por_validar' } } }),
-    prisma.reporte.count({ where: { createdAt: { gte: desdeAnterior, lt: desde }, estatus: { not: 'por_validar' } } }),
+    prisma.reporte.count({ where: { ...area, createdAt: { gte: desde, lte: hasta }, estatus: { not: 'por_validar' } } }),
+    prisma.reporte.count({ where: { ...area, createdAt: { gte: desdeAnterior, lt: desde }, estatus: { not: 'por_validar' } } }),
 
     // Se traen las fechas, no un conteo: el promedio de días hábiles lo hace JS.
     prisma.reporte.findMany({
-      where: { resueltoAt: { gte: desde, lte: hasta } },
+      where: { ...area, resueltoAt: { gte: desde, lte: hasta } },
       select: { categoriaId: true, createdAt: true, resueltoAt: true, fechaLimite: true },
     }),
     prisma.reporte.findMany({
-      where: { resueltoAt: { gte: desdeAnterior, lt: desde } },
+      where: { ...area, resueltoAt: { gte: desdeAnterior, lt: desde } },
       select: { resueltoAt: true, fechaLimite: true },
     }),
 
     prisma.reporte.aggregate({
       _avg: { calificacion: true },
-      where: { calificacion: { not: null }, cerradoAt: { gte: desde, lte: hasta } },
+      where: { ...area, calificacion: { not: null }, cerradoAt: { gte: desde, lte: hasta } },
     }),
     prisma.reporte.aggregate({
       _avg: { calificacion: true },
-      where: { calificacion: { not: null }, cerradoAt: { gte: desdeAnterior, lt: desde } },
+      where: { ...area, calificacion: { not: null }, cerradoAt: { gte: desdeAnterior, lt: desde } },
     }),
 
-    prisma.reporte.count({ where: { estatus: { in: ESTATUS_ABIERTOS } } }),
+    prisma.reporte.count({ where: { ...area, estatus: { in: ESTATUS_ABIERTOS } } }),
     prisma.reporte.count({
-      where: { estatus: { in: ESTATUS_ABIERTOS }, fechaLimite: { lt: hasta } },
+      where: { ...area, estatus: { in: ESTATUS_ABIERTOS }, fechaLimite: { lt: hasta } },
     }),
 
     prisma.reporte.groupBy({
       by: ['categoriaId'], _count: true,
-      where: { createdAt: { gte: desde, lte: hasta } },
+      where: { ...area, createdAt: { gte: desde, lte: hasta } },
     }),
-    prisma.reporte.groupBy({ by: ['estatus'], _count: true }),
+    prisma.reporte.groupBy({ by: ['estatus'], _count: true, where: area }),
     prisma.reporte.groupBy({
       by: ['origen'], _count: true,
-      where: { createdAt: { gte: desde, lte: hasta } },
+      where: { ...area, createdAt: { gte: desde, lte: hasta } },
     }),
 
     prisma.reporte.groupBy({
       by: ['calificacion'], _count: true,
-      where: { calificacion: { not: null }, cerradoAt: { gte: desde, lte: hasta } },
+      where: { ...area, calificacion: { not: null }, cerradoAt: { gte: desde, lte: hasta } },
     }),
 
     prisma.eventoReporte.findMany({
-      where: { tipo: 'reasignado', timestamp: { gte: desde, lte: hasta } },
+      where: { ...areaEvento, tipo: 'reasignado', timestamp: { gte: desde, lte: hasta } },
       select: { reporteId: true }, distinct: ['reporteId'],
     }),
     prisma.eventoReporte.findMany({
-      where: { tipo: 'reasignado', timestamp: { gte: desde, lte: hasta } },
+      where: { ...areaEvento, tipo: 'reasignado', timestamp: { gte: desde, lte: hasta } },
       select: { reporteId: true, timestamp: true },
     }),
 
-    prisma.reporte.count({ where: { reabiertoAt: { gte: desde, lte: hasta } } }),
-    prisma.reporte.count({ where: { cerradoAt: { gte: desde, lte: hasta } } }),
+    prisma.reporte.count({ where: { ...area, reabiertoAt: { gte: desde, lte: hasta } } }),
+    prisma.reporte.count({ where: { ...area, cerradoAt: { gte: desde, lte: hasta } } }),
 
     prisma.reporte.findMany({
-      where: { createdAt: { gte: desde, lte: hasta } },
+      where: { ...area, createdAt: { gte: desde, lte: hasta } },
       select: { createdAt: true },
     }),
   ])
@@ -245,12 +252,17 @@ export async function calcularIndicadores(meses = 12): Promise<Indicadores> {
     : 0
 
   // ---------------------------------------------------------------- promesas
+  // Todas las categorías para poner nombre: a un área le llegan reportes
+  // reasignados de categorías ajenas. Las promesas sí son solo las suyas.
   const categorias = await prisma.categoria.findMany({
     orderBy: { orden: 'asc' },
-    select: { id: true, slug: true, nombre: true, icono: true, slaDiasHabiles: true },
+    select: { id: true, slug: true, nombre: true, icono: true, slaDiasHabiles: true, dependenciaId: true },
   })
   const porCat = new Map(categorias.map((c) => [c.id, c]))
-  const promesas = armarPromesas(categorias, resueltosLista, festivos)
+  const promesas = armarPromesas(
+    dependenciaId ? categorias.filter((c) => c.dependenciaId === dependenciaId) : categorias,
+    resueltosLista, festivos,
+  )
 
   // ---------------------------------------------------------------- series mensuales
   const claves = mesesEntre(desde, hasta)
@@ -312,24 +324,28 @@ const FRESCURA_MS = 15 * 60 * 1000 // SPEC §7
  * hay un resumen viejo, se sirve ese: más vale un tablero de hace media hora
  * que una página rota.
  */
-export async function obtenerIndicadores(): Promise<Indicadores> {
-  const guardado = await prisma.resumenIndicadores.findUnique({ where: { clave: CLAVE } })
+export async function obtenerIndicadores(dependenciaId?: number | null): Promise<Indicadores> {
+  const clave = claveDe(dependenciaId)
+  const guardado = await prisma.resumenIndicadores.findUnique({ where: { clave } })
   const fresco = guardado && Date.now() - guardado.calculadoAt.getTime() < FRESCURA_MS
   if (fresco) return guardado.payload as unknown as Indicadores
 
   try {
-    return await refrescarIndicadores()
+    return await refrescarIndicadores(dependenciaId)
   } catch (e) {
     if (guardado) return guardado.payload as unknown as Indicadores
     throw e
   }
 }
 
-export async function refrescarIndicadores(): Promise<Indicadores> {
-  const datos = await calcularIndicadores()
+const claveDe = (dependenciaId?: number | null) => dependenciaId ? `${CLAVE}:dependencia:${dependenciaId}` : CLAVE
+
+export async function refrescarIndicadores(dependenciaId?: number | null): Promise<Indicadores> {
+  const clave = claveDe(dependenciaId)
+  const datos = await calcularIndicadores(12, dependenciaId)
   await prisma.resumenIndicadores.upsert({
-    where: { clave: CLAVE },
-    create: { clave: CLAVE, payload: datos as never, calculadoAt: new Date() },
+    where: { clave },
+    create: { clave, payload: datos as never, calculadoAt: new Date() },
     update: { payload: datos as never, calculadoAt: new Date() },
   })
   return datos

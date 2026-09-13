@@ -345,7 +345,20 @@ todos los canales que tenga conectados:
 
 El correo institucional de cada dependencia se captura en `/admin/dependencias`.
 
-## 4c. Recepción: una persona decide qué se registra
+## 4c. Un usuario por dependencia
+
+Cada dependencia tiene su **titular** (perfil supervisión con dependencia) que
+al entrar cae en el tablero de su área: lo que tiene asignado con su plazo,
+los vencidos, lo resuelto esta semana, cumplimiento contra la promesa
+pública, calificación de los vecinos, gráficas de 12 meses y su gente. Solo
+ve su área; dirección y administración abren el de cualquiera desde
+Indicadores. Las cuentas de demostración están en el README.
+
+**Pendiente con el municipio:** el correo real de cada titular (hoy son
+`<área>@municipio.gob.mx` de demostración) y vincularles Telegram/WhatsApp
+para que reciban los avisos de su área.
+
+## 4d. Recepción: una persona decide qué se registra
 
 Todo lo que manda la gente —WhatsApp, Telegram, web, app— nace **por validar**.
 Hasta que alguien lo revisa, no existe para el área, no sale en el mapa ni en

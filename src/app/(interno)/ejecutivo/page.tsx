@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { AlertTriangle, Bot, Building2, CalendarRange, RotateCcw, Users } from 'lucide-react'
 import { requerirRol } from '@/infrastructure/auth'
 import { obtenerIndicadores } from '@/application/indicadores'
@@ -28,7 +29,9 @@ function tono(p: number | null) {
 }
 
 export default async function Ejecutivo() {
-  await requerirRol('supervisor', 'admin')
+  const usuario = await requerirRol('supervisor', 'admin')
+  // El titular de un área entra a su tablero, no al de todo el municipio.
+  if (usuario.rol === 'supervisor' && usuario.dependenciaId) redirect(`/ejecutivo/dependencia/${usuario.dependenciaId}`)
 
   const [publicos, internos, alertas] = await Promise.all([
     obtenerIndicadores(),
@@ -113,6 +116,7 @@ export default async function Ejecutivo() {
           Por dependencia
         </h2>
         <p className="mb-3 text-sm text-tinta-suave">
+          Cada nombre abre el tablero de esa área: lo mismo que ve su titular.
           «Recibidos de otra área» cuenta los reportes que otra dependencia le
           pasó: si un área recibe muchos, el problema suele estar en cómo se
           clasifican al entrar, no en ella.
@@ -136,7 +140,9 @@ export default async function Ejecutivo() {
               <tbody className="divide-y divide-borde">
                 {internos.dependencias.map((d) => (
                   <tr key={d.id}>
-                    <td className="px-4 py-3 font-medium">{d.nombre}</td>
+                    <td className="px-4 py-3 font-medium">
+                      <Link href={`/ejecutivo/dependencia/${d.id}`} className="text-marca-700 underline decoration-marca-300 hover:decoration-marca-700">{d.nombre}</Link>
+                    </td>
                     <td className="px-4 py-3 tabular-nums">{numero(d.abiertos)}</td>
                     <td className="px-4 py-3 tabular-nums">
                       {d.vencidos > 0

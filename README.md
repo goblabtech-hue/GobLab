@@ -60,6 +60,22 @@ Las crea el seed. Todas usan la contraseña **`Demo1234!`**.
 | Atención ciudadana | `operador@municipio.gob.mx` | Recepción y bandeja |
 | Cuadrilla | `cuadrilla@municipio.gob.mx` | Sus reportes asignados |
 
+Además, **cada dependencia tiene su titular y su cuadrilla**, con la misma
+contraseña. El titular entra directo al tablero de su área (asignados,
+resultados y cómo va):
+
+| Dependencia | Titular | Cuadrilla |
+|---|---|---|
+| Servicios Municipales | `servicios@municipio.gob.mx` | `cuadrilla.servicios@municipio.gob.mx` |
+| Obras Públicas | `obras@municipio.gob.mx` | `cuadrilla.obras@municipio.gob.mx` |
+| CAPyAT (agua) | `capyat@municipio.gob.mx` | `cuadrilla.capyat@municipio.gob.mx` |
+| Seguridad Pública y Tránsito | `seguridad@municipio.gob.mx` | `cuadrilla.seguridad@municipio.gob.mx` |
+| Protección Ambiental | `ambiental@municipio.gob.mx` | `cuadrilla.ambiental@municipio.gob.mx` |
+| Reglamentos y Espectáculos | `reglamentos@municipio.gob.mx` | `cuadrilla.reglamentos@municipio.gob.mx` |
+| Salud Municipal | `salud@municipio.gob.mx` | `cuadrilla.salud@municipio.gob.mx` |
+| Transparencia | `transparencia@municipio.gob.mx` | `cuadrilla.transparencia@municipio.gob.mx` |
+| Protección Civil | `proteccioncivil@municipio.gob.mx` | `cuadrilla.proteccioncivil@municipio.gob.mx` |
+
 **Bórralas antes de producción.** Ver `PENDIENTES.md`.
 
 ## Los bots
