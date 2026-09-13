@@ -357,6 +357,55 @@ CRON_SECRET=el-mismo-valor-que-en-.env
 
 ---
 
+## 5b. Respaldos
+
+El instalador deja programado un respaldo **diario a las 2:00** de la base de
+datos y de las fotos, en `/home/atencion/respaldos`, conservando 30 días. Las
+fotos van aparte a propósito: un `pg_dump` solo guarda la base, y la evidencia
+del antes y el después vive en disco.
+
+```bash
+npm run respaldar              # hacer uno ahora
+bash scripts/respaldar.sh --listar
+```
+
+### Una copia fuera del servidor
+
+Un respaldo en el mismo disco que la base protege contra un error humano, no
+contra que el disco muera. Una vez a la semana, desde tu computadora:
+
+```bash
+rsync -avz atencion@IP-DEL-VPS:respaldos/ ~/respaldos-demosvoz/
+```
+
+Con eso hay copia en dos máquinas distintas. Cuando el sistema sea del
+ayuntamiento, esa copia debe vivir en un lugar del ayuntamiento.
+
+### Restaurar
+
+La mitad que siempre falta en las guías. En el servidor, como usuario
+`atencion`:
+
+```bash
+cd /opt/atencion-ciudadana
+sudo systemctl stop atencion-ciudadana
+
+# La base: se vacía y se recarga desde el respaldo.
+pg_restore --clean --if-exists --no-owner --no-privileges \
+  --dbname "$(grep DATABASE_URL .env | cut -d'"' -f2 | sed 's/?schema=public//')" \
+  ~/respaldos/base-2026-09-12.dump
+
+# Las fotos.
+tar -xzf ~/respaldos/fotos-2026-09-12.tar.gz -C public/
+
+sudo systemctl start atencion-ciudadana
+```
+
+Prueba la restauración **antes** de necesitarla: un respaldo que nunca se ha
+restaurado es una suposición, no un respaldo.
+
+---
+
 ## 6. Antes de que lo vea un ciudadano
 
 Esto **no** es opcional. La base sembrada trae cientos de reportes inventados

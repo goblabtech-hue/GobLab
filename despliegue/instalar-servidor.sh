@@ -181,6 +181,16 @@ $PUERTA
 CADDY
 systemctl reload caddy || systemctl restart caddy
 
+paso "Respaldo diario"
+# Base y fotos, a las 2 de la mañana, 30 días. Sin esto, si el disco muere se
+# pierden los reportes y los teléfonos de la gente, y no hay forma de saberlo
+# hasta que ya pasó.
+install -d -m 700 -o "$USUARIO" -g "$USUARIO" "/home/$USUARIO/respaldos"
+LINEA="0 2 * * * cd $DESTINO && bash scripts/respaldar.sh >> /home/$USUARIO/respaldos/respaldo.log 2>&1"
+( sudo -u "$USUARIO" crontab -l 2>/dev/null | grep -v 'respaldar.sh'; echo "$LINEA" ) | sudo -u "$USUARIO" crontab -
+ok_="  ✓ programado a las 02:00, en /home/$USUARIO/respaldos"
+echo "$ok_"
+
 paso "Servicio systemd"
 cp "$(dirname "$0")/atencion-ciudadana.service" /etc/systemd/system/ 2>/dev/null || \
 cat > /etc/systemd/system/atencion-ciudadana.service <<UNIT

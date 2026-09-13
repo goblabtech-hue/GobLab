@@ -27,6 +27,7 @@ de `/admin`.
 | ⏱️ | Validar los 12 plazos de atención | Cada dependencia | Producción |
 | ⚖️ | Tres datos del aviso de privacidad + revisión jurídica | El jurídico | Producción |
 | 🔐 | Borrar cuentas demo y regenerar secretos | Quien despliegue | Producción |
+| 💾 | Probar una restauración del respaldo, y copiar respaldos fuera del servidor | Quien despliegue | Producción |
 | 🖥️ | Servidor y dominio en vivo | Tú | Ambos |
 
 Lo que ya **no** falta: identidad del municipio, las 8 dependencias reales con
