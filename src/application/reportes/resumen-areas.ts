@@ -15,6 +15,9 @@ export type CargaArea = {
   abiertos: number
   vencidos: number
   sinCuadrilla: number
+  /** Últimos 7 días: cuántos se registraron al área y cuántos resolvió. */
+  llegaron7d: number
+  resueltos7d: number
 }
 
 export async function cargaPorArea(soloDependenciaId?: number | null): Promise<CargaArea[]> {
@@ -29,10 +32,24 @@ export async function cargaPorArea(soloDependenciaId?: number | null): Promise<C
   if (dependencias.length === 0) return []
 
   const ids = dependencias.map((d) => d.id)
-  const abiertos = await prisma.reporte.findMany({
-    where: { dependenciaId: { in: ids }, estatus: { in: ESTATUS_ABIERTOS } },
-    select: { dependenciaId: true, estatus: true, fechaLimite: true },
-  })
+  // Siete días corridos, no la semana calendario: la bandeja se abre a
+  // diario y «desde el lunes» un martes no dice nada.
+  const hace7 = new Date(ahora.getTime() - 7 * 24 * 3600_000)
+  const [abiertos, llegaron, resueltos] = await Promise.all([
+    prisma.reporte.findMany({
+      where: { dependenciaId: { in: ids }, estatus: { in: ESTATUS_ABIERTOS } },
+      select: { dependenciaId: true, estatus: true, fechaLimite: true },
+    }),
+    prisma.reporte.groupBy({
+      by: ['dependenciaId'], _count: true,
+      where: { dependenciaId: { in: ids }, createdAt: { gte: hace7 }, estatus: { not: 'por_validar' } },
+    }),
+    prisma.reporte.groupBy({
+      by: ['dependenciaId'], _count: true,
+      where: { dependenciaId: { in: ids }, resueltoAt: { gte: hace7 } },
+    }),
+  ])
+  const conteo = (g: { dependenciaId: number; _count: number }[], id: number) => g.find((x) => x.dependenciaId === id)?._count ?? 0
 
   return dependencias
     .map((d) => {
@@ -44,6 +61,8 @@ export async function cargaPorArea(soloDependenciaId?: number | null): Promise<C
         vencidos: suyos.filter((r) => r.fechaLimite < ahora).length,
         // "nuevo" significa que tiene área pero todavía no tiene a nadie atrás.
         sinCuadrilla: suyos.filter((r) => r.estatus === 'nuevo').length,
+        llegaron7d: conteo(llegaron, d.id),
+        resueltos7d: conteo(resueltos, d.id),
       }
     })
     .sort((a, b) => b.vencidos - a.vencidos || b.abiertos - a.abiertos)

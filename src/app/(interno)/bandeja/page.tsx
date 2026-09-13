@@ -87,8 +87,13 @@ export default async function PaginaBandeja({ searchParams }: PageProps<'/bandej
       prisma.colonia.findMany({ orderBy: { nombre: 'asc' }, select: { id: true, nombre: true } }),
       prisma.dependencia.findMany({ orderBy: { nombre: 'asc' }, select: { id: true, nombre: true } }),
       cargarFestivos(),
+      // El aviso de vencidos respeta el mismo alcance que la lista: a un
+      // titular no le sirve saber cuántos vencidos tiene el municipio entero.
       prisma.reporte.count({
-        where: { estatus: { in: ESTATUS_ABIERTOS }, fechaLimite: { lt: new Date() } },
+        where: {
+          estatus: { in: ESTATUS_ABIERTOS }, fechaLimite: { lt: new Date() },
+          ...(usuario.rol === 'supervisor' && usuario.dependenciaId ? { dependenciaId: usuario.dependenciaId } : {}),
+        },
       }),
       // Un supervisor solo ve la carga de su área; operación y administración,
       // la de todas.
