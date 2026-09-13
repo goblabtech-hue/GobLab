@@ -59,8 +59,12 @@ async function nuevo(over: Partial<Parameters<typeof crearReporte>[0]> = {}) {
 const estatusDe = async (id: string) =>
   (await prisma.reporte.findUniqueOrThrow({ where: { id }, select: { estatus: true } })).estatus
 
+// Ordenado a propósito: sin `orderBy`, Postgres devuelve lo que quiera y
+// cualquier aserción sobre la posición de un evento se vuelve intermitente.
 const eventosDe = async (id: string) =>
-  (await prisma.eventoReporte.findMany({ where: { reporteId: id }, select: { tipo: true } })).map((e) => e.tipo)
+  (await prisma.eventoReporte.findMany({
+    where: { reporteId: id }, select: { tipo: true }, orderBy: { timestamp: 'asc' },
+  })).map((e) => e.tipo)
 
 describe('puedeTransicionar', () => {
   test('permite el camino normal del reporte', () => {
@@ -93,8 +97,10 @@ describe('crearReporte', () => {
     assert.ok(r.fechaLimite > new Date())
     // El primero es siempre «creado». Después puede venir la bitácora del
     // aviso al área, que no es parte del ciclo de vida sino de quién se enteró.
+    // «creado» y la bitácora del aviso al área pueden caer en el mismo
+    // milisegundo, así que no se afirma sobre la posición: solo que, quitando
+    // las notificaciones, el ciclo de vida tiene exactamente ese evento.
     const eventos = await eventosDe(r.id)
-    assert.equal(eventos[0], 'creado')
     assert.deepEqual(eventos.filter((e) => e !== 'notificacion'), ['creado'])
     assert.equal(await estatusDe(r.id), 'nuevo')
   })
