@@ -1,3 +1,4 @@
+import { avisarVencidos } from '@/application/avisos-personal'
 import { NextResponse } from 'next/server'
 import { evaluarAlertas } from '@/application/alertas'
 import { autorizadoComoCron, noAutorizado } from '@/infrastructure/cron'
@@ -9,5 +10,7 @@ export async function GET(request: Request) {
   if (!autorizadoComoCron(request)) return noAutorizado()
 
   const resultado = await evaluarAlertas()
-  return NextResponse.json({ ok: true, ...resultado })
+  // Además de los umbrales globales, cada reporte que venció avisa a su área.
+  const vencidosAvisados = await avisarVencidos()
+  return NextResponse.json({ ok: true, ...resultado, vencidosAvisados })
 }

@@ -3,28 +3,45 @@ import { obtenerConfiguracion } from '@/infrastructure/config'
 import type { AlertaEvaluada } from '@/application/alertas'
 
 /**
- * Correo de alertas (SPEC §4.5: «banner + correo»).
+ * Correo saliente.
  *
- * El banner del tablero interno funciona siempre; el correo solo si el
- * municipio configuró un SMTP. Sin configuración no falla ni bloquea nada: se
- * registra en el log y la alerta igual queda guardada y visible. Un sistema de
- * alertas que se cae porque el servidor de correo no responde es peor que no
- * tener correo.
+ * Solo funciona si el municipio configuró un SMTP. Sin configuración no falla
+ * ni bloquea nada: se registra en el log y lo que disparó el correo sigue su
+ * curso. Un aviso que tumba la asignación de un reporte porque el servidor de
+ * correo no responde es peor que no tener correo.
  */
 
-function configurado(): boolean {
-  return Boolean(process.env.SMTP_HOST && process.env.SMTP_FROM && process.env.ALERTAS_DESTINATARIOS)
+export type Correo = {
+  para: string | string[]
+  asunto: string
+  texto: string
 }
 
-export async function enviarCorreoAlerta(alertas: AlertaEvaluada[]): Promise<void> {
-  if (alertas.length === 0) return
+/**
+ * Buzón de prueba. Con SMTP_HOST="buzon-prueba" nada sale de la máquina: los
+ * correos se guardan aquí para que las pruebas puedan afirmar a quién y qué
+ * se habría mandado. Es un valor imposible como host real, así que no hay
+ * forma de dejarlo puesto en producción por accidente y no notarlo.
+ */
+export const buzonDePrueba: Correo[] = []
 
-  if (!configurado()) {
-    console.warn(
-      `[alertas] ${alertas.length} alerta(s) sin enviar por correo: falta configurar SMTP. ` +
-      alertas.map((a) => a.mensaje).join(' | '),
-    )
-    return
+export function correoConfigurado(): boolean {
+  return Boolean(process.env.SMTP_HOST && process.env.SMTP_FROM)
+}
+
+export async function enviarCorreo(correo: Correo): Promise<boolean> {
+  const destinatarios = Array.isArray(correo.para) ? correo.para : [correo.para]
+  const validos = destinatarios.filter((d) => d && d.includes('@'))
+  if (validos.length === 0) return false
+
+  if (process.env.SMTP_HOST === 'buzon-prueba') {
+    buzonDePrueba.push({ ...correo, para: validos })
+    return true
+  }
+
+  if (!correoConfigurado()) {
+    console.warn(`[correo] sin enviar (falta SMTP): «${correo.asunto}» → ${validos.join(', ')}`)
+    return false
   }
 
   try {
@@ -36,18 +53,33 @@ export async function enviarCorreoAlerta(alertas: AlertaEvaluada[]): Promise<voi
         ? { user: process.env.SMTP_USUARIO, pass: process.env.SMTP_PASSWORD }
         : undefined,
     })
-
-    const lista = alertas.map((a) => `• ${a.mensaje}`).join('\n')
     const cfg = await obtenerConfiguracion()
-
     await transporte.sendMail({
       from: process.env.SMTP_FROM,
-      to: process.env.ALERTAS_DESTINATARIOS,
-      subject: `[${cfg.nombre}] ${alertas.length === 1 ? 'Alerta' : `${alertas.length} alertas`} de atención ciudadana`,
-      text: `El sistema detectó lo siguiente:\n\n${lista}\n\nRevisa el detalle en el tablero interno, sección Indicadores.\n\nEste correo lo manda el sistema automáticamente. No respondas a esta dirección.`,
+      to: validos.join(', '),
+      subject: `[${cfg.nombre}] ${correo.asunto}`,
+      text: `${correo.texto}\n\n—\nEste correo lo manda el sistema de atención ciudadana automáticamente. No respondas a esta dirección.`,
     })
+    return true
   } catch (e) {
-    // Nunca propaga: el correo es el aviso, no la alerta.
-    console.error('[alertas] no se pudo enviar el correo:', e)
+    // Nunca propaga: el correo es el aviso, no el hecho.
+    console.error('[correo] no se pudo enviar:', e)
+    return false
   }
+}
+
+/** Alertas globales del SPEC §4.5, a la lista de administración. */
+export async function enviarCorreoAlerta(alertas: AlertaEvaluada[]): Promise<void> {
+  if (alertas.length === 0) return
+  const para = process.env.ALERTAS_DESTINATARIOS
+  if (!para) {
+    console.warn(`[alertas] ${alertas.length} alerta(s) sin correo: falta ALERTAS_DESTINATARIOS.`)
+    return
+  }
+  const lista = alertas.map((a) => `• ${a.mensaje}`).join('\n')
+  await enviarCorreo({
+    para: para.split(',').map((s) => s.trim()),
+    asunto: alertas.length === 1 ? 'Alerta de atención ciudadana' : `${alertas.length} alertas de atención ciudadana`,
+    texto: `El sistema detectó lo siguiente:\n\n${lista}\n\nRevisa el detalle en el tablero interno, sección Indicadores.`,
+  })
 }

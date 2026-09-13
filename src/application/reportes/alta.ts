@@ -1,4 +1,5 @@
 import { prisma } from '@/infrastructure/prisma'
+import { avisarArea } from '@/application/avisos-personal'
 import { generarFolio } from '@/infrastructure/folio'
 import { cargarFestivos } from '@/infrastructure/festivos'
 import { calcularFechaLimite } from '@/domain/dias-habiles'
@@ -104,6 +105,10 @@ export async function crearReporte(datos: DatosNuevoReporte): Promise<ReporteCre
 
     return r
   })
+
+  // El área se entera de que le llegó trabajo. Fuera de la transacción: un
+  // aviso que falla no puede deshacer el alta.
+  await avisarArea(reporte.id, 'nuevo_en_area')
 
   return {
     ...reporte,

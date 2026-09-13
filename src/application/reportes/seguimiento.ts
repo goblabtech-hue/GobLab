@@ -5,6 +5,7 @@ import { calcularFechaLimite } from '@/domain/dias-habiles'
 import { cargarFestivos } from '@/infrastructure/festivos'
 import { ReglaDeNegocio, registrarEvento } from './nucleo'
 import { notificarCiudadano } from '@/application/notificaciones'
+import { avisarArea, avisarUsuario } from '@/application/avisos-personal'
 
 /**
  * Lo que el ciudadano puede hacer con un reporte que ya levantó.
@@ -131,5 +132,9 @@ export async function rechazarResolucion(reporteId: string, motivo: string) {
   })
 
   await notificarCiudadano(r.id, 'reabierto')
+  // Hay que volver: el área y quien lo tenía.
+  await avisarArea(r.id, 'reabierto')
+  const asignado = await prisma.reporte.findUnique({ where: { id: r.id }, select: { asignadoAId: true } })
+  if (asignado?.asignadoAId) await avisarUsuario(r.id, asignado.asignadoAId, 'reabierto')
   return { folio: r.folio, fechaLimite }
 }

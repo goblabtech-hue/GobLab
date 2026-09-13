@@ -292,6 +292,28 @@ credenciales.
 
 ---
 
+## 4b. Avisos al personal
+
+Cada persona del municipio recibe los avisos de los reportes que le tocan, por
+todos los canales que tenga conectados:
+
+| Evento | A quién |
+|---|---|
+| Llega un reporte al área | Correo institucional del área + supervisores del área |
+| Se lo asignan a alguien | Esa persona |
+| El ciudadano dice que no quedó | Área + quien lo tenía |
+| Se venció el plazo sin resolver | Área + quien lo tenía (una sola vez por reporte) |
+
+**Canales**, en `/admin/usuarios`:
+- **Correo**: el de la cuenta, siempre. Necesita `SMTP_*` para salir de verdad.
+- **Telegram**: botón «Vincular Telegram» → genera un código → la persona le
+  escribe `/vincular CÓDIGO` al bot desde su teléfono. Vence en 15 minutos y es
+  de un solo uso: así nadie puede conectar el chat de otro.
+- **WhatsApp**: el campo de teléfono. Necesita la cuenta de Meta Business
+  (sección 4); hasta entonces se registra pero no sale.
+
+El correo institucional de cada dependencia se captura en `/admin/dependencias`.
+
 ## 5. Integraciones que necesitan credenciales
 
 Estado real de este `.env`, hoy:
@@ -304,7 +326,7 @@ Estado real de este `.env`, hoy:
 | WhatsApp Cloud | `WHATSAPP_*` | ❌ vacías | Se usa el simulador de `/dev/bot` |
 | Almacenamiento | `STORAGE_DRIVER` | `local` | Las fotos van a `public/uploads` del servidor. Suficiente en un servidor propio; **no** funciona en Vercel ni en nada sin disco escribible |
 | S3 / R2 | `S3_*` | ❌ vacías | — |
-| Correo de alertas | `SMTP_*` | ❌ vacías | Las alertas se detectan y se ven en el tablero interno, pero no salen por correo |
+| Correo | `SMTP_*` | ❌ vacías | Ni las alertas ni los avisos al personal salen por correo; Telegram y WhatsApp del personal sí funcionan sin esto |
 
 > El almacenamiento S3 **ya está implementado** y sirve para AWS S3, Cloudflare
 > R2, MinIO o Spaces: solo hay que poner las credenciales y

@@ -5,6 +5,7 @@ import { hashTelefono } from '@/domain/telefono'
 import { puedeTransicionar } from '@/domain/estatus'
 import { CALIFICACION_REAPERTURA, MAX_REAPERTURAS } from '@/infrastructure/config'
 import { notificarCiudadano } from '@/application/notificaciones'
+import { avisarArea, avisarUsuario } from '@/application/avisos-personal'
 import { ReglaDeNegocio, registrarEvento } from './nucleo'
 
 /**
@@ -110,6 +111,9 @@ export async function reabrirReporte(folio: string, motivo?: string) {
   })
 
   await notificarCiudadano(r.id, 'reabierto')
+  await avisarArea(r.id, 'reabierto')
+  const asignado = await prisma.reporte.findUnique({ where: { id: r.id }, select: { asignadoAId: true } })
+  if (asignado?.asignadoAId) await avisarUsuario(r.id, asignado.asignadoAId, 'reabierto')
 }
 
 /** Reportes ligados a un teléfono, para "consultar mis reportes" del bot. */

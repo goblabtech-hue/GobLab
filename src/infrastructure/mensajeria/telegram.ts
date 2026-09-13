@@ -233,3 +233,18 @@ export function webhookTelegramAutorizado(request: Request): boolean {
   if (!esperado) return false
   return request.headers.get('x-telegram-bot-api-secret-token') === esperado
 }
+
+let nombreCache: string | null = null
+
+/** @usuario del bot, para decirle a la gente a quién escribirle. */
+export async function nombreDelBot(): Promise<string> {
+  if (nombreCache) return nombreCache
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  if (!token) return 'el bot de Telegram'
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${token}/getMe`)
+    const d = await r.json() as { ok?: boolean; result?: { username?: string } }
+    if (d.ok && d.result?.username) nombreCache = `@${d.result.username}`
+  } catch { /* se queda el genérico */ }
+  return nombreCache ?? 'el bot de Telegram'
+}

@@ -5,7 +5,7 @@ import type { CanalMensajeria } from '@/generated/prisma/enums'
 import type { MessagingProvider } from './provider'
 
 export * from './provider'
-export { SimuladorProvider } from './simulador'
+export { SimuladorProvider, enviadosDePrueba } from './simulador'
 export { WhatsAppCloudProvider, verificarWebhookWhatsApp } from './whatsapp-cloud'
 export { TelegramProvider, webhookTelegramAutorizado } from './telegram'
 
@@ -19,6 +19,17 @@ const instancias = new Map<CanalMensajeria, MessagingProvider>()
  * nada con Facebook (SPEC §4.1).
  */
 export function proveedor(canal: CanalMensajeria): MessagingProvider {
+  // Las pruebas lo encienden para que ningún canal salga de la máquina, aunque
+  // .env traiga un token real. Es un nombre imposible de dejar puesto por
+  // accidente en producción sin notarlo.
+  if (process.env.MENSAJERIA_FORZAR_SIMULADOR === '1') {
+    return instancias.get('simulador') ?? (() => {
+      const sim = new SimuladorProvider()
+      instancias.set('simulador', sim)
+      return sim
+    })()
+  }
+
   const guardado = instancias.get(canal)
   if (guardado) return guardado
 

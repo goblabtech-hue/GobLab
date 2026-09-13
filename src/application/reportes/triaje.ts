@@ -1,6 +1,7 @@
 import { prisma } from '@/infrastructure/prisma'
 import { puedeTransicionar } from '@/domain/estatus'
 import { notificarCiudadano } from '@/application/notificaciones'
+import { avisarArea, avisarUsuario } from '@/application/avisos-personal'
 import { ReglaDeNegocio, registrarEvento } from './nucleo'
 
 /**
@@ -32,6 +33,7 @@ export async function asignarCuadrilla(reporteId: string, cuadrillaId: string, u
   })
 
   await notificarCiudadano(reporteId, 'asignado')
+  await avisarUsuario(reporteId, cuadrillaId, 'asignado_a_ti')
 }
 
 /**
@@ -74,6 +76,9 @@ export async function reasignarDependencia(datos: DatosReasignacion) {
       de: r.dependenciaId, a: dependenciaId, motivo: limpio,
     }, userId: userId })
   })
+
+  // Para el área nueva es un reporte que acaba de llegar.
+  await avisarArea(reporteId, 'nuevo_en_area')
 }
 
 export async function marcarImprocedente(reporteId: string, motivo: string, userId: string) {

@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { primerError } from '@/domain/validacion'
 import { prisma } from '@/infrastructure/prisma'
+import { cifrarTelefono, hashTelefono } from '@/domain/telefono'
+import { nombreDelBot } from '@/infrastructure/mensajeria/telegram'
 import { requerirRol, hashearPassword, NoAutorizado } from '@/infrastructure/auth'
 import { invalidarCacheFestivos } from '@/infrastructure/festivos'
 import {
@@ -204,6 +206,10 @@ const usuarioSchema = z.object({
   dependenciaId: z.coerce.number().int().optional().nullable(),
   activo: z.coerce.boolean().optional(),
   password: z.string().optional(),
+  /** WhatsApp del funcionario, para avisos. Diez dígitos; vacío lo quita. */
+  telefono: z.string().trim().optional().nullable()
+    .transform((t) => (t ? t.replace(/\D/g, '') : null))
+    .refine((t) => t === null || t.length === 10, 'El teléfono son diez dígitos.'),
 })
 
 export async function guardarUsuario(_p: Resultado, datos: FormData): Promise<Resultado> {
@@ -216,10 +222,17 @@ export async function guardarUsuario(_p: Resultado, datos: FormData): Promise<Re
       dependenciaId: datos.get('dependenciaId') || null,
       activo: datos.get('activo') === 'on',
       password: datos.get('password') || undefined,
+      telefono: datos.get('telefono') || null,
     })
     if (!parsed.success) return { error: primerError(parsed.error) }
 
-    const { id, password, ...data } = parsed.data
+    const { id, password, telefono, ...data } = parsed.data
+    // El teléfono se guarda cifrado y hasheado, como el de los ciudadanos.
+    // Vacío = no tocar el que haya: el formulario nunca lo muestra, así que
+    // un campo vacío es lo normal al editar cualquier otra cosa de la cuenta.
+    const canalTelefono = telefono
+      ? { telefonoCifrado: cifrarTelefono(telefono), telefonoHash: hashTelefono(telefono) }
+      : {}
 
     if (password && password.length < 8) {
       return { error: 'La contraseña debe tener al menos 8 caracteres.' }
@@ -234,14 +247,54 @@ export async function guardarUsuario(_p: Resultado, datos: FormData): Promise<Re
     if (id) {
       await prisma.usuario.update({
         where: { id },
-        data: { ...data, ...(password ? { hashPassword: await hashearPassword(password) } : {}) },
+        data: { ...data, ...canalTelefono, ...(password ? { hashPassword: await hashearPassword(password) } : {}) },
       })
     } else {
       if (!password) return { error: 'Escribe una contraseña para la cuenta nueva.' }
       await prisma.usuario.create({
-        data: { ...data, hashPassword: await hashearPassword(password) },
+        data: { ...data, ...canalTelefono, hashPassword: await hashearPassword(password) },
       })
     }
+    revalidatePath('/admin/usuarios')
+    return { ok: true }
+  }) as Promise<Resultado>
+}
+
+// ---------------------------------------------------------------- Telegram del personal
+
+const VIGENCIA_CODIGO_MIN = 15
+
+/**
+ * Código de un solo uso para que un funcionario vincule su Telegram.
+ *
+ * Se vincula con un código y no pidiéndole su usuario de Telegram porque el
+ * bot no puede iniciar una conversación: Telegram solo deja escribirle a
+ * quien le escribió primero. El código es la prueba de que la persona que
+ * está del otro lado del chat es la misma que tiene la cuenta.
+ */
+export async function generarCodigoVinculacion(userId: string): Promise<{ codigo?: string; bot?: string; error?: string }> {
+  return comoAdmin(async () => {
+    const u = await prisma.usuario.findUnique({ where: { id: userId }, select: { activo: true } })
+    if (!u?.activo) return { error: 'Esa cuenta no está activa.' }
+
+    // Sin caracteres que se confundan entre sí (0/O, 1/I/L).
+    const alfabeto = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+    const codigo = Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => alfabeto[b % alfabeto.length]).join('')
+
+    await prisma.usuario.update({
+      where: { id: userId },
+      data: { codigoVinculacion: codigo, codigoVinculacionExpira: new Date(Date.now() + VIGENCIA_CODIGO_MIN * 60_000) },
+    })
+    return { codigo, bot: await nombreDelBot() }
+  }) as Promise<{ codigo?: string; bot?: string; error?: string }>
+}
+
+export async function desvincularTelegram(userId: string): Promise<Resultado> {
+  return comoAdmin(async () => {
+    await prisma.usuario.update({
+      where: { id: userId },
+      data: { telegramChatIdCifrado: null, telegramChatIdHash: null, codigoVinculacion: null, codigoVinculacionExpira: null },
+    })
     revalidatePath('/admin/usuarios')
     return { ok: true }
   }) as Promise<Resultado>

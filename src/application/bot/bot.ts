@@ -1,6 +1,6 @@
 import { obtenerConfiguracion } from '@/infrastructure/config'
 import { prisma } from '@/infrastructure/prisma'
-import { derivarTelefono, telefonoValido } from '@/domain/telefono'
+import { derivarTelefono, telefonoValido, cifrarTelefono, hashTelefono } from '@/domain/telefono'
 import { pareceEmergencia } from './clasificador'
 import {
   PALABRAS_HUMANO, PALABRAS_MENU, normalizar, type Contexto, type Estado,
@@ -96,6 +96,10 @@ export async function responder(
     })
   }
 
+  // --- personal municipal vinculando su chat, antes que cualquier estado ---
+  const vinculo = /^\/?vincular\s+([a-z0-9]{6})$/i.exec(texto)
+  if (vinculo) return vincularPersonal(entrante, vinculo[1]!.toUpperCase())
+
   // --- salidas de emergencia, antes que cualquier estado ---
   if (PALABRAS_MENU.includes(clave)) {
     await guardarEstado(conversacion.id, { paso: 'menu' })
@@ -177,4 +181,46 @@ export async function responder(
       await guardarEstado(conversacion.id, { paso: 'menu' })
       return [await menuPrincipal(chatId, entrante.nombre)]
   }
+}
+
+
+// ---------------------------------------------------------------- personal
+
+/**
+ * Un funcionario conecta este chat a su cuenta con el código que le dio el
+ * administrador. A partir de aquí recibe por este chat los avisos de los
+ * reportes que le tocan.
+ *
+ * El código se consume al usarse y vence a los 15 minutos: es la única prueba
+ * de que quien escribe es quien tiene la cuenta, así que no puede quedar
+ * válido por ahí.
+ */
+async function vincularPersonal(entrante: MensajeEntrante, codigo: string): Promise<MensajeSaliente[]> {
+  const { chatId } = entrante
+  if (entrante.canal !== 'telegram' && entrante.canal !== 'simulador') {
+    return [{ chatId, texto: 'La vinculación es para Telegram.' }]
+  }
+
+  const u = await prisma.usuario.findUnique({
+    where: { codigoVinculacion: codigo },
+    select: { id: true, nombre: true, activo: true, codigoVinculacionExpira: true },
+  })
+  if (!u || !u.activo || !u.codigoVinculacionExpira || u.codigoVinculacionExpira < new Date()) {
+    return [{ chatId, texto: 'Ese código no sirve o ya venció. Pide uno nuevo en Administración → Usuarios.' }]
+  }
+
+  await prisma.usuario.update({
+    where: { id: u.id },
+    data: {
+      telegramChatIdCifrado: cifrarTelefono(chatId),
+      telegramChatIdHash: hashTelefono(chatId),
+      codigoVinculacion: null,
+      codigoVinculacionExpira: null,
+    },
+  })
+
+  return [{
+    chatId,
+    texto: `Listo, ${u.nombre}. Por aquí te voy a avisar de los reportes que te toquen: los nuevos de tu área, los que te asignen, los que el ciudadano reabra y los que se venzan.`,
+  }]
 }

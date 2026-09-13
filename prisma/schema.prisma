@@ -171,6 +171,20 @@ model Usuario {
   rol           Rol
   dependenciaId Int?
   activo        Boolean  @default(true)
+
+  // ── Por dónde avisarle ──────────────────────────────────────────────────
+  // Se cifran igual que los de los ciudadanos (C-05): un teléfono de
+  // funcionario filtrado es un teléfono filtrado.
+  /// Teléfono para avisos por WhatsApp.
+  telefonoCifrado         String?
+  telefonoHash            String?
+  /// Chat de Telegram, vinculado con el código de /admin/usuarios.
+  telegramChatIdCifrado   String?
+  telegramChatIdHash      String?
+  /// Código de un solo uso para vincular Telegram. Vigencia corta.
+  codigoVinculacion       String?   @unique
+  codigoVinculacionExpira DateTime?
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -178,6 +192,9 @@ model Usuario {
   reportesAsignados Reporte[]    @relation("ReporteAsignado")
   eventos           EventoReporte[]
   fotosSubidas      FotoReporte[]
+
+  @@index([telegramChatIdHash])
+  @@index([telefonoHash])
 }
 
 // ---------------------------------------------------------------- reportes

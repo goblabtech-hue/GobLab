@@ -91,7 +91,11 @@ describe('crearReporte', () => {
     const r = await nuevo()
     assert.match(r.folio, /^[A-Z]{2,5}-\d{4}-\d{5,}$/)
     assert.ok(r.fechaLimite > new Date())
-    assert.deepEqual(await eventosDe(r.id), ['creado'])
+    // El primero es siempre «creado». Después puede venir la bitácora del
+    // aviso al área, que no es parte del ciclo de vida sino de quién se enteró.
+    const eventos = await eventosDe(r.id)
+    assert.equal(eventos[0], 'creado')
+    assert.deepEqual(eventos.filter((e) => e !== 'notificacion'), ['creado'])
     assert.equal(await estatusDe(r.id), 'nuevo')
   })
 
