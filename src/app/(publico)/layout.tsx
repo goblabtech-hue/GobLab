@@ -64,6 +64,7 @@ export default async function LayoutPublico({ children }: { children: React.Reac
               <Link href="/privacidad" className="underline hover:text-tinta">Aviso de privacidad</Link>
               <Link href="/datos-abiertos" className="underline hover:text-tinta">Datos abiertos</Link>
               <Link href="/entrar" className="underline hover:text-tinta">Personal municipal</Link>
+              <Link href="/plataforma" className="underline hover:text-tinta">Qué es DemosVoz</Link>
             </nav>
           </div>
         </div>
