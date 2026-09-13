@@ -267,7 +267,7 @@ pases la clave.
 Quítala el día que el sitio sea el del ayuntamiento: borra el bloque
 `basic_auth` de `/etc/caddy/Caddyfile` y `sudo systemctl reload caddy`.
 
-Instala Node 22, PostgreSQL 18, Caddy, crea el usuario de servicio `atencion`,
+Instala Node 24, PostgreSQL 18, Caddy, crea el usuario de servicio `atencion`,
 la base de datos, y cierra el firewall dejando abiertos solo SSH, 80 y 443.
 
 La cadena de conexión a la base queda en

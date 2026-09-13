@@ -66,7 +66,7 @@ apt-get upgrade -y -qq
 apt-get install -y -qq curl ca-certificates gnupg git ufw
 
 paso "Node.js 22 LTS"
-curl -fsSL https://deb.nodesource.com/setup_22.x | bash - >/dev/null
+curl -fsSL https://deb.nodesource.com/setup_24.x | bash - >/dev/null
 apt-get install -y -qq nodejs
 node --version
 
