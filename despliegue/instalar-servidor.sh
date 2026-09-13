@@ -5,7 +5,7 @@
 #
 #   bash instalar-servidor.sh atencion.tuladeallende.gob.mx
 #
-# Deja instalados: Node 22, PostgreSQL 18, Caddy (HTTPS automático), el
+# Deja instalados: Node 24, PostgreSQL 18, Caddy (HTTPS automático), el
 # usuario de servicio y el firewall. NO despliega la aplicación: eso lo hace
 # desplegar.sh, que ya corre sin privilegios.
 
